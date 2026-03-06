@@ -1,0 +1,2431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ledger — personal film record</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ═══════════════════════════════════════════════
+   ledger · Swiss-Editorial Design System
+   Palette: paper/ink + slate blue + persimmon CTA
+═══════════════════════════════════════════════ */
+:root {
+  --ink:        #0c0b09;
+  --paper:      #f4efe6;
+  --cream:      #ece5d8;
+  --deep-cream: #e2d9c8;
+  --blue:       #3d5a80;
+  --blue-dark:  #2a3f5a;
+  --blue-pale:  #dce8f5;
+  --action:     #e8623a;
+  --action-dark:#c94e28;
+  --dim:        #837a6a;
+  --rule:       #d8d0c0;
+  --rule-dark:  #b0a898;
+  --card-bg:    #faf6f0;
+  --red:        #8b2020;
+  --green:      #2a6b3c;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'DM Sans', 'Helvetica Neue', sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── MASTHEAD ── */
+.masthead {
+  padding: 36px 56px 0;
+}
+.masthead-wordmark {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 80px;
+  line-height: 1;
+  letter-spacing: -3px;
+  color: var(--ink);
+  display: block;
+  user-select: none;
+}
+.masthead-rules {
+  margin-top: 14px;
+}
+.masthead-rule-thick {
+  height: 3px;
+  background: var(--ink);
+}
+.masthead-rule-thin {
+  height: 1px;
+  background: var(--ink);
+  margin-top: 3px;
+}
+.masthead-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0 0;
+  margin-bottom: 20px;
+}
+.masthead-meta-left {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.masthead-meta-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.masthead-count {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.masthead-util {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--dim);
+  cursor: pointer;
+  letter-spacing: 1px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.15s;
+}
+.masthead-util:hover { color: var(--ink); }
+.masthead-util.highlight { color: var(--blue); }
+
+/* ── NAV ── */
+.nav-strip {
+  display: flex;
+  border-top: 1px solid var(--rule-dark);
+  border-bottom: 1px solid var(--rule-dark);
+  padding: 0 56px;
+}
+.nav-btn {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  padding: 11px 22px 10px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  color: var(--dim);
+  transition: all 0.15s;
+}
+.nav-btn:hover { color: var(--ink); }
+.nav-btn.active { color: var(--ink); border-bottom-color: var(--ink); }
+.nav-btn.action-tab {
+  color: var(--action);
+  font-weight: 600;
+  margin-left: auto;
+  letter-spacing: 2px;
+}
+.nav-btn.action-tab:hover { color: var(--action-dark); }
+.nav-btn.action-tab.active { border-bottom-color: var(--action); color: var(--action-dark); }
+
+/* ── SCREENS ── */
+.screen { display: none; padding: 40px 56px 80px; animation: fadeIn 0.2s ease; }
+.screen.active { display: block; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── RANKINGS TABLE ── */
+.rankings-header {
+  display: grid;
+  grid-template-columns: 44px 1fr repeat(8, 52px) 80px;
+  border-top: 2px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  padding: 9px 0;
+  position: sticky;
+  top: 0;
+  background: var(--paper);
+  z-index: 10;
+}
+.col-head {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--dim);
+  text-align: center;
+}
+.col-head:nth-child(2) { text-align: left; padding-left: 12px; }
+
+.film-row {
+  display: grid;
+  grid-template-columns: 44px 1fr repeat(8, 52px) 80px;
+  border-bottom: 1px solid var(--rule);
+  padding: 10px 0;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.film-row:hover { background: var(--cream); }
+.film-row:hover .film-rank { color: var(--blue); }
+
+.film-rank {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--rule-dark);
+  text-align: center;
+  transition: color 0.1s;
+}
+.film-title-cell { padding-left: 12px; }
+.film-title-main {
+  font-family: 'Playfair Display', serif;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.film-title-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--dim);
+  margin-top: 2px;
+  letter-spacing: 0.3px;
+}
+.film-score {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  text-align: center;
+  color: var(--dim);
+}
+.film-total {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: -0.5px;
+}
+
+/* Score heat */
+.s90 { color: #1a5c2e; font-weight: 600; }
+.s80 { color: #2e7d4e; }
+.s70 { color: #5a7a3a; }
+.s60 { color: #7a7040; }
+.s50 { color: var(--dim); }
+.s40 { color: #8b4020; }
+.s30 { color: var(--red); }
+
+/* ── ADD FILM ── */
+.add-layout { max-width: 800px; margin: 0 auto; }
+
+.add-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 40px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: -1px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.add-sub {
+  font-size: 13px;
+  color: var(--dim);
+  margin-bottom: 36px;
+  line-height: 1.7;
+  max-width: 520px;
+}
+
+/* Steps */
+.steps-bar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 44px;
+}
+.step-item { display: flex; align-items: center; gap: 8px; flex: 1; }
+.step-item:last-child { flex: 0; }
+.step-num {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid var(--rule-dark);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--dim);
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.step-num.done { background: var(--blue); border-color: var(--blue); color: white; font-size: 11px; }
+.step-num.active { border-color: var(--ink); color: var(--ink); font-weight: 600; }
+.step-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--dim);
+}
+.step-label.active { color: var(--ink); }
+.step-line { flex: 1; height: 1px; background: var(--rule); margin: 0 8px; }
+
+/* Step panels */
+.step-panel { display: none; animation: fadeIn 0.2s ease; }
+.step-panel.active { display: block; }
+
+/* Form */
+.field-group { margin-bottom: 20px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.field-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--dim);
+  margin-bottom: 7px;
+  display: block;
+}
+.field-input {
+  width: 100%;
+  padding: 11px 14px;
+  background: white;
+  border: 1px solid var(--rule-dark);
+  border-radius: 2px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
+}
+.field-input:focus { outline: none; border-color: var(--blue); }
+
+/* ── CALIBRATION ── */
+.calibration-intro {
+  background: var(--cream);
+  border-left: 3px solid var(--blue);
+  padding: 14px 18px;
+  margin-bottom: 32px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--dim);
+  border-radius: 0 2px 2px 0;
+}
+.calibration-intro strong { color: var(--ink); }
+
+.category-section { margin-bottom: 44px; }
+.cat-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1.5px solid var(--ink);
+}
+.cat-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+}
+.cat-weight {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.cat-question { font-size: 13px; color: var(--dim); font-style: italic; margin-bottom: 20px; }
+
+/* Anchor selector */
+.anchor-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+.anchor-film {
+  padding: 12px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: white;
+}
+.anchor-film:hover { border-color: var(--blue); }
+.anchor-film.selected { border-color: var(--blue); background: var(--blue-pale); }
+.anchor-film-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 3px;
+}
+.anchor-film-score { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim); }
+
+/* Slider */
+.slider-section { margin-top: 12px; }
+.slider-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.slider-val {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--blue);
+  letter-spacing: -1px;
+}
+.slider-desc { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--dim); }
+
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 3px;
+  background: var(--rule);
+  border-radius: 2px;
+  outline: none;
+  margin: 10px 0 10px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px; height: 22px;
+  background: var(--blue);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid var(--paper);
+  box-shadow: 0 1px 6px rgba(61,90,128,0.35);
+  transition: background 0.15s;
+}
+input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); }
+
+/* Head-to-head */
+.hth-prompt {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  font-style: italic;
+  text-align: center;
+  margin-bottom: 24px;
+  color: var(--dim);
+}
+.hth-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.hth-card {
+  padding: 22px 18px;
+  border: 1.5px solid var(--rule);
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  background: white;
+}
+.hth-card:hover { border-color: var(--blue); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(61,90,128,0.12); }
+.hth-card.winner { border-color: var(--green); background: #f0f8f2; }
+.hth-card.loser { opacity: 0.45; }
+.hth-title { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.hth-score { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--dim); }
+.hth-vs { font-family: 'Playfair Display', serif; font-size: 13px; font-style: italic; color: var(--dim); text-align: center; }
+.hth-skip {
+  text-align: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--dim);
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  margin-top: 6px;
+}
+.hth-skip:hover { color: var(--ink); }
+
+/* Result preview */
+.result-card {
+  background: var(--cream);
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  padding: 32px 36px;
+  margin-bottom: 24px;
+}
+.result-film-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+}
+.result-total {
+  font-family: 'Playfair Display', serif;
+  font-size: 72px;
+  font-weight: 900;
+  color: var(--blue);
+  line-height: 1;
+  letter-spacing: -3px;
+  margin: 8px 0 4px;
+}
+.result-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--dim); margin-bottom: 24px; letter-spacing: 1px; }
+.result-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.result-cat {
+  background: white;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 10px 12px;
+}
+.result-cat-name { font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); margin-bottom: 4px; }
+.result-cat-val { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 26px;
+  border-radius: 2px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1.5px solid transparent;
+  letter-spacing: 0.2px;
+}
+.btn-primary { background: var(--blue); color: white; border-color: var(--blue); }
+.btn-primary:hover { background: var(--blue-dark); border-color: var(--blue-dark); }
+.btn-action { background: var(--action); color: white; border-color: var(--action); }
+.btn-action:hover { background: var(--action-dark); border-color: var(--action-dark); }
+.btn-outline { background: transparent; color: var(--ink); border-color: var(--rule-dark); }
+.btn-outline:hover { border-color: var(--ink); }
+.btn-row { display: flex; gap: 12px; align-items: center; margin-top: 28px; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(12,11,9,0.6);
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  backdrop-filter: blur(2px);
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  max-width: 620px;
+  width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 40px;
+}
+.modal-title { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 900; margin-bottom: 4px; }
+.modal-sub { font-size: 13px; color: var(--dim); margin-bottom: 24px; }
+.modal-close {
+  float: right;
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: var(--dim);
+  line-height: 1;
+  margin-top: -4px;
+  transition: color 0.15s;
+}
+.modal-close:hover { color: var(--ink); }
+
+/* Breakdown in modal */
+.breakdown-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.breakdown-cat { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); width: 116px; flex-shrink: 0; }
+.breakdown-bar-wrap { flex: 1; height: 4px; background: var(--rule); border-radius: 2px; overflow: hidden; }
+.breakdown-bar { height: 100%; border-radius: 2px; background: var(--blue); }
+.breakdown-val { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; width: 30px; text-align: right; }
+.breakdown-wt { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--dim); width: 20px; }
+
+/* Comparisons */
+.compare-section { margin-top: 24px; }
+.compare-title { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--dim); margin-bottom: 12px; }
+.compare-film { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: 13px; }
+.compare-film-title { flex: 1; font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 700; }
+.compare-film-score { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--dim); }
+.compare-diff { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 600; }
+.diff-pos { color: var(--green); }
+.diff-neg { color: var(--red); }
+
+/* ── ANALYSIS ── */
+.analysis-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 40px; }
+.analysis-card {
+  background: var(--card-bg);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 20px;
+}
+.analysis-card-title { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--dim); margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--rule); }
+.analysis-item { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--rule); font-size: 13px; }
+.analysis-item:last-child { border-bottom: none; }
+.analysis-name { flex: 1; font-weight: 500; }
+.analysis-score-val { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--dim); }
+.analysis-count { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim); }
+
+/* ── TMDB SEARCH ── */
+.tmdb-result {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  background: white;
+  transition: all 0.15s;
+}
+.tmdb-result:hover { border-color: var(--blue); background: var(--blue-pale); }
+.tmdb-result-poster { width: 40px; height: 60px; object-fit: cover; border-radius: 1px; flex-shrink: 0; }
+.tmdb-result-poster-placeholder { width: 40px; height: 60px; background: var(--cream); border-radius: 1px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-size: 8px; color: var(--dim); }
+.tmdb-result-info { flex: 1; }
+.tmdb-result-title { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; }
+.tmdb-result-meta { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim); margin-top: 2px; }
+.tmdb-result-overview { font-size: 12px; color: var(--dim); margin-top: 4px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tmdb-loading { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--dim); padding: 14px 0; letter-spacing: 0.5px; }
+.tmdb-error { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--red); padding: 10px 14px; background: #fdf0f0; border: 1px solid #f5c0c0; border-radius: 2px; }
+
+/* Cast & company chips */
+.cast-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.cast-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--rule); border-radius: 2px; cursor: pointer; transition: all 0.15s; background: white; }
+.cast-item:hover { border-color: var(--blue); }
+.cast-item.checked { border-color: var(--blue); background: var(--blue-pale); }
+.cast-item.unchecked { opacity: 0.4; }
+.cast-check { width: 16px; height: 16px; border: 1.5px solid var(--rule-dark); border-radius: 2px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+.cast-item.checked .cast-check { background: var(--blue); border-color: var(--blue); color: white; }
+.cast-photo { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--cream); flex-shrink: 0; }
+.cast-name { font-weight: 600; font-size: 13px; line-height: 1.2; }
+.cast-character { font-size: 11px; color: var(--dim); font-style: italic; }
+
+.company-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.company-chip {
+  padding: 6px 14px;
+  border: 1px solid var(--rule-dark);
+  border-radius: 20px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: white;
+  color: var(--dim);
+}
+.company-chip:hover { border-color: var(--blue); color: var(--ink); }
+.company-chip.checked { background: var(--blue); color: white; border-color: var(--blue); }
+.company-chip.unchecked { opacity: 0.35; }
+
+/* ── ONBOARDING OVERLAY ── */
+#onboarding-overlay {
+  position: fixed; inset: 0; background: var(--paper);
+  z-index: 9999; display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.ob-card {
+  max-width: 600px; width: 100%;
+  background: var(--card-bg);
+  border: 1px solid var(--rule);
+  padding: 48px 52px;
+}
+.ob-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--dim); margin-bottom: 8px;
+}
+.ob-title {
+  font-family: 'Playfair Display', serif;
+  font-style: italic; font-size: 40px; line-height: 1.1;
+  color: var(--ink); margin-bottom: 20px;
+}
+.ob-sub {
+  font-size: 14px; color: var(--dim); line-height: 1.6;
+  margin-bottom: 32px;
+}
+.ob-name-input {
+  width: 100%; padding: 14px 16px;
+  border: 1px solid var(--rule-dark);
+  background: white; color: var(--ink);
+  font-family: 'DM Sans', sans-serif; font-size: 16px;
+  outline: none; margin-bottom: 16px;
+}
+.ob-name-input:focus { border-color: var(--blue); }
+.ob-btn {
+  width: 100%; padding: 16px;
+  background: var(--action); color: white; border: none;
+  font-family: 'DM Mono', monospace; font-size: 12px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  cursor: pointer; transition: background 0.15s;
+}
+.ob-btn:hover { background: var(--action-dark); }
+.ob-btn:disabled { opacity: 0.5; cursor: default; }
+.ob-progress {
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  letter-spacing: 1px; color: var(--dim); text-transform: uppercase;
+  margin-bottom: 24px;
+}
+.ob-progress-bar {
+  height: 2px; background: var(--rule);
+  margin-bottom: 32px; position: relative;
+}
+.ob-progress-fill {
+  position: absolute; top: 0; left: 0; height: 100%;
+  background: var(--blue); transition: width 0.4s ease;
+}
+.ob-question {
+  font-family: 'Playfair Display', serif;
+  font-style: italic; font-size: 22px; line-height: 1.45;
+  color: var(--ink); margin-bottom: 28px;
+}
+.ob-option {
+  display: flex; align-items: flex-start; gap: 16px;
+  padding: 16px 18px; margin-bottom: 10px;
+  border: 1px solid var(--rule); background: white;
+  cursor: pointer; transition: all 0.15s;
+}
+.ob-option:hover { border-color: var(--blue); background: var(--blue-pale); }
+.ob-option.selected { border-color: var(--blue); background: var(--blue-pale); }
+.ob-option-key {
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  color: var(--blue); font-weight: 500; flex-shrink: 0;
+  padding-top: 2px;
+}
+.ob-option-text { font-size: 14px; line-height: 1.5; color: var(--ink); }
+.ob-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; gap: 12px; }
+.ob-btn-secondary {
+  padding: 14px 20px;
+  background: transparent; color: var(--dim);
+  border: 1px solid var(--rule);
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  letter-spacing: 1px; text-transform: uppercase;
+  cursor: pointer;
+}
+.ob-btn-secondary:hover { border-color: var(--ink); color: var(--ink); }
+.ob-btn-primary {
+  flex: 1; padding: 14px 20px;
+  background: var(--blue); color: white; border: none;
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  cursor: pointer; transition: background 0.15s;
+}
+.ob-btn-primary:hover { background: var(--blue-dark); }
+.ob-btn-primary:disabled { opacity: 0.4; cursor: default; }
+.ob-reveal {
+  text-align: center; padding: 8px 0;
+}
+.ob-archetype-name {
+  font-family: 'Playfair Display', serif;
+  font-style: italic; font-size: 36px;
+  color: var(--blue); margin-bottom: 8px;
+}
+.ob-archetype-quote {
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  color: var(--dim); letter-spacing: 1px;
+  margin-bottom: 24px; font-style: normal;
+}
+.ob-weights-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px; margin: 24px 0;
+}
+.ob-weight-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 12px; background: var(--blue-pale);
+  border: 1px solid var(--rule);
+}
+.ob-weight-label { font-size: 12px; color: var(--ink); }
+.ob-weight-val {
+  font-family: 'DM Mono', monospace; font-size: 12px;
+  color: var(--blue); font-weight: 500;
+}
+
+/* ── CLOUD SYNC STATUS ── */
+.cloud-status {
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  color: var(--dim); letter-spacing: 1px;
+  cursor: pointer;
+}
+.cloud-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--dim); flex-shrink: 0;
+}
+.cloud-dot.synced { background: var(--green); }
+.cloud-dot.syncing { background: var(--blue); animation: pulse 1s infinite; }
+.cloud-dot.error { background: var(--red); }
+@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.3 } }
+
+/* ── PROFILE CHIP ── */
+.profile-chip {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  color: var(--dim); letter-spacing: 1px;
+  cursor: pointer;
+}
+.profile-chip:hover { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ ONBOARDING OVERLAY ══════════════ -->
+<div id="onboarding-overlay" style="display:none">
+  <div class="ob-card" id="ob-card-content"></div>
+</div>
+
+<div class="masthead">
+  <span class="masthead-wordmark">ledger</span>
+  <div class="masthead-rules">
+    <div class="masthead-rule-thick"></div>
+    <div class="masthead-rule-thin"></div>
+  </div>
+  <div class="masthead-meta">
+    <div class="masthead-meta-left" id="mastheadLeft">A personal film record &nbsp;·&nbsp; ongoing</div>
+    <div class="masthead-meta-right">
+      <span class="cloud-status" id="cloudStatus" onclick="showSyncPanel()" title="Cloud sync">
+        <span class="cloud-dot" id="cloudDot"></span>
+        <span id="cloudLabel">local</span>
+      </span>
+      <span id="storageStatus" class="masthead-util"></span>
+      <span class="masthead-util" onclick="exportData()">Export</span>
+      <span class="masthead-util" onclick="resetStorage()">Reset</span>
+      <span class="masthead-count" id="mastheadCount">94 films ranked</span>
+    </div>
+  </div>
+</div>
+
+<div class="nav-strip">
+  <button class="nav-btn active" onclick="showScreen('rankings')">Rankings</button>
+  <button class="nav-btn" onclick="showScreen('analysis')">Analysis</button>
+  <button class="nav-btn" onclick="showScreen('calibration')">Calibrate</button>
+  <button class="nav-btn action-tab" onclick="showScreen('add')">+ Add Film</button>
+</div>
+
+<!-- ══════════════ RANKINGS ══════════════ -->
+<div id="rankings" class="screen active">
+  <div class="rankings-header">
+    <div class="col-head">#</div>
+    <div class="col-head" style="text-align:left;padding-left:8px">Film</div>
+    <div class="col-head">Plot</div>
+    <div class="col-head">Exec</div>
+    <div class="col-head">Act</div>
+    <div class="col-head">Prod</div>
+    <div class="col-head">Enjoy</div>
+    <div class="col-head">Rewch</div>
+    <div class="col-head">End</div>
+    <div class="col-head">Uniq</div>
+    <div class="col-head">Total</div>
+  </div>
+  <div id="filmList"></div>
+</div>
+
+<!-- ══════════════ ADD FILM ══════════════ -->
+<div id="add" class="screen">
+<div class="add-layout">
+  <h1 class="add-title">Rate a new film</h1>
+  <p class="add-sub">The calibration system uses your existing rankings as anchors — instead of picking numbers in isolation, you'll compare against films you already know. Produces more consistent, defensible scores.</p>
+
+  <div class="steps-bar">
+    <div class="step-item">
+      <div class="step-num active" id="sn1">1</div>
+      <div class="step-label active" id="sl1">Details</div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-item">
+      <div class="step-num" id="sn2">2</div>
+      <div class="step-label" id="sl2">Calibrate</div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-item">
+      <div class="step-num" id="sn3">3</div>
+      <div class="step-label" id="sl3">Refine</div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-item" style="flex:0">
+      <div class="step-num" id="sn4">4</div>
+      <div class="step-label" id="sl4">Confirm</div>
+    </div>
+  </div>
+
+  <!-- STEP 1: TMDB Search + Cast Curation -->
+  <div class="step-panel active" id="step1">
+
+    <!-- 1a: Search -->
+    <div id="tmdb-search-phase">
+      <div class="field-group">
+        <label class="field-label">Film Title — start typing to search</label>
+        <div style="position:relative;max-width:520px">
+          <input class="field-input" id="f-search" placeholder="e.g. The Substance"
+            type="text" autocomplete="off" oninput="liveSearch(this.value)"
+            style="width:100%;padding-right:36px">
+          <span id="searchSpinner" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--dim);display:none">⌛</span>
+        </div>
+      </div>
+      <div id="tmdb-results" style="max-width:520px"></div>
+    </div>
+
+    <!-- 1b: Cast curation (shown after selecting a film) -->
+    <div id="tmdb-curation-phase" style="display:none">
+      <div id="tmdb-film-header" style="display:flex;gap:20px;align-items:flex-start;margin-bottom:28px;padding-bottom:24px;border-bottom:2px solid var(--ink)"></div>
+
+      <div style="margin-bottom:28px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:4px">Director</div>
+        <div id="curate-directors" style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700"></div>
+      </div>
+
+      <div style="margin-bottom:28px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:4px">Writer(s)</div>
+        <div id="curate-writers" style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600"></div>
+      </div>
+
+      <div style="margin-bottom:28px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:2px">Cast — check who's load-bearing</div>
+            <div style="font-size:12px;color:var(--dim)">Top 8 billed pre-checked. Uncheck cameos/extras, add others if needed.</div>
+          </div>
+          <button class="btn btn-outline" onclick="showMoreCast()" id="moreCastBtn" style="font-size:12px;padding:8px 14px">+ More cast</button>
+        </div>
+        <div id="curate-cast"></div>
+      </div>
+
+      <div style="margin-bottom:28px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:10px">Production Companies — uncheck distributors</div>
+        <div id="curate-companies"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="resetToSearch()">← Search again</button>
+        <button class="btn btn-primary" onclick="confirmTmdbData()">Looks good — Calibrate →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Calibrate -->
+  <div class="step-panel" id="step2">
+    <div class="calibration-intro">
+      <strong>How this works:</strong> For each category, you'll pick an anchor film — one from your list that feels closest to the new film in that dimension. The slider then lets you fine-tune relative to that anchor. This stops you from inflating scores in isolation.
+    </div>
+    <div id="calibrationCategories"></div>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goToStep(1)">← Back</button>
+      <button class="btn btn-primary" onclick="goToStep3()">Continue to Refinement →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Head-to-Head Refinement -->
+  <div class="step-panel" id="step3">
+    <div class="calibration-intro">
+      <strong>Head-to-head check:</strong> For categories where your score puts the new film near another film on your list, we'll do a quick direct comparison. "Is <em>this</em> ending really better than <em>that</em> ending?" Answer honestly — you can always adjust.
+    </div>
+    <div id="hthContainer"></div>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goToStep(2)">← Back</button>
+      <button class="btn btn-primary" onclick="goToStep4()">See Final Score →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: Confirm -->
+  <div class="step-panel" id="step4">
+    <div class="result-card" id="resultCard"></div>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goToStep(2)">← Adjust Scores</button>
+      <button class="btn btn-action" onclick="saveFilm()">Save to Rankings ✓</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════ ANALYSIS ══════════════ -->
+<div id="analysis" class="screen">
+  <div id="analysisContent"></div>
+</div>
+
+<!-- ══════════════ CALIBRATION ══════════════ -->
+<div id="calibration" class="screen">
+  <div style="max-width:760px;margin:0 auto">
+
+    <!-- Phase A: Setup -->
+    <div id="cal-setup">
+      <h2 style="font-family:'Playfair Display',serif;font-style:italic;font-size:36px;font-weight:900;letter-spacing:-1px;margin-bottom:6px">Calibration</h2>
+      <p style="color:var(--dim);font-size:13px;margin-bottom:32px;line-height:1.7">The app finds films with similar scores and pits them head-to-head. Your answers recalculate scores using Elo math, then you review every proposed change before anything is saved.</p>
+
+      <div style="margin-bottom:24px">
+        <div class="field-label" style="margin-bottom:10px">Which category to calibrate?</div>
+        <div id="cal-cat-picker" style="display:flex;flex-wrap:wrap;gap:8px">
+          <div class="company-chip checked" id="calcat_all" onclick="selectCalCat('all')">All Categories</div>
+          <div class="company-chip" id="calcat_plot" onclick="selectCalCat('plot')">Plot</div>
+          <div class="company-chip" id="calcat_execution" onclick="selectCalCat('execution')">Execution</div>
+          <div class="company-chip" id="calcat_acting" onclick="selectCalCat('acting')">Acting</div>
+          <div class="company-chip" id="calcat_production" onclick="selectCalCat('production')">Production</div>
+          <div class="company-chip" id="calcat_enjoyability" onclick="selectCalCat('enjoyability')">Enjoyability</div>
+          <div class="company-chip" id="calcat_rewatchability" onclick="selectCalCat('rewatchability')">Rewatchability</div>
+          <div class="company-chip" id="calcat_ending" onclick="selectCalCat('ending')">Ending</div>
+          <div class="company-chip" id="calcat_uniqueness" onclick="selectCalCat('uniqueness')">Uniqueness</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:28px">
+        <div class="field-label" style="margin-bottom:10px">Intensity</div>
+        <div style="display:flex;gap:10px">
+          <div class="company-chip checked" id="calint_focused" onclick="selectCalInt('focused')">Focused — 15 matchups</div>
+          <div class="company-chip" id="calint_thorough" onclick="selectCalInt('thorough')">Thorough — 30 matchups</div>
+          <div class="company-chip" id="calint_deep" onclick="selectCalInt('deep')">Deep dive — 50 matchups</div>
+        </div>
+      </div>
+
+      <button class="btn btn-action" onclick="startCalibration()" style="font-size:15px;padding:14px 32px">Begin Calibration →</button>
+    </div>
+
+    <!-- Phase B: Matchups -->
+    <div id="cal-matchups" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim)" id="cal-progress-label">Matchup 1 of 15</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim)" id="cal-cat-label"></div>
+      </div>
+      <div style="height:3px;background:var(--rule);border-radius:2px;margin-bottom:28px">
+        <div id="cal-progress-bar" style="height:100%;background:var(--gold);border-radius:2px;transition:width 0.3s;width:0%"></div>
+      </div>
+      <div id="cal-matchup-card"></div>
+    </div>
+
+    <!-- Phase C: Review diff -->
+    <div id="cal-review" style="display:none">
+      <h2 style="font-family:'Playfair Display',serif;font-style:italic;font-size:30px;font-weight:900;letter-spacing:-1px;margin-bottom:6px">Review proposed changes</h2>
+      <p style="color:var(--dim);font-size:13px;margin-bottom:24px">Uncheck anything you want to keep as-is. Changes are only applied when you hit Apply.</p>
+      <div id="cal-diff-list"></div>
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="resetCalibration()">← Start over</button>
+        <button class="btn btn-gold" onclick="applyCalibration()" id="cal-apply-btn">Apply Changes ✓</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════ FILM MODAL ══════════════ -->
+<div class="modal-overlay" id="filmModal" onclick="closeModal(event)">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════
+
+let MOVIES = [{"title": "Eternal Sunshine of the Spotless Mind", "year": 2004, "total": 94.29, "director": "Michel Gondry", "writer": "Charlie Kaufman", "cast": "Jim Carrey, Kate Winslet, Tom Wilkinson, Mark Ruffalo, Kirsten Dunst, Elijah Wood, David Cross, Jane Adams", "scores": {"plot": 95, "execution": 95, "acting": 91, "production": 89, "enjoyability": 95, "rewatchability": 96, "ending": 96, "uniqueness": 95}}, {"title": "In Bruges", "year": 2008, "total": 94.18, "director": "Martin McDonagh", "writer": "Martin McDonagh", "cast": "Colin Farrell, Brendan Gleeson, Ralph Fiennes, Cl\u00e9mence Po\u00e9sy, Jordan Prentice, Thekla Reuten, \u017delko Ivanek, Eric Godon", "scores": {"plot": 94, "execution": 95, "acting": 92, "production": 84, "enjoyability": 96, "rewatchability": 97, "ending": 95, "uniqueness": 95}}, {"title": "Parasite", "year": 2019, "total": 91.53, "director": "Bong Joon-ho", "writer": "Bong Joon-ho, Han Jin Won", "cast": "Kang-ho Song, Park Seo-joon, Choi Woo-shik, Park So-dam, Cho Yeo-Jeong, Lee Sun-Kyun", "scores": {"plot": 94, "execution": 93, "acting": 83, "production": 89, "enjoyability": 93, "rewatchability": 93, "ending": 95, "uniqueness": 90}}, {"title": "Children of Men", "year": 2006, "total": 92.76, "director": "Alfonso Cuar\u00f3n", "writer": "Alfonso Cuar\u00f3n, Timothy J. Sexton, David Arata", "cast": "Clive Owen, Michael Caine, Julianne Moore, Chiwetel Ejiofor, Clare-Hope Ashitey, Pam Ferris, Peter Mullan", "scores": {"plot": 94, "execution": 94, "acting": 89, "production": 95, "enjoyability": 93, "rewatchability": 95, "ending": 91, "uniqueness": 91}}, {"title": "Synecdoche, New York", "year": 2008, "total": 88.94, "director": "Charlie Kaufman", "writer": "Charlie Kaufman", "cast": "Philip Seymour Hoffman, Tom Noonan, Catherine Keener, Madeleine Gravis", "scores": {"plot": 93, "execution": 91, "acting": 88, "production": 84, "enjoyability": 83, "rewatchability": 89, "ending": 91, "uniqueness": 94}}, {"title": "Lord of the Rings: The Two Towers", "year": 2002, "total": 90.29, "director": "Peter Jackson", "writer": "Fran Walsh, Philippa Boyens, Peter Jackson", "cast": "Elijah Wood, Ian McKellen, Viggo Mortensen, Cate Blanchett, Sean Astin, Sean Bean, Orlando Bloom, John Rhys-Davies, Bernard Hill, Andy Serkis", "scores": {"plot": 92, "execution": 95, "acting": 80, "production": 94, "enjoyability": 94, "rewatchability": 98, "ending": 64, "uniqueness": 91}}, {"title": "Lord of the Rings: Fellowship of the Ring", "year": 2001, "total": 90.59, "director": "Peter Jackson", "writer": "Fran Walsh, Philippa Boyens, Peter Jackson", "cast": "Elijah Wood, Ian McKellen, Viggo Mortensen, Cate Blanchett, Sean Astin, Sean Bean, Orlando Bloom, John Rhys-Davies, Bernard Hill, Andy Serkis", "scores": {"plot": 92, "execution": 94, "acting": 80, "production": 94, "enjoyability": 94, "rewatchability": 98, "ending": 72, "uniqueness": 91}}, {"title": "Arrival", "year": 2016, "total": 90.88, "director": "Denis Villeneuve", "writer": "Eric Heisserer", "cast": "Amy Adams, Jeremy Renner, Forest Whitaker", "scores": {"plot": 91, "execution": 93, "acting": 84, "production": 88, "enjoyability": 93, "rewatchability": 92, "ending": 91, "uniqueness": 91}}, {"title": "The Truman Show", "year": 1998, "total": 89.24, "director": "Peter Weir", "writer": "Andrew Niccol", "cast": "Jim Carrey, Ed Harris, Laura Linney, Noah Emmerich", "scores": {"plot": 91, "execution": 93, "acting": 83, "production": 85, "enjoyability": 88, "rewatchability": 90, "ending": 92, "uniqueness": 90}}, {"title": "2001: A Space Odyssey", "year": 1968, "total": 88.88, "director": "Stanley Kubrick", "writer": "Stanley Kubrick, Arthur C. Clarke", "cast": "Keir Dullea, Gary Lockwood, William Sylvester, Douglas Rain", "scores": {"plot": 91, "execution": 95, "acting": 69, "production": 92, "enjoyability": 86, "rewatchability": 89, "ending": 94, "uniqueness": 98}}, {"title": "There Will Be Blood", "year": 2007, "total": 86.06, "director": "Paul Thomas Anderson", "writer": "Paul Thomas Anderson", "cast": "Daniel Day-Lewis, Paul Dano, Dillon Freasier", "scores": {"plot": 91, "execution": 86, "acting": 90, "production": 84, "enjoyability": 79, "rewatchability": 85, "ending": 87, "uniqueness": 90}}, {"title": "Ex Machina", "year": 2014, "total": 91.41, "director": "Alex Garland", "writer": "Alex Garland", "cast": "Oscar Isaac, Alicia Vikander, Domhnall Gleeson", "scores": {"plot": 90, "execution": 91, "acting": 91, "production": 90, "enjoyability": 93, "rewatchability": 92, "ending": 93, "uniqueness": 91}}, {"title": "A Different Man", "year": 2024, "total": 88.47, "director": "Aaron Schimberg", "writer": "Aaron Schimberg", "cast": "Sebastian Stan, Adam Pearson, Renate Reinsve", "scores": {"plot": 90, "execution": 90, "acting": 86, "production": 84, "enjoyability": 87, "rewatchability": 81, "ending": 91, "uniqueness": 94}}, {"title": "The Matrix", "year": 1999, "total": 86.82, "director": "Lana Wachowski, Lilly Wachowski", "writer": "Lilly Wachowski, Lana Wachowski", "cast": "Keanu Reeves, Laurence Fisburne, Carrie-Anne Moss, Hugo Weaving", "scores": {"plot": 90, "execution": 90, "acting": 66, "production": 84, "enjoyability": 88, "rewatchability": 93, "ending": 87, "uniqueness": 94}}, {"title": "Everything Everywhere All At Once", "year": 2022, "total": 86.76, "director": "Daniel Scheinert, Daniel Kwan", "writer": "Daniel Scheinert, Daniel Kwan", "cast": "Michelle Yeoh, Stephanie Hsu, Ke Huy Quan, James Hong, Jamie Lee Curtis, Tallie Medel, Jenny Slate, Harry Shum Jr", "scores": {"plot": 89, "execution": 89, "acting": 69, "production": 91, "enjoyability": 87, "rewatchability": 87, "ending": 89, "uniqueness": 94}}, {"title": "Incendies", "year": 2010, "total": 86.59, "director": "Denis Villeneuve", "writer": "Denis Villeneuve, Val\u00e9rie Beaugrand-Champagne, Wajdi Mouawad", "cast": "Lubna Azabal, M\u00e9lissa D\u00e9sormeaux-Poulin, Maxim Gaudette, Abdelghafour Elaaziz, R\u00e9my Girard", "scores": {"plot": 89, "execution": 88, "acting": 86, "production": 85, "enjoyability": 86, "rewatchability": 72, "ending": 90, "uniqueness": 89}}, {"title": "The Grand Budapest Hotel", "year": 2014, "total": 89.94, "director": "Wes Anderson", "writer": "Wes Anderson, Hugo Guinness", "cast": "Ralph Fiennes, Bill Murray, Tony Revolori, Tilda Swinton, Edward Norton, Jason Schwartzman, Adrien Brody, Willem Dafoe, Saoirse Ronan", "scores": {"plot": 88, "execution": 92, "acting": 88, "production": 93, "enjoyability": 90, "rewatchability": 90, "ending": 88, "uniqueness": 91}}, {"title": "Lord of the Rings: Return of the King", "year": 2003, "total": 89.06, "director": "Peter Jackson", "writer": "Fran Walsh, Philippa Boyens, Peter Jackson", "cast": "Elijah Wood, Ian McKellen, Viggo Mortensen, Cate Blanchett, Sean Astin, Sean Bean, Orlando Bloom, John Rhys-Davies, Bernard Hill, Andy Serkis", "scores": {"plot": 88, "execution": 84, "acting": 80, "production": 94, "enjoyability": 94, "rewatchability": 97, "ending": 87, "uniqueness": 92}}, {"title": "No Country For Old Men", "year": 2007, "total": 85.71, "director": "Ethan Coen, Joel Coen", "writer": "Joel Coen, Ethan Coen", "cast": "Javier Bardem, Josh Brolin, Tommy Lee Jones, Kelly MacDonald, Woody Harrelson, Stephen Root, Tess Harper", "scores": {"plot": 88, "execution": 86, "acting": 87, "production": 83, "enjoyability": 83, "rewatchability": 87, "ending": 87, "uniqueness": 86}}, {"title": "The Shawshank Redemption", "year": 1994, "total": 84.94, "director": "Frank Darabont", "writer": "Frank Darabont", "cast": "Tim Robbins, Morgan Freeman, Bob Gunton", "scores": {"plot": 87, "execution": 89, "acting": 81, "production": 80, "enjoyability": 83, "rewatchability": 84, "ending": 82, "uniqueness": 88}}, {"title": "The Prestige", "year": 2006, "total": 83.88, "director": "Christopher Nolan", "writer": "Jonathan Nolan, Christopher Nolan", "cast": "Christian Bale, Hugh Jackman, Michael Caine, Scarlett Johansson, David Bowie, Andy Serkis", "scores": {"plot": 86, "execution": 85, "acting": 76, "production": 77, "enjoyability": 86, "rewatchability": 85, "ending": 87, "uniqueness": 84}}, {"title": "The Darjeeling Limited", "year": 2007, "total": 86.71, "director": "Wes Anderson", "writer": "Wes Anderson, Roman Coppola, Jason Schwartzman", "cast": "Adrien Brody, Owen Wilson, Jason Schwartzman, Anjelica Huston, Amara Karan, Bill Murray", "scores": {"plot": 86, "execution": 88, "acting": 81, "production": 90, "enjoyability": 86, "rewatchability": 84, "ending": 90, "uniqueness": 91}}, {"title": "Spirited Away", "year": 2001, "total": 87.65, "director": "Hayao Miyazaki", "writer": "Hayao Miyazaki", "cast": "Daveigh Chase, Suzanne, Pleshette, Jason Marsden, Susan Egan, David Ogden Stiers", "scores": {"plot": 85, "execution": 93, "acting": 81, "production": 94, "enjoyability": 86, "rewatchability": 93, "ending": 81, "uniqueness": 91}}, {"title": "Birdman", "year": 2014, "total": 86.12, "director": "Alejandro Gonz\u00e1lez I\u00f1\u00e1rritu", "writer": "Alejandro G. I\u00f1\u00e1rritu, Nicol\u00e1s Giacobone, Alexander Dinelaris Jr., Armando Bo", "cast": "Michael Keaton, Edwart Norton, Emma Stone, Zach Galafianakas, Naomi Watts, Amy Ryan", "scores": {"plot": 85, "execution": 87, "acting": 85, "production": 88, "enjoyability": 86, "rewatchability": 84, "ending": 84, "uniqueness": 89}}, {"title": "Warfare", "year": 2025, "total": 84.47, "director": "Ray Mendoza, Alex Garland", "writer": "Ray Mendoza, Alex Garland", "cast": "Will Poulter, Cosmo Jarvis, Kit Connor, Charles Melton, D'Pharaoh Woon-A-Tai", "scores": {"plot": 85, "execution": 93, "acting": 85, "production": 92, "enjoyability": 87, "rewatchability": 61, "ending": 45, "uniqueness": 93}}, {"title": "The Master", "year": 2012, "total": 82.12, "director": "Paul Thomas Anderson", "writer": "Paul Thomas Anderson", "cast": "Joaquin Phoenix, Philip Seymour Hoffman, Amy Adams, Rami Malek, Jesse Plemons", "scores": {"plot": 85, "execution": 84, "acting": 93, "production": 82, "enjoyability": 74, "rewatchability": 66, "ending": 79, "uniqueness": 90}}, {"title": "Interstellar", "year": 2014, "total": 78.0, "director": "Christopher Nolan", "writer": "Christopher Nolan, Jonathan Nolan", "cast": "Matthew McConaughey, Anne Hathaway, Jessica Chastain, Michael Caine, John Lithgow, Timoth\u00e9e Chalamet, Matt Damon, Mackenzie Foy, Ellen Burstyn, Casey Affleck, Wes Bentley, David Gyasi", "scores": {"plot": 85, "execution": 78, "acting": 62, "production": 82, "enjoyability": 84, "rewatchability": 86, "ending": 67, "uniqueness": 71}}, {"title": "Whiplash", "year": 2014, "total": 88.59, "director": "Damien Chazelle", "writer": "Damien Chazelle", "cast": "Miles Teller, J.K. Simmons", "scores": {"plot": 84, "execution": 92, "acting": 92, "production": 86, "enjoyability": 87, "rewatchability": 84, "ending": 96, "uniqueness": 90}}, {"title": "Inglourious Basterds", "year": 2009, "total": 85.65, "director": "Quentin Tarantino", "writer": "Quentin Tarantino", "cast": "Brad Pitt, M\u00e9lanie Laurent, Christoph Waltz, Eli Roth, Michael Fassbender, Diane Kruger, Daniel Br\u00fchl, Til Schweiger, B.J. Novak, Sylvester Groth, Mike Meyers, August Diehl", "scores": {"plot": 84, "execution": 88, "acting": 88, "production": 83, "enjoyability": 86, "rewatchability": 81, "ending": 86, "uniqueness": 85}}, {"title": "Ratatouille", "year": 2007, "total": 84.0, "director": "Brad Bird, Jan Pinkava", "writer": "Brad Bird, Jan Pinkava, Jim Capobianco", "cast": "Brad Garrett, Lou Romano, Patton Oswalt", "scores": {"plot": 84, "execution": 85, "acting": 65, "production": 81, "enjoyability": 88, "rewatchability": 93, "ending": 87, "uniqueness": 89}}, {"title": "Anomalisa", "year": 2015, "total": 83.59, "director": "Charlie Kaufman", "writer": "Charlie Kaufman, Duke Johnson", "cast": "David Thewlis, Tom Noonan, Jennifer Jason Leigh", "scores": {"plot": 84, "execution": 86, "acting": 73, "production": 89, "enjoyability": 82, "rewatchability": 73, "ending": 87, "uniqueness": 94}}, {"title": "Primer", "year": 2004, "total": 76.76, "director": "Shane Carruth", "writer": "Shane Carruth", "cast": "Shane Carruth, David Sullivan", "scores": {"plot": 84, "execution": 80, "acting": 83, "production": 45, "enjoyability": 71, "rewatchability": 74, "ending": 66, "uniqueness": 89}}, {"title": "Gravity", "year": 2013, "total": 85.47, "director": "Alfonso Cuar\u00f3n", "writer": "Alfonso Cuar\u00f3n, Jon\u00e1s Cu\u00e1ron", "cast": "Sandra Bullock, George Clooney", "scores": {"plot": 83, "execution": 94, "acting": 64, "production": 94, "enjoyability": 87, "rewatchability": 84, "ending": 80, "uniqueness": 94}}, {"title": "Boyhood", "year": 2014, "total": 83.82, "director": "Richard Linklater", "writer": "Richard Linklater", "cast": "Ellar Coltrane, Ethan Hawke, Patricia Arquette, Lorelei Linklater", "scores": {"plot": 83, "execution": 83, "acting": 67, "production": 93, "enjoyability": 89, "rewatchability": 90, "ending": 64, "uniqueness": 95}}, {"title": "Raiders of the Lost Ark", "year": 1981, "total": 79.59, "director": "Steven Spielberg", "writer": "Lawrence Kasdan", "cast": "Harrison Ford, Karen Allen", "scores": {"plot": 83, "execution": 85, "acting": 49, "production": 72, "enjoyability": 83, "rewatchability": 87, "ending": 88, "uniqueness": 86}}, {"title": "Indiana Jones and the Last Crusade", "year": 1989, "total": 78.88, "director": "Steven Spielberg", "writer": "Jeffrey Boam", "cast": "Harrison Ford, Sean Connery", "scores": {"plot": 83, "execution": 83, "acting": 53, "production": 71, "enjoyability": 84, "rewatchability": 88, "ending": 88, "uniqueness": 77}}, {"title": "Moonrise Kingdom", "year": 2012, "total": 85.47, "director": "Wes Anderson", "writer": "Wes Anderson, Roman Coppola", "cast": "Jared Gilman, Kara Hayward, Bruce Willis, Bill Murray, Edward Norton, Frances McDormand, Tilda Swinton, Jason Schwartzman, Bob Balaban, Larry Pine", "scores": {"plot": 82, "execution": 86, "acting": 85, "production": 89, "enjoyability": 85, "rewatchability": 82, "ending": 90, "uniqueness": 89}}, {"title": "Dune: Part 2", "year": 2024, "total": 84.0, "director": "Denis Villeneuve", "writer": "Jon Spaihts, Denis Villeneuve", "cast": "Timoth\u00e9e Chalamet, Zendaya, Austin Butler, Rebecca Ferguson, Javier Bardem", "scores": {"plot": 82, "execution": 86, "acting": 74, "production": 88, "enjoyability": 87, "rewatchability": 88, "ending": 86, "uniqueness": 83}}, {"title": "The Royal Tenenbaums", "year": 2001, "total": 82.76, "director": "Wes Anderson", "writer": "Wes Anderson, Owen Wilson", "cast": "Gene Hackman, Ben Stiller, Gwyneth Paltrow, Luke Wilson, Owen Wilson, Bill Murray", "scores": {"plot": 82, "execution": 85, "acting": 82, "production": 83, "enjoyability": 77, "rewatchability": 82, "ending": 87, "uniqueness": 91}}, {"title": "Enemy", "year": 2013, "total": 71.59, "director": "Denis Villeneuve", "writer": "Javier Gull\u00f3n", "cast": "Jake Gyllenhaal, M\u00e9lanie Laurent, Sarah Gadon", "scores": {"plot": 82, "execution": 64, "acting": 81, "production": 75, "enjoyability": 57, "rewatchability": 75, "ending": 69, "uniqueness": 85}}, {"title": "Airplane!", "year": 1980, "total": 84.0, "director": "Jim Abrahams, David Zucker, Jerry Zucker", "writer": "Jim Abrahams, David Zucker, Jerry Zucker", "cast": "Robert Hays, Julie Hagerty, Leslie Nielsen, Peter Graves, Lloyd Bridges, Kareem Abdul-Jabbar", "scores": {"plot": 81, "execution": 90, "acting": 65, "production": 70, "enjoyability": 91, "rewatchability": 94, "ending": 71, "uniqueness": 93}}, {"title": "Civil War", "year": 2024, "total": 82.35, "director": "Alex Garland", "writer": "Alex Garland", "cast": "Kirsten Dunst, Wagner Moura, Cailee Spaeny, Jesse Plemons, Stephen McKinley Henderson, Nick Offerman", "scores": {"plot": 81, "execution": 82, "acting": 77, "production": 81, "enjoyability": 83, "rewatchability": 86, "ending": 90, "uniqueness": 84}}, {"title": "Eighth Grade", "year": 2018, "total": 81.35, "director": "Bo Burnham", "writer": "Bo Burnham", "cast": "Elsie Fisher, Luke Prael, Daniel Zolghadri", "scores": {"plot": 81, "execution": 90, "acting": 86, "production": 72, "enjoyability": 73, "rewatchability": 83, "ending": 75, "uniqueness": 88}}, {"title": "The Departed", "year": 2006, "total": 81.0, "director": "Martin Scorsese", "writer": "William Monahan", "cast": "Matt Damon, Leonardo DiCaprio, Jack Nicholson, Mark Wahlberg, Martin Sheen, Alec Baldwin, Ray Winstone, Vera Farmiga", "scores": {"plot": 81, "execution": 83, "acting": 81, "production": 79, "enjoyability": 78, "rewatchability": 84, "ending": 88, "uniqueness": 80}}, {"title": "Snowpiercer", "year": 2013, "total": 77.94, "director": "Bong Joon-ho", "writer": "Bong Joon-ho, Kelly Masterson", "cast": "Chris Evans, Tilda Swinton, Kang-ho Song, Ed Harris", "scores": {"plot": 81, "execution": 82, "acting": 73, "production": 82, "enjoyability": 76, "rewatchability": 83, "ending": 67, "uniqueness": 77}}, {"title": "The End of the Tour", "year": 2015, "total": 82.47, "director": "James Ponsoldt", "writer": "Donald Margulies", "cast": "Jesse Eisenberg, Jason Segel", "scores": {"plot": 80, "execution": 85, "acting": 89, "production": 71, "enjoyability": 85, "rewatchability": 84, "ending": 76, "uniqueness": 79}}, {"title": "Oldboy", "year": 2003, "total": 79.94, "director": "Park Chan-wook", "writer": "Garon Tsuchiya, Nobuaki Minegishi, Park Chan-wook", "cast": "Choi Min-sik, Yoo Ji-tae, Kang Hye-jeong, Kim Byeong-Ok, \nJi Dae-han, Oh Dal-su", "scores": {"plot": 80, "execution": 84, "acting": 85, "production": 85, "enjoyability": 69, "rewatchability": 64, "ending": 90, "uniqueness": 91}}, {"title": "Unforgiven", "year": 1992, "total": 77.18, "director": "Clint Eastwood", "writer": "David Webb Peoples", "cast": "Clint Eastwood, Gene Hackman, Morgan Freeman, Richard Harris", "scores": {"plot": 80, "execution": 83, "acting": 73, "production": 67, "enjoyability": 75, "rewatchability": 81, "ending": 89, "uniqueness": 70}}, {"title": "Borat", "year": 2006, "total": 85.06, "director": "Larry Charles", "writer": "Sacha Baron Cohen, Anthony Hines, Peter Baynham, Dan Mazer", "cast": "Sacha Baron Cohen, Ken Davitian, Pamela Anderson", "scores": {"plot": 79, "execution": 91, "acting": 87, "production": 61, "enjoyability": 89, "rewatchability": 93, "ending": 62, "uniqueness": 95}}, {"title": "Poor Things", "year": 2023, "total": 83.59, "director": "Yorgos Lanthimos", "writer": "Tony McNamara", "cast": "Emma Stone, Mark Ruffalo, Willem Dafoe, Margaret Qualley ", "scores": {"plot": 79, "execution": 85, "acting": 84, "production": 87, "enjoyability": 86, "rewatchability": 76, "ending": 72, "uniqueness": 91}}, {"title": "Mad Max: Fury Road", "year": 2015, "total": 82.47, "director": "George Miller", "writer": "George Miller, Brendan McCarthy, Nico Lathouris", "cast": "Tom Hardy, Charlize Theron, Nicholas Hoult, Zo\u00eb Kravitz", "scores": {"plot": 79, "execution": 94, "acting": 69, "production": 94, "enjoyability": 78, "rewatchability": 87, "ending": 62, "uniqueness": 95}}, {"title": "Gladiator", "year": 2000, "total": 80.88, "director": "Ridley Scott", "writer": "David Franzoni, John Logan, William Nicholson", "cast": "Russell Crowe, Joaquin Phoenix, Connie Nielsen, Richard Harris ", "scores": {"plot": 79, "execution": 82, "acting": 72, "production": 78, "enjoyability": 83, "rewatchability": 87, "ending": 85, "uniqueness": 83}}, {"title": "Moon", "year": 2009, "total": 78.82, "director": "Duncan Jones", "writer": "Duncan Jones, Nathan Parker", "cast": "Sam Rockwell", "scores": {"plot": 79, "execution": 81, "acting": 86, "production": 73, "enjoyability": 74, "rewatchability": 83, "ending": 70, "uniqueness": 83}}, {"title": "Dune: Part 1", "year": 2021, "total": 76.0, "director": "Denis Villeneuve", "writer": "Jon Spaihts, Denis Villeneuve, Eric Roth", "cast": "Timoth\u00e9e Chalamet, Zendaya, Oscar Isaac, Rebecca Ferguson, Jason Momoa, Javier Bardem", "scores": {"plot": 79, "execution": 81, "acting": 64, "production": 83, "enjoyability": 74, "rewatchability": 83, "ending": 70, "uniqueness": 76}}, {"title": "Conclave", "year": 2024, "total": 79.06, "director": "Edward Berger", "writer": "Peter Straughan", "cast": "Ralph Fiennes, Stanley Tucci, John Lithgow, Isabella Rossellini, Carlos Diehz, Sergio Castellito", "scores": {"plot": 78, "execution": 82, "acting": 83, "production": 84, "enjoyability": 76, "rewatchability": 70, "ending": 78, "uniqueness": 81}}, {"title": "Battle Royale", "year": 2000, "total": 71.18, "director": "Kinji Fukasaku", "writer": "Kenta Fukasaku, Kinji Fukasaku", "cast": "Tatsuya Fijuwara, Chiaki Kuriyama, Aki Maeda, Ko Shibasaki", "scores": {"plot": 78, "execution": 74, "acting": 42, "production": 52, "enjoyability": 77, "rewatchability": 81, "ending": 49, "uniqueness": 90}}, {"title": "Tinker, Tailor, Soldier, Spy", "year": 2011, "total": 68.88, "director": "Tomas Alfredson", "writer": "Bridget O\u2019Connor, Peter Straughan", "cast": "Gary Oldman, Colin Firth, Benedict Cumberbatch, Mark Strong, Tom Hardy, Toby Jones, John Hurt, Stephen Graham", "scores": {"plot": 78, "execution": 55, "acting": 78, "production": 79, "enjoyability": 60, "rewatchability": 83, "ending": 68, "uniqueness": 73}}, {"title": "The Banshees of Inisherin", "year": 2022, "total": 79.76, "director": "Martin McDonagh", "writer": "Martin McDonagh", "cast": "Colin Farrell, Brendan Gleeson, Barry Keoghan, Kerry Condon", "scores": {"plot": 77, "execution": 82, "acting": 84, "production": 82, "enjoyability": 73, "rewatchability": 70, "ending": 87, "uniqueness": 90}}, {"title": "Boogie Nights", "year": 1997, "total": 78.76, "director": "Paul Thomas Anderson", "writer": "Paul Thomas Anderson", "cast": "Mark Wahlberg, Burt Reynolds, Julianne Moore, John C. Reilly, Don Cheadle, Heather Graham, Philip Seymour Hoffman, William H. Macy, Luis Guzm\u00e1n, Alfred Molina", "scores": {"plot": 77, "execution": 84, "acting": 77, "production": 80, "enjoyability": 74, "rewatchability": 74, "ending": 82, "uniqueness": 85}}, {"title": "Don't Look Up", "year": 2021, "total": 76.29, "director": "Adam McKay", "writer": "Adam McKay, David Sirota", "cast": "Leonardo DiCaprio, Jennifer Lawrence, Meryl Streep, Cate Blanchett, Timoth\u00e9e Chalamet, Mark Rylance", "scores": {"plot": 77, "execution": 79, "acting": 69, "production": 75, "enjoyability": 72, "rewatchability": 78, "ending": 86, "uniqueness": 82}}, {"title": "Mrs. Doubtfire", "year": 1993, "total": 78.94, "director": "Chris Columbus", "writer": "Chris Columbus, Randi Mayem Singer, Leslie Dixon, Anne Fine", "cast": "Robin Williams, Sally Field, Pierce Brosnan, Robert Prosky, Harvey Fierstein, Matthew Lawrence, Lisa Jakub, Mara Wilson", "scores": {"plot": 76, "execution": 83, "acting": 66, "production": 72, "enjoyability": 81, "rewatchability": 84, "ending": 81, "uniqueness": 86}}, {"title": "Memento", "year": 2000, "total": 76.82, "director": "Christopher Nolan", "writer": "Christopher Nolan, Jonathan Nolan", "cast": "Guy Pearce, Joe Pantoliano, Carrie-Anne Moss, Jorja Fox, Stephen Tobolowski, Harriet Sansom Harris", "scores": {"plot": 76, "execution": 74, "acting": 75, "production": 76, "enjoyability": 75, "rewatchability": 74, "ending": 82, "uniqueness": 87}}, {"title": "Anora", "year": 2024, "total": 76.18, "director": "Sean Baker", "writer": "Sean Baker, Chris Bergoch", "cast": "Mikey Madison, Mark Eydelshteyn, Yura Borisov, Vache Tovmasyan, Karren Karagulian, Luna Sof\u00eda Miranda, Daria Ekamasova, Aleksey Serebryakov", "scores": {"plot": 75, "execution": 80, "acting": 76, "production": 79, "enjoyability": 73, "rewatchability": 73, "ending": 84, "uniqueness": 75}}, {"title": "Love and Mercy", "year": 2014, "total": 75.94, "director": "Bill Pohlad", "writer": "Oren Moverman, Michael Alan Lerner", "cast": "John Cusack, Paul Dano, Paul Giamatti, Elizabeth Banks", "scores": {"plot": 75, "execution": 83, "acting": 76, "production": 74, "enjoyability": 74, "rewatchability": 71, "ending": 76, "uniqueness": 74}}, {"title": "Four Lions", "year": 2010, "total": 74.94, "director": "Chris Morris", "writer": "Chris Morris, Jesse Armstrong, Sam Bain, Simon Blackwell", "cast": "Riz Ahmed, Nigel Lindsay, Kayvan Novak, Adeel Akhtar, Arsher Ali", "scores": {"plot": 75, "execution": 77, "acting": 66, "production": 55, "enjoyability": 75, "rewatchability": 78, "ending": 77, "uniqueness": 88}}, {"title": "The Menu", "year": 2022, "total": 74.53, "director": "Mark Mylod", "writer": "Seth Reiss, Will Tracy", "cast": "Ralph Fiennes, Nicholas Hoult, Anya Taylor-Joy", "scores": {"plot": 75, "execution": 78, "acting": 68, "production": 79, "enjoyability": 71, "rewatchability": 74, "ending": 67, "uniqueness": 84}}, {"title": "Fargo", "year": 1996, "total": 73.94, "director": "Joel Coen, Ethan Coen", "writer": "Joel Coen, Ethan Coen", "cast": "William H. Macy, Steve Buscemi, Frances McDormand, Peter Stormare, Kristin Rudr\u00fcd, Harve Presnell", "scores": {"plot": 74, "execution": 79, "acting": 71, "production": 71, "enjoyability": 69, "rewatchability": 74, "ending": 71, "uniqueness": 82}}, {"title": "How to Train Your Dragon", "year": 2010, "total": 73.35, "director": "Dean DeBlois, Chris Sanders", "writer": "Will Davies, Dean DeBlois, Chris Sanders", "cast": "Jay Baruchel, Gerard Butler, Christopher Mintz-Plasse, Jonah Hill, America Ferrera, T.J. Miller, Craig Ferguson, Kristen Wiig", "scores": {"plot": 74, "execution": 79, "acting": 62, "production": 73, "enjoyability": 75, "rewatchability": 81, "ending": 62, "uniqueness": 74}}, {"title": "District 9", "year": 2009, "total": 76.53, "director": "Neill Blomkamp", "writer": "Neill Blomkamp, Terri Tatchell", "cast": "Sharlto Copley, Vanessa Haywood, David James, Robert Hobbs", "scores": {"plot": 73, "execution": 83, "acting": 85, "production": 76, "enjoyability": 69, "rewatchability": 67, "ending": 80, "uniqueness": 82}}, {"title": "Coherence", "year": 2013, "total": 73.06, "director": "James Ward Byrkit", "writer": "James Ward Byrkit", "cast": "Emily Baldoni, Hugo Armstrong, Lorene Scafaria, Nicholas Brendon, Maury Sterling, Alex Manugian, Lauren Maher", "scores": {"plot": 72, "execution": 69, "acting": 72, "production": 50, "enjoyability": 73, "rewatchability": 85, "ending": 74, "uniqueness": 87}}, {"title": "Edge of Tomorrow", "year": 2014, "total": 71.41, "director": "Doug Liman", "writer": "Christopher McQuarrie, Jez Butterworth, John-Henry Butterworth", "cast": "Tom Cruise, Emily Blunt, Brendan Gleeson, Bill Paxton", "scores": {"plot": 72, "execution": 75, "acting": 53, "production": 74, "enjoyability": 79, "rewatchability": 77, "ending": 66, "uniqueness": 67}}, {"title": "Gangs of New York", "year": 2002, "total": 69.0, "director": "Martin Scorsese", "writer": "Jay Cocks, Steven Zaillian, Kenneth Lonergan", "cast": "Daniel Day-Lewis, Leonardo DiCaprio, Cameron Diaz, Brendan Gleeson, Liam Neeson, John C. Reilly, Stephen Graham, Jim Broadbent, Henry Thomas", "scores": {"plot": 72, "execution": 67, "acting": 70, "production": 62, "enjoyability": 61, "rewatchability": 72, "ending": 78, "uniqueness": 80}}, {"title": "The Wolf of Wall Street", "year": 2013, "total": 71.94, "director": "Martin Scorsese", "writer": "Terence Winter", "cast": "Leonardo DiCaprio, Jonah Hill, Margot Robbie, Matthew McConaughey, Cristin Milioti, Jon Bernthal, Jon Favreau", "scores": {"plot": 71, "execution": 73, "acting": 73, "production": 79, "enjoyability": 72, "rewatchability": 75, "ending": 59, "uniqueness": 72}}, {"title": "Sunshine", "year": 2007, "total": 69.24, "director": "Danny Boyle", "writer": "Danny Boyle, Alex Garland", "cast": "Cillian Murphy, Chris Evans, Michelle Yeoh, Rose Byrne, Cliff Curtis, Benedict Wong, Hiroyuki Sanada, Troy Garity, Mark Strong", "scores": {"plot": 71, "execution": 65, "acting": 65, "production": 73, "enjoyability": 69, "rewatchability": 58, "ending": 64, "uniqueness": 84}}, {"title": "Spotlight", "year": 2015, "total": 68.06, "director": "Tom McCarthy", "writer": "Josh Singer, Tom McCarthy", "cast": "Michael Keaton, Mark Ruffalo, Rachel McAdams, Stanley Tucci, Liev Schrieber, John Slattery", "scores": {"plot": 71, "execution": 72, "acting": 59, "production": 74, "enjoyability": 64, "rewatchability": 54, "ending": 78, "uniqueness": 74}}, {"title": "Mickey 17", "year": 2025, "total": 70.53, "director": "Bong Joon-ho", "writer": "Bong Joon-ho", "cast": "Robert Pattinson, Mark Ruffalo, Naomi Ackie, Toni Collette", "scores": {"plot": 70, "execution": 62, "acting": 79, "production": 77, "enjoyability": 70, "rewatchability": 73, "ending": 47, "uniqueness": 84}}, {"title": "A Real Pain", "year": 2024, "total": 69.82, "director": "Jesse Eisenberg", "writer": "Jesse Eisenberg", "cast": "Jesse Eisenberg, Kieran Culkin, Will Sharpe, Kurt Egyiawan, Jennifer Grey", "scores": {"plot": 69, "execution": 72, "acting": 76, "production": 68, "enjoyability": 64, "rewatchability": 63, "ending": 81, "uniqueness": 72}}, {"title": "Catch Me If You Can", "year": 2002, "total": 68.0, "director": "Steven Spielberg", "writer": "Jeff Nathanson", "cast": "Leonardo DiCaprio, Tom Hanks, Christopher Walken, Ellen Pompeo, Amy Adams, Martin Sheen, Jennifer Garner, Elizabeth Banks", "scores": {"plot": 68, "execution": 67, "acting": 64, "production": 72, "enjoyability": 70, "rewatchability": 68, "ending": 63, "uniqueness": 70}}, {"title": "The Big Short", "year": 2015, "total": 68.47, "director": "Adam McKay", "writer": "Charles Randolph, Adam McKay", "cast": "Christian Bale, Ryan Gosling, Steve Carrell, Brad Pitt, Jeremy Strong, Marisa Tomei", "scores": {"plot": 66, "execution": 67, "acting": 64, "production": 78, "enjoyability": 70, "rewatchability": 72, "ending": 75, "uniqueness": 66}}, {"title": "Anchorman", "year": 2004, "total": 72.12, "director": "Adam McKay", "writer": "Will Ferrell, Adam McKay", "cast": "Will Ferrell, Steve Carell, Paul Rudd, David Koechner, Christina Applegate, Jack Black", "scores": {"plot": 62, "execution": 82, "acting": 50, "production": 70, "enjoyability": 78, "rewatchability": 85, "ending": 61, "uniqueness": 83}}, {"title": "The Goodbye Girl", "year": 1977, "total": 66.06, "director": "Herbert Ross", "writer": "Neil Simon", "cast": "Richard Dreyfuss, Marsha Mason, Quinn Cummings", "scores": {"plot": 62, "execution": 58, "acting": 69, "production": 51, "enjoyability": 69, "rewatchability": 76, "ending": 80, "uniqueness": 71}}, {"title": "Seven Psychopaths", "year": 2012, "total": 66.76, "director": "Martin McDonagh", "writer": "Martin McDonagh", "cast": "Colin Farrell, Sam Rockwell, Christopher Walken, Woody Harrelson, Abbie Cornish, Olga Kurylenko", "scores": {"plot": 61, "execution": 61, "acting": 72, "production": 69, "enjoyability": 62, "rewatchability": 73, "ending": 67, "uniqueness": 84}}, {"title": "Oppenheimer", "year": 2024, "total": 57.94, "director": "Christopher Nolan", "writer": "Christopher Nolan", "cast": "Cillian Murphy, Robert Downey Jr., Emily Blunt, Florence Pugh, Emma Dumont, Casey Affleck, Josh Peck, Josh Hartnett, Gary Oldman, Rami Malek", "scores": {"plot": 59, "execution": 54, "acting": 68, "production": 75, "enjoyability": 46, "rewatchability": 43, "ending": 62, "uniqueness": 73}}, {"title": "Fight Club", "year": 1999, "total": 64.18, "director": "David Fincher", "writer": "Jim Uhls", "cast": "Edward Norton, Brad Pitt, Helena Bonham Carter, Jared Leto, Meat Loaf Aday", "scores": {"plot": 56, "execution": 64, "acting": 81, "production": 66, "enjoyability": 53, "rewatchability": 44, "ending": 77, "uniqueness": 85}}, {"title": "Stalker", "year": 1979, "total": 66.65, "director": "Andrei Tarkovsky", "writer": "Boris Strugatsky, Arkady Strugatsky", "cast": "Aleksandr Kaydanovskiy, Anatoliy Solonitsyn, Nikolay Grinko, Alisa Freyndlikh", "scores": {"plot": 55, "execution": 63, "acting": 73, "production": 83, "enjoyability": 62, "rewatchability": 72, "ending": 46, "uniqueness": 92}}, {"title": "Lincoln", "year": 2012, "total": 60.82, "director": "Steven Spielberg", "writer": "Tony Kushner", "cast": "Daniel Day-Lewis, Sally Field, Tommy Lee Jones, Joseph Gordon-Levitt, James Spader, Jeremy Strong", "scores": {"plot": 54, "execution": 71, "acting": 75, "production": 78, "enjoyability": 52, "rewatchability": 51, "ending": 54, "uniqueness": 59}}, {"title": "Friendship", "year": 2025, "total": 69.65, "director": "Andrew DeYoung", "writer": "Andrew DeYoung", "cast": "Tim Robinson, Paul Rudd, Kate Mara, Jack Dylan Grazer", "scores": {"plot": 52, "execution": 73, "acting": 63, "production": 70, "enjoyability": 71, "rewatchability": 78, "ending": 77, "uniqueness": 87}}, {"title": "Wonder Boys", "year": 2000, "total": 49.29, "director": "Curtis Hanson", "writer": "Steve Kloves", "cast": "Michael Douglas, Tobey Maguire, Frances McDormand, Robert Downey Jr., Rip Torn, Katie Holmes, Richard Thomas, Jane Adam's", "scores": {"plot": 51, "execution": 52, "acting": 45, "production": 57, "enjoyability": 44, "rewatchability": 45, "ending": 37, "uniqueness": 62}}, {"title": "The Princess Bride", "year": 1987, "total": 56.41, "director": "Rob Reiner", "writer": "William Goldman", "cast": "Robin Wright, Cary Elwes, Mandy Patinkin, Chris Sarandon, Christopher Guest, Wallace Shawn, Andre the Giant, Billy Crystal", "scores": {"plot": 47, "execution": 64, "acting": 50, "production": 42, "enjoyability": 51, "rewatchability": 70, "ending": 56, "uniqueness": 77}}, {"title": "Train to Busan", "year": 2016, "total": 50.29, "director": "Sang-ho Yeon", "writer": "Park Joo-suk", "cast": "Gong Yoo, Ma Dong-Seok, Yeon Sang-Ho, Jung Yu-mi, Kim Su-an, Choi Woo-shik", "scores": {"plot": 46, "execution": 57, "acting": 49, "production": 53, "enjoyability": 50, "rewatchability": 47, "ending": 70, "uniqueness": 39}}, {"title": "Elvis", "year": 2022, "total": 42.24, "director": "Baz Luhrmann", "writer": "Baz Luhrmann, Sam Bromell, Craig Pearce, Jeremy Doner", "cast": "Austin Butler, Tom Hanks, Olivia DeJonge", "scores": {"plot": 40, "execution": 38, "acting": 52, "production": 48, "enjoyability": 39, "rewatchability": 23, "ending": 57, "uniqueness": 48}}, {"title": "Anchorman 2", "year": 2013, "total": 49.06, "director": "Adam McKay", "writer": "Will Ferrell, Adam McKay", "cast": "Will Ferrell, Steve Carell, Paul Rudd, David Koechner, Christina Applegate", "scores": {"plot": 39, "execution": 47, "acting": 42, "production": 47, "enjoyability": 54, "rewatchability": 47, "ending": 62, "uniqueness": 60}}, {"title": "Nosferatu", "year": 2024, "total": 39.47, "director": "Robert Eggers", "writer": "Robert Eggers, Henrik Galeen", "cast": "Bill Skaarsg\u00e5rd, Lily-Rose Depp, Willem Dafoe, Nicholas Hoult", "scores": {"plot": 36, "execution": 35, "acting": 62, "production": 73, "enjoyability": 20, "rewatchability": 10, "ending": 51, "uniqueness": 60}}, {"title": "Indiana Jones and the Temple of Doom", "year": 1984, "total": 43.06, "director": "Steven Spielberg", "writer": "Willard Huyck, Gloria Katz", "cast": "Harrison Ford, Ke Huy Quan", "scores": {"plot": 34, "execution": 37, "acting": 43, "production": 60, "enjoyability": 37, "rewatchability": 44, "ending": 53, "uniqueness": 64}}];
+
+const CATEGORIES = [
+  { key: 'plot',         label: 'Plot',            weight: 3, question: 'How strong, original, and well-constructed is the story?' },
+  { key: 'execution',   label: 'Execution',       weight: 3, question: 'Direction, cinematography, pacing — how well is it made?' },
+  { key: 'acting',      label: 'Acting',          weight: 2, question: 'How effective is the overall performance?' },
+  { key: 'production',  label: 'Production',      weight: 1, question: 'Score, production design, costume — the craft around the film.' },
+  { key: 'enjoyability',label: 'Enjoyability',    weight: 4, question: 'The most honest question: how much did you actually enjoy it?' },
+  { key: 'rewatchability',label:'Rewatchability', weight: 1, question: 'Would you sit down and watch this again? How eagerly?' },
+  { key: 'ending',      label: 'Ending',          weight: 1, question: 'How satisfying, earned, and well-executed is the conclusion?' },
+  { key: 'uniqueness',  label: 'Uniqueness',      weight: 2, question: 'Does this feel genuinely singular? Could only this film exist this way?' },
+];
+
+const WEIGHTS = { plot:3, execution:3, acting:2, production:1, enjoyability:4, rewatchability:1, ending:1, uniqueness:2 };
+const TOTAL_WEIGHT = 17;
+
+const LABELS = [
+  [90, 'An all-time favorite'], [85, 'Really quite exceptional'], [80, 'Excellent'],
+  [75, 'Well above average'], [70, 'Great'], [65, 'Very good'], [60, 'A cut above'],
+  [55, 'Good'], [50, 'Solid'], [45, 'Not bad'], [40, 'Sub-par'], [35, 'Multiple flaws'],
+  [30, 'Poor'], [25, 'Bad'], [20, "Wouldn't watch by choice"], [0, 'Unwatchable']
+];
+
+function getLabel(score) {
+  if (score >= 90 && score === Math.max(...MOVIES.map(m => m.total))) return 'No better exists';
+  for (const [threshold, label] of LABELS) if (score >= threshold) return label;
+  return 'Unwatchable';
+}
+
+function calcTotal(scores) {
+  let sum = 0, wsum = 0;
+  for (const cat of CATEGORIES) {
+    if (scores[cat.key] != null) { sum += scores[cat.key] * cat.weight; wsum += cat.weight; }
+  }
+  return wsum > 0 ? Math.round((sum / wsum) * 100) / 100 : 0;
+}
+
+function scoreClass(s) {
+  if (s >= 90) return 's90'; if (s >= 80) return 's80'; if (s >= 70) return 's70';
+  if (s >= 60) return 's60'; if (s >= 50) return 's50'; if (s >= 40) return 's40';
+  return 's30';
+}
+
+// ══════════════════════════════════════════
+// RANKINGS
+// ══════════════════════════════════════════
+
+function renderRankings() {
+  const sorted = [...MOVIES].sort((a, b) => b.total - a.total);
+  document.getElementById('mastheadCount').textContent = sorted.length + ' films ranked';
+  const list = document.getElementById('filmList');
+  list.innerHTML = sorted.map((m, i) => {
+    const s = m.scores;
+    return `<div class="film-row" onclick="openModal(${MOVIES.indexOf(m)})">
+      <div class="film-rank">${i+1}</div>
+      <div class="film-title-cell">
+        <div class="film-title-main">${m.title}</div>
+        <div class="film-title-sub">${m.year || ''} ${m.director ? '· ' + m.director.split(',')[0] : ''}</div>
+      </div>
+      ${['plot','execution','acting','production','enjoyability','rewatchability','ending','uniqueness'].map(k =>
+        `<div class="film-score ${s[k] ? scoreClass(s[k]) : ''}">${s[k] ?? '—'}</div>`
+      ).join('')}
+      <div class="film-total">${m.total}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════
+
+function openModal(idx) {
+  const m = MOVIES[idx];
+  const sorted = [...MOVIES].sort((a,b) => b.total - a.total);
+  const rank = sorted.indexOf(m) + 1;
+  const nearby = sorted.filter(x => x !== m && Math.abs(x.total - m.total) < 6).slice(0,5);
+
+  document.getElementById('modalContent').innerHTML = `
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">Rank #${rank} of ${MOVIES.length}</div>
+    <div class="modal-title">${m.title}</div>
+    <div class="modal-sub">${[m.year, m.director, m.writer !== m.director ? m.writer : ''].filter(Boolean).join(' · ')}</div>
+    ${m.productionCompanies ? `<div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">${m.productionCompanies}</div>` : ''}
+    ${m.cast ? `<div style="font-size:12px;color:var(--dim);margin-bottom:20px">${m.cast}</div>` : ''}
+
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:6px">
+      <span style="font-family:'Playfair Display',serif;font-size:52px;font-weight:900;color:var(--gold)">${m.total}</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim)">${getLabel(m.total)}</span>
+    </div>
+
+    <div>${CATEGORIES.map(cat => {
+      const v = m.scores[cat.key];
+      return `<div class="breakdown-row">
+        <div class="breakdown-cat">${cat.label}</div>
+        <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${v||0}%"></div></div>
+        <div class="breakdown-val ${v ? scoreClass(v) : ''}">${v ?? '—'}</div>
+        <div class="breakdown-wt">×${cat.weight}</div>
+      </div>`;
+    }).join('')}</div>
+
+    ${nearby.length > 0 ? `<div class="compare-section">
+      <div class="compare-title">Nearby in the rankings</div>
+      ${nearby.map(x => {
+        const diff = (x.total - m.total).toFixed(2);
+        const sign = diff > 0 ? '+' : '';
+        return `<div class="compare-film">
+          <div class="compare-film-title">${x.title} <span style="font-family:'IBM Plex Mono';font-size:10px;color:var(--dim);font-weight:400">${x.year||''}</span></div>
+          <div class="compare-film-score">${x.total}</div>
+          <div class="compare-diff ${diff > 0 ? 'diff-pos' : 'diff-neg'}">${sign}${diff}</div>
+        </div>`;
+      }).join('')}
+    </div>` : ''}
+  `;
+  document.getElementById('filmModal').classList.add('open');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('filmModal')) {
+    document.getElementById('filmModal').classList.remove('open');
+  }
+}
+
+// ══════════════════════════════════════════
+// ADD FILM
+// ══════════════════════════════════════════
+
+let newFilm = { title:'', year:null, director:'', writer:'', cast:'', scores:{} };
+let currentStep = 1;
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  if (id === 'analysis') renderAnalysis();
+  if (id === 'calibration') resetCalibration();
+}
+
+function updateStepUI(step) {
+  for (let i = 1; i <= 4; i++) {
+    const num = document.getElementById('sn'+i);
+    const lbl = document.getElementById('sl'+i);
+    if (i < step) { num.className = 'step-num done'; num.textContent = '✓'; }
+    else if (i === step) { num.className = 'step-num active'; num.textContent = i; lbl.className = 'step-label active'; }
+    else { num.className = 'step-num'; num.textContent = i; lbl.className = 'step-label'; }
+  }
+  document.querySelectorAll('.step-panel').forEach((p,i) => {
+    p.classList.toggle('active', i+1 === step);
+  });
+  currentStep = step;
+}
+
+function goToStep(n) { updateStepUI(n); }
+
+// ══════════════════════════════════════════
+// TMDB
+// ══════════════════════════════════════════
+
+const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
+const TMDB = 'https://api.themoviedb.org/3';
+let tmdbFullCast = []; // all cast from API, for "more cast" expansion
+let castChecked = {};
+let companyChecked = {};
+
+async function tmdbSearch() {
+  const q = document.getElementById('f-search').value.trim();
+  if (!q) return;
+  const btn = document.getElementById('searchBtn');
+  btn.textContent = 'Searching…';
+  btn.disabled = true;
+  const resultsEl = document.getElementById('tmdb-results');
+  resultsEl.innerHTML = '<div class="tmdb-loading">Searching TMDB…</div>';
+  try {
+    const res = await fetch(`${TMDB}/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}&include_adult=false`);
+    const data = await res.json();
+    if (!data.results || data.results.length === 0) {
+      resultsEl.innerHTML = '<div class="tmdb-error">No results found. Try a different title.</div>';
+    } else {
+      const top = data.results.slice(0, 6);
+      resultsEl.innerHTML = top.map(m => {
+        const year = m.release_date ? m.release_date.slice(0,4) : '?';
+        const poster = m.poster_path
+          ? `<img class="tmdb-result-poster" src="https://image.tmdb.org/t/p/w92${m.poster_path}" alt="">`
+          : `<div class="tmdb-result-poster-placeholder">NO IMG</div>`;
+        const overview = m.overview ? m.overview.slice(0,120) + (m.overview.length > 120 ? '…' : '') : '';
+        return `<div class="tmdb-result" onclick="tmdbSelect(${m.id}, '${m.title.replace(/'/g,"\\'")}')">
+          ${poster}
+          <div class="tmdb-result-info">
+            <div class="tmdb-result-title">${m.title}</div>
+            <div class="tmdb-result-meta">${year} · ${m.vote_average ? m.vote_average.toFixed(1) + ' TMDB' : ''}</div>
+            <div class="tmdb-result-overview">${overview}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  } catch(e) {
+    resultsEl.innerHTML = '<div class="tmdb-error">Search failed. Check your connection and try again.</div>';
+  }
+  btn.textContent = 'Search →';
+  btn.disabled = false;
+}
+
+async function tmdbSelect(tmdbId, title) {
+  document.getElementById('tmdb-results').innerHTML = '<div class="tmdb-loading">Loading film details…</div>';
+  try {
+    const [detailRes, creditsRes] = await Promise.all([
+      fetch(`${TMDB}/movie/${tmdbId}?api_key=${TMDB_KEY}`),
+      fetch(`${TMDB}/movie/${tmdbId}/credits?api_key=${TMDB_KEY}`)
+    ]);
+    const detail = await detailRes.json();
+    const credits = await creditsRes.json();
+
+    // Parse data
+    const year = detail.release_date ? parseInt(detail.release_date.slice(0,4)) : null;
+    const posterUrl = detail.poster_path ? `https://image.tmdb.org/t/p/w185${detail.poster_path}` : null;
+    const directors = credits.crew.filter(c => c.job === 'Director').map(c => c.name);
+    const writers = credits.crew
+      .filter(c => ['Screenplay','Writer','Story','Original Story','Novel'].includes(c.job))
+      .map(c => c.name)
+      .filter((v,i,a) => a.indexOf(v) === i); // dedupe
+    const allCast = credits.cast || [];
+    const top8Cast = allCast.slice(0, 8);
+    tmdbFullCast = allCast;
+    const companies = detail.production_companies || [];
+
+    // Store raw tmdb data on newFilm
+    newFilm._tmdbId = tmdbId;
+    newFilm._tmdbDetail = detail;
+    newFilm.year = year;
+    newFilm._allDirectors = directors;
+    newFilm._allWriters = writers;
+    newFilm._posterUrl = posterUrl;
+
+    // Build check state — all top8 checked, companies all checked by default
+    castChecked = {};
+    top8Cast.forEach(a => { castChecked[a.id] = { actor: a, checked: true }; });
+    companyChecked = {};
+    companies.forEach(c => { companyChecked[c.id] = { company: c, checked: true }; });
+
+    // Render film header
+    document.getElementById('tmdb-film-header').innerHTML = `
+      ${posterUrl ? `<img src="${posterUrl}" style="width:80px;border-radius:4px;flex-shrink:0" alt="">` : ''}
+      <div>
+        <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;line-height:1.1">${detail.title}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);margin-top:4px">${year || ''} · ${detail.runtime ? detail.runtime + ' min' : ''}</div>
+        <div style="font-size:13px;color:var(--dim);margin-top:8px;max-width:480px;line-height:1.5">${(detail.overview||'').slice(0,200)}${detail.overview && detail.overview.length > 200 ? '…':''}</div>
+      </div>`;
+
+    // Directors & writers (plain text, not editable for now)
+    document.getElementById('curate-directors').textContent = directors.join(', ') || 'Unknown';
+    document.getElementById('curate-writers').textContent = writers.join(', ') || 'Unknown';
+
+    // Cast
+    renderCastCuration(top8Cast);
+
+    // Companies
+    renderCompanyCuration(companies);
+
+    // Switch phases
+    document.getElementById('tmdb-search-phase').style.display = 'none';
+    document.getElementById('tmdb-results').innerHTML = '';
+    document.getElementById('tmdb-curation-phase').style.display = 'block';
+
+  } catch(e) {
+    document.getElementById('tmdb-results').innerHTML = '<div class="tmdb-error">Failed to load film details. Try again.</div>';
+  }
+}
+
+function renderCastCuration(castList) {
+  const container = document.getElementById('curate-cast');
+  container.innerHTML = `<div class="cast-grid">
+    ${castList.map(a => {
+      const state = castChecked[a.id];
+      const isChecked = state ? state.checked : true;
+      const photo = a.profile_path
+        ? `<img class="cast-photo" src="https://image.tmdb.org/t/p/w45${a.profile_path}" alt="">`
+        : `<div class="cast-photo" style="background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:14px">👤</div>`;
+      return `<div class="cast-item ${isChecked ? 'checked' : 'unchecked'}" onclick="toggleCast(${a.id})" id="castItem_${a.id}">
+        <div class="cast-check">${isChecked ? '✓' : ''}</div>
+        ${photo}
+        <div>
+          <div class="cast-name">${a.name}</div>
+          <div class="cast-character">${a.character || ''}</div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function toggleCast(actorId) {
+  if (castChecked[actorId]) {
+    castChecked[actorId].checked = !castChecked[actorId].checked;
+  }
+  const el = document.getElementById('castItem_' + actorId);
+  const isNowChecked = castChecked[actorId].checked;
+  el.className = 'cast-item ' + (isNowChecked ? 'checked' : 'unchecked');
+  el.querySelector('.cast-check').textContent = isNowChecked ? '✓' : '';
+}
+
+async function showMoreCast() {
+  const btn = document.getElementById('moreCastBtn');
+  btn.textContent = 'Loading…';
+  btn.disabled = true;
+  // Add cast 8-20 to castChecked (unchecked by default)
+  const moreCast = tmdbFullCast.slice(8, 20);
+  moreCast.forEach(a => {
+    if (!castChecked[a.id]) castChecked[a.id] = { actor: a, checked: false };
+  });
+  const displayCast = tmdbFullCast.slice(0, 20);
+  renderCastCuration(displayCast);
+  btn.textContent = '+ More cast';
+  btn.disabled = false;
+  if (tmdbFullCast.length <= 20) btn.style.display = 'none';
+}
+
+function renderCompanyCuration(companies) {
+  document.getElementById('curate-companies').innerHTML = `<div class="company-chips">
+    ${companies.map(c => `
+      <div class="company-chip checked" onclick="toggleCompany(${c.id})" id="companyChip_${c.id}">${c.name}</div>
+    `).join('')}
+    ${companies.length === 0 ? '<span style="font-size:13px;color:var(--dim)">None listed</span>' : ''}
+  </div>`;
+}
+
+function toggleCompany(companyId) {
+  companyChecked[companyId].checked = !companyChecked[companyId].checked;
+  const el = document.getElementById('companyChip_' + companyId);
+  el.className = 'company-chip ' + (companyChecked[companyId].checked ? 'checked' : 'unchecked');
+}
+
+function resetToSearch() {
+  document.getElementById('tmdb-search-phase').style.display = 'block';
+  document.getElementById('tmdb-curation-phase').style.display = 'none';
+  document.getElementById('tmdb-results').innerHTML = '';
+}
+
+function confirmTmdbData() {
+  // Commit curated data to newFilm
+  const directors = newFilm._allDirectors || [];
+  const writers = newFilm._allWriters || [];
+  const selectedCast = Object.values(castChecked).filter(v => v.checked).map(v => v.actor.name);
+  const selectedCompanies = Object.values(companyChecked).filter(v => v.checked).map(v => v.company.name);
+
+  newFilm.title = newFilm._tmdbDetail.title;
+  newFilm.director = directors.join(', ');
+  newFilm.writer = writers.join(', ');
+  newFilm.cast = selectedCast.join(', ');
+  newFilm.productionCompanies = selectedCompanies.join(', ');
+
+  renderCalibration();
+  updateStepUI(2);
+}
+
+// Legacy goToStep2 — now called from confirmTmdbData
+function goToStep2() {
+  confirmTmdbData();
+}
+
+function getAnchors(catKey) {
+  const sorted = [...MOVIES].filter(m => m.scores[catKey] != null)
+    .sort((a,b) => b.scores[catKey] - a.scores[catKey]);
+  const n = sorted.length;
+  return [
+    sorted[Math.floor(n * 0.05)],
+    sorted[Math.floor(n * 0.25)],
+    sorted[Math.floor(n * 0.5)],
+    sorted[Math.floor(n * 0.75)],
+    sorted[Math.floor(n * 0.95)],
+  ].filter(Boolean);
+}
+
+function renderCalibration() {
+  const container = document.getElementById('calibrationCategories');
+  container.innerHTML = CATEGORIES.map(cat => {
+    const anchors = getAnchors(cat.key);
+    const initVal = newFilm.scores[cat.key] || 75;
+    return `<div class="category-section" id="catSection_${cat.key}">
+      <div class="cat-header">
+        <div class="cat-name">${cat.label}</div>
+        <div class="cat-weight">Weight ×${cat.weight} of 17</div>
+      </div>
+      <div class="cat-question">${cat.question}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Closest anchor film:</div>
+      <div class="anchor-row">
+        ${anchors.map(a => `
+          <div class="anchor-film" onclick="selectAnchor('${cat.key}', ${a.scores[cat.key]}, this)">
+            <div class="anchor-film-title">${a.title}</div>
+            <div class="anchor-film-score">${cat.label}: ${a.scores[cat.key]}</div>
+          </div>`).join('')}
+      </div>
+      <div class="slider-section">
+        <div class="slider-label-row">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px">Your score</div>
+          <div>
+            <span class="slider-val" id="sliderVal_${cat.key}">${initVal}</span>
+            <span class="slider-desc" id="sliderDesc_${cat.key}" style="margin-left:8px">${getLabel(initVal)}</span>
+          </div>
+        </div>
+        <input type="range" min="1" max="100" value="${initVal}" id="slider_${cat.key}"
+          oninput="updateSlider('${cat.key}', this.value)">
+        <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--dim)">
+          <span>1 — Insulting</span><span>50 — Solid</span><span>100 — Perfect</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  // Initialize scores
+  CATEGORIES.forEach(cat => {
+    if (!newFilm.scores[cat.key]) newFilm.scores[cat.key] = 75;
+  });
+}
+
+function selectAnchor(catKey, anchorScore, el) {
+  el.closest('.anchor-row').querySelectorAll('.anchor-film').forEach(a => a.classList.remove('selected'));
+  el.classList.add('selected');
+  // Nudge slider toward anchor
+  const current = newFilm.scores[catKey] || 75;
+  const nudged = Math.round((current + anchorScore) / 2);
+  document.getElementById('slider_' + catKey).value = nudged;
+  updateSlider(catKey, nudged);
+}
+
+function updateSlider(catKey, val) {
+  val = parseInt(val);
+  newFilm.scores[catKey] = val;
+  document.getElementById('sliderVal_' + catKey).textContent = val;
+  document.getElementById('sliderDesc_' + catKey).textContent = getLabel(val);
+}
+
+// HEAD-TO-HEAD
+function goToStep3() {
+  renderHth();
+  updateStepUI(3);
+}
+
+let hthComparisons = [];
+let hthIdx = 0;
+
+function renderHth() {
+  hthComparisons = [];
+  // For each category, find films within 3 points of the new score
+  CATEGORIES.forEach(cat => {
+    const myScore = newFilm.scores[cat.key];
+    if (!myScore) return;
+    const close = MOVIES.filter(m => m.scores[cat.key] != null && Math.abs(m.scores[cat.key] - myScore) <= 3)
+      .sort((a,b) => Math.abs(a.scores[cat.key]-myScore) - Math.abs(b.scores[cat.key]-myScore))
+      .slice(0, 1);
+    close.forEach(m => hthComparisons.push({ cat, film: m }));
+  });
+
+  // Deduplicate by film+cat
+  hthComparisons = hthComparisons.slice(0, 6); // max 6 comparisons
+  hthIdx = 0;
+  renderHthCard();
+}
+
+function renderHthCard() {
+  const container = document.getElementById('hthContainer');
+  if (hthComparisons.length === 0 || hthIdx >= hthComparisons.length) {
+    container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--dim);font-style:italic">
+      No close comparisons needed — your scores are clearly differentiated. Click Continue.
+    </div>`;
+    return;
+  }
+  const { cat, film } = hthComparisons[hthIdx];
+  const myScore = newFilm.scores[cat.key];
+  container.innerHTML = `
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">
+      Comparison ${hthIdx+1} of ${hthComparisons.length} &nbsp;·&nbsp; ${cat.label} (×${cat.weight})
+    </div>
+    <div class="hth-prompt">Which has the better <em>${cat.label.toLowerCase()}</em>?</div>
+    <div class="hth-row">
+      <div class="hth-card" onclick="hthChoice('new', '${cat.key}', ${film.scores[cat.key]})">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">New film</div>
+        <div class="hth-title">${newFilm.title}</div>
+        <div class="hth-score">Current score: ${myScore}</div>
+      </div>
+      <div class="hth-vs">vs</div>
+      <div class="hth-card" onclick="hthChoice('existing', '${cat.key}', ${film.scores[cat.key]})">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">From your list</div>
+        <div class="hth-title">${film.title}</div>
+        <div class="hth-score">${cat.label}: ${film.scores[cat.key]}</div>
+      </div>
+    </div>
+    <div class="hth-skip" onclick="hthSkip()">They're equal / skip this one</div>
+  `;
+}
+
+function hthChoice(winner, catKey, existingScore) {
+  const myScore = newFilm.scores[catKey];
+  if (winner === 'new' && myScore <= existingScore) {
+    // New film won but score says otherwise — bump new film up
+    newFilm.scores[catKey] = existingScore + 1;
+  } else if (winner === 'existing' && myScore >= existingScore) {
+    // Existing film won but score says otherwise — drop new film
+    newFilm.scores[catKey] = existingScore - 1;
+  }
+  hthIdx++;
+  renderHthCard();
+}
+
+function hthSkip() { hthIdx++; renderHthCard(); }
+
+// STEP 4
+function goToStep4() {
+  renderResult();
+  updateStepUI(4);
+}
+
+function renderResult() {
+  const total = calcTotal(newFilm.scores);
+  newFilm.total = total;
+  const sorted = [...MOVIES, newFilm].sort((a,b) => b.total - a.total);
+  const rank = sorted.indexOf(newFilm) + 1;
+
+  document.getElementById('resultCard').innerHTML = `
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">
+      Would rank #${rank} of ${MOVIES.length + 1}
+    </div>
+    <div class="result-film-title">${newFilm.title}</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);margin-bottom:12px">${newFilm.year || ''} ${newFilm.director ? '· ' + newFilm.director : ''}</div>
+    <div class="result-total">${total}</div>
+    <div class="result-label">${getLabel(total)}</div>
+    <div class="result-grid">
+      ${CATEGORIES.map(cat => `
+        <div class="result-cat">
+          <div class="result-cat-name">${cat.label} ×${cat.weight}</div>
+          <div class="result-cat-val ${scoreClass(newFilm.scores[cat.key] || 0)}">${newFilm.scores[cat.key] || '—'}</div>
+        </div>`).join('')}
+    </div>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--rule)">
+      ${[-2,-1,0,1,2].map(offset => {
+        const neighbor = sorted[rank - 1 + offset];
+        if (!neighbor || neighbor === newFilm) return '';
+        const diff = (neighbor.total - total).toFixed(2);
+        return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--rule);font-size:13px">
+          <span style="font-family:'Playfair Display',serif;font-weight:700;flex:1">${neighbor.title}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim)">${neighbor.total}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:${diff > 0 ? 'var(--green)' : 'var(--red)'}">${diff > 0 ? '+':''  }${diff}</span>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+function saveFilm() {
+  newFilm.total = calcTotal(newFilm.scores);
+  MOVIES.push({
+    title: newFilm.title,
+    year: newFilm.year,
+    total: newFilm.total,
+    director: newFilm.director,
+    writer: newFilm.writer,
+    cast: newFilm.cast,
+    productionCompanies: newFilm.productionCompanies || '',
+    scores: { ...newFilm.scores }
+  });
+  saveToStorage();
+  updateStorageStatus();
+  // Full reset
+  newFilm = { title:'', year:null, director:'', writer:'', cast:'', productionCompanies:'', scores:{} };
+  castChecked = {};
+  companyChecked = {};
+  tmdbFullCast = [];
+  // Reset UI
+  document.getElementById('f-search').value = '';
+  document.getElementById('tmdb-results').innerHTML = '';
+  document.getElementById('tmdb-search-phase').style.display = 'block';
+  document.getElementById('tmdb-curation-phase').style.display = 'none';
+  document.getElementById('moreCastBtn').style.display = '';
+  updateStepUI(1);
+  renderRankings();
+  // Switch to rankings tab
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('rankings').classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn')[0].classList.add('active');
+}
+
+// ══════════════════════════════════════════
+// ANALYSIS
+// ══════════════════════════════════════════
+
+function renderAnalysis() {
+  const directors = {}, actors = {}, years = {};
+  MOVIES.forEach(m => {
+    // Directors
+    m.director.split(',').forEach(d => {
+      d = d.trim();
+      if (d) { if (!directors[d]) directors[d] = []; directors[d].push(m.total); }
+    });
+    // Actors
+    m.cast.split(',').forEach(a => {
+      a = a.trim();
+      if (a) { if (!actors[a]) actors[a] = []; actors[a].push(m.total); }
+    });
+    // Years
+    if (m.year) { if (!years[m.year]) years[m.year] = []; years[m.year].push(m.total); }
+  });
+
+  const avg = arr => Math.round(arr.reduce((s,v) => s+v, 0) / arr.length * 100) / 100;
+
+  const topDirs = Object.entries(directors).filter(([,v]) => v.length >= 2)
+    .map(([k,v]) => ({name:k, avg:avg(v), count:v.length}))
+    .sort((a,b) => b.avg - a.avg).slice(0, 10);
+
+  const topActors = Object.entries(actors).filter(([,v]) => v.length >= 2)
+    .map(([k,v]) => ({name:k, avg:avg(v), count:v.length}))
+    .sort((a,b) => b.avg - a.avg).slice(0, 10);
+
+  const topYears = Object.entries(years).filter(([,v]) => v.length >= 2)
+    .map(([k,v]) => ({name:k, avg:avg(v), count:v.length}))
+    .sort((a,b) => b.avg - a.avg).slice(0, 10);
+
+  // Category averages
+  const catAvgs = CATEGORIES.map(cat => {
+    const vals = MOVIES.map(m => m.scores[cat.key]).filter(v => v != null);
+    return { ...cat, avg: avg(vals) };
+  });
+
+  document.getElementById('analysisContent').innerHTML = `
+    <h2 style="font-family:'Playfair Display',serif;font-style:italic;font-size:36px;font-weight:900;letter-spacing:-1px;margin-bottom:8px">Your taste, decoded</h2>
+    <p style="color:var(--dim);font-size:13px;margin-bottom:32px">${MOVIES.length} films ranked · Weighted formula: Enjoyability×4, Plot×3, Execution×3, Uniqueness×2, Acting×2, Production×1, Rewatchability×1, Ending×1</p>
+
+    <div style="background:var(--cream);border:1px solid var(--rule);border-radius:6px;padding:24px;margin-bottom:32px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:16px">Category Averages Across All Films</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+        ${catAvgs.map(c => `
+          <div style="text-align:center">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);margin-bottom:4px">${c.label}</div>
+            <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--gold)">${c.avg}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="analysis-grid">
+      <div class="analysis-card">
+        <div class="analysis-card-title">Top Directors (2+ films)</div>
+        ${topDirs.map(d => `<div class="analysis-item">
+          <div class="analysis-name">${d.name}</div>
+          <div class="analysis-count">${d.count}f</div>
+          <div class="analysis-score-val">${d.avg}</div>
+        </div>`).join('')}
+      </div>
+      <div class="analysis-card">
+        <div class="analysis-card-title">Top Actors (2+ films)</div>
+        ${topActors.map(a => `<div class="analysis-item">
+          <div class="analysis-name">${a.name}</div>
+          <div class="analysis-count">${a.count}f</div>
+          <div class="analysis-score-val">${a.avg}</div>
+        </div>`).join('')}
+      </div>
+      <div class="analysis-card">
+        <div class="analysis-card-title">Best Years (2+ films)</div>
+        ${topYears.map(y => `<div class="analysis-item">
+          <div class="analysis-name">${y.name}</div>
+          <div class="analysis-count">${y.count}f</div>
+          <div class="analysis-score-val">${y.avg}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════
+// LIVE SEARCH
+// ══════════════════════════════════════════
+
+let searchDebounceTimer = null;
+
+function liveSearch(val) {
+  clearTimeout(searchDebounceTimer);
+  const resultsEl = document.getElementById('tmdb-results');
+  if (val.trim().length < 2) { resultsEl.innerHTML = ''; return; }
+  document.getElementById('searchSpinner').style.display = 'inline';
+  searchDebounceTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(`${TMDB}/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(val.trim())}&include_adult=false`);
+      const data = await res.json();
+      document.getElementById('searchSpinner').style.display = 'none';
+      if (!data.results || data.results.length === 0) {
+        resultsEl.innerHTML = '<div class="tmdb-loading">No results yet…</div>';
+        return;
+      }
+      const top = data.results.slice(0, 6);
+      resultsEl.innerHTML = top.map(m => {
+        const year = m.release_date ? m.release_date.slice(0,4) : '?';
+        const poster = m.poster_path
+          ? `<img class="tmdb-result-poster" src="https://image.tmdb.org/t/p/w92${m.poster_path}" alt="">`
+          : `<div class="tmdb-result-poster-placeholder">NO IMG</div>`;
+        const overview = (m.overview||'').slice(0,100) + ((m.overview||'').length > 100 ? '…' : '');
+        return `<div class="tmdb-result" onclick="tmdbSelect(${m.id}, '${m.title.replace(/'/g,"\'").replace(/"/g,'\"')}')">
+          ${poster}
+          <div class="tmdb-result-info">
+            <div class="tmdb-result-title">${m.title}</div>
+            <div class="tmdb-result-meta">${year}${m.vote_average ? ' · ' + m.vote_average.toFixed(1) + ' TMDB' : ''}</div>
+            <div class="tmdb-result-overview">${overview}</div>
+          </div>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      document.getElementById('searchSpinner').style.display = 'none';
+      resultsEl.innerHTML = '<div class="tmdb-error">Search failed — check connection.</div>';
+    }
+  }, 280);
+}
+
+// Keep tmdbSearch as fallback (called by nothing now but harmless)
+async function tmdbSearch() { liveSearch(document.getElementById('f-search').value); }
+
+// ══════════════════════════════════════════
+// CALIBRATION
+// ══════════════════════════════════════════
+
+let calCategory = 'all';
+let calIntensity = 'focused';
+let calMatchups = [];
+let calMatchupIdx = 0;
+let calScoreDeltas = {}; // { movieTitle: { catKey: { old, new } } }
+const CAL_INTENSITY = { focused: 15, thorough: 30, deep: 50 };
+const ELO_K = 8; // how much each matchup shifts scores
+
+function selectCalCat(cat) {
+  calCategory = cat;
+  document.querySelectorAll('[id^="calcat_"]').forEach(el => el.className = 'company-chip');
+  document.getElementById('calcat_' + cat).className = 'company-chip checked';
+}
+
+function selectCalInt(intensity) {
+  calIntensity = intensity;
+  document.querySelectorAll('[id^="calint_"]').forEach(el => el.className = 'company-chip');
+  document.getElementById('calint_' + intensity).className = 'company-chip checked';
+}
+
+function generateMatchups(catKey, count) {
+  const pairs = [];
+  const cats = catKey === 'all' ? CATEGORIES.map(c => c.key) : [catKey];
+
+  cats.forEach(key => {
+    const films = MOVIES.filter(m => m.scores[key] != null)
+      .sort((a,b) => a.scores[key] - b.scores[key]);
+
+    // Generate pairs of films within 8 points of each other
+    for (let i = 0; i < films.length - 1; i++) {
+      for (let j = i + 1; j < films.length; j++) {
+        const diff = Math.abs(films[i].scores[key] - films[j].scores[key]);
+        if (diff <= 8) pairs.push({ a: films[i], b: films[j], catKey: key, diff });
+        else break;
+      }
+    }
+  });
+
+  // Shuffle and pick closest pairs first (most likely to be miscalibrated)
+  pairs.sort((a,b) => a.diff - b.diff);
+  // Deduplicate so same film doesn't appear too many times back-to-back
+  const seen = new Set();
+  const deduped = [];
+  for (const p of pairs) {
+    const key2 = [p.a.title, p.b.title, p.catKey].join('|');
+    if (!seen.has(key2)) { seen.add(key2); deduped.push(p); }
+  }
+  // Shuffle slightly to avoid always seeing the same order
+  const shuffled = deduped.sort(() => Math.random() - 0.5).slice(0, count);
+  return shuffled;
+}
+
+function startCalibration() {
+  const count = CAL_INTENSITY[calIntensity];
+  calMatchups = generateMatchups(calCategory, count);
+  if (calMatchups.length === 0) {
+    alert('Not enough films with close scores to calibrate. Try a different category or add more films.');
+    return;
+  }
+  calMatchupIdx = 0;
+  calScoreDeltas = {};
+  // Work on a temporary score copy so we don't modify MOVIES mid-session
+  calTempScores = {};
+  MOVIES.forEach(m => { calTempScores[m.title] = { ...m.scores }; });
+
+  document.getElementById('cal-setup').style.display = 'none';
+  document.getElementById('cal-matchups').style.display = 'block';
+  document.getElementById('cal-cat-label').textContent =
+    calCategory === 'all' ? 'All categories' :
+    CATEGORIES.find(c => c.key === calCategory)?.label || calCategory;
+  renderCalMatchup();
+}
+
+let calTempScores = {};
+
+function renderCalMatchup() {
+  if (calMatchupIdx >= calMatchups.length) { showCalReview(); return; }
+  const { a, b, catKey } = calMatchups[calMatchupIdx];
+  const total = calMatchups.length;
+  const pct = Math.round((calMatchupIdx / total) * 100);
+  document.getElementById('cal-progress-label').textContent = `Matchup ${calMatchupIdx + 1} of ${total}`;
+  document.getElementById('cal-progress-bar').style.width = pct + '%';
+
+  const catLabel = CATEGORIES.find(c => c.key === catKey)?.label || catKey;
+  const aScore = calTempScores[a.title]?.[catKey] ?? a.scores[catKey];
+  const bScore = calTempScores[b.title]?.[catKey] ?? b.scores[catKey];
+
+  document.getElementById('cal-matchup-card').innerHTML = `
+    <div class="hth-prompt">Which has better <em>${catLabel}</em>?</div>
+    <div class="hth-row">
+      <div class="hth-card" onclick="calChoose('a')">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${catLabel}</div>
+        <div class="hth-title">${a.title}</div>
+        <div class="hth-score">${a.year || ''}</div>
+        <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:var(--gold);margin-top:8px">${aScore}</div>
+      </div>
+      <div class="hth-vs">vs</div>
+      <div class="hth-card" onclick="calChoose('b')">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${catLabel}</div>
+        <div class="hth-title">${b.title}</div>
+        <div class="hth-score">${b.year || ''}</div>
+        <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:var(--gold);margin-top:8px">${bScore}</div>
+      </div>
+    </div>
+    <div class="hth-skip" onclick="calChoose('skip')">Too close to call — skip</div>
+  `;
+}
+
+function calChoose(choice) {
+  if (choice !== 'skip') {
+    const { a, b, catKey } = calMatchups[calMatchupIdx];
+    const aScore = calTempScores[a.title]?.[catKey] ?? a.scores[catKey];
+    const bScore = calTempScores[b.title]?.[catKey] ?? b.scores[catKey];
+
+    // Expected scores (Elo probability)
+    const expA = 1 / (1 + Math.pow(10, (bScore - aScore) / 40));
+    const expB = 1 - expA;
+    const actualA = choice === 'a' ? 1 : 0;
+    const actualB = 1 - actualA;
+
+    // New scores, clamped 1-100
+    const newA = Math.round(Math.min(100, Math.max(1, aScore + ELO_K * (actualA - expA))));
+    const newB = Math.round(Math.min(100, Math.max(1, bScore + ELO_K * (actualB - expB))));
+
+    // Track deltas
+    if (!calScoreDeltas[a.title]) calScoreDeltas[a.title] = {};
+    if (!calScoreDeltas[b.title]) calScoreDeltas[b.title] = {};
+
+    if (newA !== aScore) {
+      const original = calScoreDeltas[a.title][catKey]?.old ?? aScore;
+      calScoreDeltas[a.title][catKey] = { old: original, new: newA };
+      calTempScores[a.title][catKey] = newA;
+    }
+    if (newB !== bScore) {
+      const original = calScoreDeltas[b.title][catKey]?.old ?? bScore;
+      calScoreDeltas[b.title][catKey] = { old: original, new: newB };
+      calTempScores[b.title][catKey] = newB;
+    }
+  }
+  calMatchupIdx++;
+  renderCalMatchup();
+}
+
+function showCalReview() {
+  document.getElementById('cal-matchups').style.display = 'none';
+  document.getElementById('cal-review').style.display = 'block';
+
+  const entries = Object.entries(calScoreDeltas)
+    .flatMap(([title, cats]) =>
+      Object.entries(cats).map(([catKey, {old: o, new: n}]) => ({ title, catKey, old: o, new: n }))
+    )
+    .filter(e => e.old !== e.new)
+    .sort((a,b) => Math.abs(b.new - b.old) - Math.abs(a.new - a.old));
+
+  if (entries.length === 0) {
+    document.getElementById('cal-diff-list').innerHTML = `
+      <div style="text-align:center;padding:40px;color:var(--dim)">
+        <div style="font-family:'Playfair Display',serif;font-size:20px;margin-bottom:8px">Your list is well-calibrated.</div>
+        <div style="font-size:13px">No significant inconsistencies found.</div>
+      </div>`;
+    document.getElementById('cal-apply-btn').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('cal-apply-btn').style.display = '';
+  const catLabels = Object.fromEntries(CATEGORIES.map(c => [c.key, c.label]));
+
+  document.getElementById('cal-diff-list').innerHTML = `
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">
+      ${entries.length} score${entries.length !== 1 ? 's' : ''} would change
+    </div>
+    ${entries.map((e, i) => {
+      const dir = e.new > e.old ? 'up' : 'down';
+      const arrow = dir === 'up' ? '↑' : '↓';
+      const col = dir === 'up' ? 'var(--green)' : 'var(--red)';
+      const film = MOVIES.find(m => m.title === e.title);
+      return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--rule)">
+        <input type="checkbox" id="caldiff_${i}" checked style="width:16px;height:16px;accent-color:var(--gold);flex-shrink:0"
+          data-title="${e.title.replace(/"/g,'&quot;')}" data-cat="${e.catKey}" data-old="${e.old}" data-new="${e.new}">
+        <div style="flex:1">
+          <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:15px">${e.title}</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px">${catLabels[e.catKey]} · ${film?.year||''}</div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--dim)">${e.old}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;color:${col}">${arrow} ${e.new}</div>
+      </div>`;
+    }).join('')}
+  `;
+}
+
+function applyCalibration() {
+  const checkboxes = document.querySelectorAll('[id^="caldiff_"]');
+  let changed = 0;
+  checkboxes.forEach(cb => {
+    if (!cb.checked) return;
+    const title = cb.dataset.title;
+    const cat = cb.dataset.cat;
+    const newVal = parseInt(cb.dataset.new);
+    const film = MOVIES.find(m => m.title === title);
+    if (film && film.scores[cat] !== undefined) {
+      film.scores[cat] = newVal;
+      film.total = calcTotal(film.scores);
+      changed++;
+    }
+  });
+  saveToStorage();
+  updateStorageStatus();
+  renderRankings();
+  resetCalibration();
+  // Flash confirmation
+  alert(`Applied ${changed} score change${changed !== 1 ? 's' : ''}. Rankings updated.`);
+  // Go to rankings
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('rankings').classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.nav-btn[onclick*="rankings"]').classList.add('active');
+}
+
+function resetCalibration() {
+  calMatchups = []; calMatchupIdx = 0; calScoreDeltas = {}; calTempScores = {};
+  document.getElementById('cal-setup').style.display = 'block';
+  document.getElementById('cal-matchups').style.display = 'none';
+  document.getElementById('cal-review').style.display = 'none';
+  document.getElementById('cal-apply-btn').style.display = '';
+}
+
+// ══════════════════════════════════════════
+// EXPORT / RESET
+// ══════════════════════════════════════════
+function exportData() {
+
+  const blob = new Blob([JSON.stringify(MOVIES, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'film_rankings.json';
+  a.click();
+}
+
+function resetStorage() {
+  if (!confirm('Reset all added films back to the original 94? This cannot be undone.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+function updateStorageStatus() {
+  const added = MOVIES.length - 94;
+  const el = document.getElementById('storageStatus');
+  if (!el) return;
+  if (added > 0) {
+    el.textContent = `✓ ${added} added · auto-saved`;
+    el.style.color = 'var(--green)';
+  } else {
+    el.textContent = 'auto-save on';
+    el.style.color = 'var(--dim)';
+  }
+}
+
+// ══════════════════════════════════════════
+// SUPABASE INTEGRATION
+// ══════════════════════════════════════════
+
+const SUPABASE_URL = 'https://gzuuhjjedrzeqbgxhfip.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_OprjtxkrwknRf8jSZ7bYWg_GGqRiu4z';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null; // { id, username, display_name, archetype, archetype_secondary, weights, harmony_sensitivity }
+
+function setCloudStatus(state) {
+  // state: 'local' | 'syncing' | 'synced' | 'error'
+  const dot = document.getElementById('cloudDot');
+  const label = document.getElementById('cloudLabel');
+  dot.className = 'cloud-dot';
+  if (state === 'syncing') { dot.classList.add('syncing'); label.textContent = 'syncing…'; }
+  else if (state === 'synced') { dot.classList.add('synced'); label.textContent = currentUser ? currentUser.display_name : 'synced'; }
+  else if (state === 'error') { dot.classList.add('error'); label.textContent = 'offline'; }
+  else { label.textContent = 'local'; }
+}
+
+async function syncToSupabase() {
+  if (!currentUser) return;
+  setCloudStatus('syncing');
+  try {
+    const { error } = await sb.from('ledger_users').upsert({
+      id: currentUser.id,
+      username: currentUser.username,
+      display_name: currentUser.display_name,
+      archetype: currentUser.archetype,
+      archetype_secondary: currentUser.archetype_secondary,
+      weights: currentUser.weights,
+      harmony_sensitivity: currentUser.harmony_sensitivity || 0.3,
+      movies: MOVIES,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'id' });
+    if (error) throw error;
+    setCloudStatus('synced');
+    saveUserLocally();
+  } catch(e) {
+    console.warn('Supabase sync error:', e);
+    setCloudStatus('error');
+  }
+}
+
+async function loadFromSupabase(userId) {
+  setCloudStatus('syncing');
+  try {
+    const { data, error } = await sb.from('ledger_users').select('*').eq('id', userId).single();
+    if (error) throw error;
+    if (data) {
+      currentUser = {
+        id: data.id, username: data.username,
+        display_name: data.display_name, archetype: data.archetype,
+        archetype_secondary: data.archetype_secondary,
+        weights: data.weights, harmony_sensitivity: data.harmony_sensitivity
+      };
+      if (data.movies && Array.isArray(data.movies) && data.movies.length >= MOVIES.length) {
+        MOVIES.length = 0;
+        data.movies.forEach(m => MOVIES.push(m));
+      }
+      saveUserLocally();
+      applyUserWeights();
+      setCloudStatus('synced');
+      updateMastheadProfile();
+      renderRankings();
+      updateStorageStatus();
+    }
+  } catch(e) {
+    console.warn('Supabase load error:', e);
+    setCloudStatus('error');
+  }
+}
+
+function saveUserLocally() {
+  try { localStorage.setItem('ledger_user', JSON.stringify(currentUser)); } catch(e) {}
+}
+
+function loadUserLocally() {
+  try {
+    const u = localStorage.getItem('ledger_user');
+    if (u) currentUser = JSON.parse(u);
+  } catch(e) {}
+}
+
+function applyUserWeights() {
+  if (!currentUser || !currentUser.weights) return;
+  const w = currentUser.weights;
+  CATEGORIES.forEach(cat => {
+    if (w[cat.key] != null) cat.weight = w[cat.key];
+  });
+}
+
+function updateMastheadProfile() {
+  if (!currentUser) return;
+  const left = document.getElementById('mastheadLeft');
+  left.innerHTML = `<span class="profile-chip" onclick="showSyncPanel()">
+    <span style="font-size:9px">▾</span>
+    <strong style="color:var(--ink)">${currentUser.display_name}</strong>
+    &nbsp;·&nbsp; ${currentUser.archetype || 'film watcher'}
+  </span>`;
+}
+
+function showSyncPanel() {
+  if (!currentUser) {
+    launchOnboarding();
+    return;
+  }
+  const name = currentUser.display_name;
+  const arch = currentUser.archetype || '—';
+  const arch2 = currentUser.archetype_secondary || '—';
+  alert(`Signed in as: ${name}\nArchetype: ${arch} + ${arch2}\nUsername: ${currentUser.username}\n\nYour films sync automatically to the cloud.`);
+}
+
+// ══════════════════════════════════════════
+// ONBOARDING QUIZ
+// ══════════════════════════════════════════
+
+const OB_QUESTIONS = [
+  {
+    q: 'You finish a film that you admired more than you enjoyed. How do you rate it?',
+    options: [
+      { key: 'A', text: 'Rate it highly. The craft speaks for itself.' },
+      { key: 'B', text: 'Rate it somewhere in the middle. Both things are true.' },
+      { key: 'C', text: 'Rate it lower. If it didn\'t connect, something didn\'t work.' },
+      { key: 'D', text: 'Watch it again before deciding.' },
+    ]
+  },
+  {
+    q: 'A film you\'ve been completely absorbed in for two hours ends in a way that doesn\'t satisfy you. How much does that affect how you feel about the whole thing?',
+    options: [
+      { key: 'A', text: 'A lot. The ending is the argument. It reframes everything before it.' },
+      { key: 'B', text: 'Somewhat. It takes the edge off, but two great hours are still two great hours.' },
+      { key: 'C', text: 'Not much. I was there for the ride, not the destination.' },
+      { key: 'D', text: 'Depends on the film. Some endings are meant to be unresolved.' },
+    ]
+  },
+  {
+    q: 'Think about a film you\'ve seen multiple times. Is there a version of that experience — a specific night, a specific mood, a specific person you watched it with — that you remember more than the film itself?',
+    options: [
+      { key: 'A', text: 'Yes, and honestly that\'s a big part of why I love it.' },
+      { key: 'B', text: 'Maybe, but I try to rate the film on its own terms.' },
+      { key: 'C', text: 'Not really. A great film is great regardless of when you watch it.' },
+      { key: 'D', text: 'I don\'t rewatch much. I\'d rather see something new.' },
+    ]
+  },
+  {
+    q: 'It\'s a Sunday. You have the whole afternoon. You\'re scrolling through options and you see a film you\'ve seen probably four or five times already. Do you put it on?',
+    options: [
+      { key: 'A', text: 'Honestly, yeah. Sometimes that\'s exactly what the moment calls for.' },
+      { key: 'B', text: 'Only if I\'m in a specific mood for it. Otherwise I\'d rather find something new.' },
+      { key: 'C', text: 'Probably not. There\'s too much I haven\'t seen.' },
+      { key: 'D', text: 'Depends who I\'m watching with.' },
+    ]
+  },
+  {
+    q: 'Sometimes a performance makes you forget you\'re watching a film. You\'re not thinking about the script or the direction — you\'re just completely inside another person. How much does that experience shape how you feel about a film overall?',
+    options: [
+      { key: 'A', text: 'It\'s everything. A performance like that can carry a film for me.' },
+      { key: 'B', text: 'It elevates it, but I need the rest of the film to hold up too.' },
+      { key: 'C', text: 'I notice it, but it\'s one piece of a bigger picture.' },
+      { key: 'D', text: 'Honestly I\'m usually more absorbed by the world the film creates than the people in it.' },
+    ]
+  },
+  {
+    q: 'A film has one of the greatest performances you\'ve ever seen. The script around it is a mess. Where do you land?',
+    options: [
+      { key: 'A', text: 'Still a great film. That performance is the film.' },
+      { key: 'B', text: 'Good but frustrating. What could have been.' },
+      { key: 'C', text: 'The script drags it down significantly. A film is only as strong as its weakest part.' },
+      { key: 'D', text: 'Depends how bad the script is. There\'s a threshold.' },
+    ]
+  }
+];
+
+const ARCHETYPES = {
+  Visceralist:    { weights: { plot:2, execution:2, acting:2, production:1, enjoyability:5, rewatchability:3, ending:1, uniqueness:1 }, quote: '"If I\'m not feeling it, nothing else matters."' },
+  Formalist:      { weights: { plot:2, execution:4, acting:1, production:3, enjoyability:1, rewatchability:1, ending:1, uniqueness:3 }, quote: '"How you say it matters as much as what you say."' },
+  Narrativist:    { weights: { plot:4, execution:2, acting:2, production:1, enjoyability:1, rewatchability:1, ending:3, uniqueness:1 }, quote: '"A great story can survive almost anything."' },
+  Humanist:       { weights: { plot:2, execution:2, acting:4, production:1, enjoyability:3, rewatchability:1, ending:1, uniqueness:1 }, quote: '"I come for the story, I stay for the people."' },
+  Completionist:  { weights: { plot:2, execution:3, acting:1, production:1, enjoyability:1, rewatchability:1, ending:1, uniqueness:4 }, quote: '"I want something I\'ve never seen before."' },
+  Sensualist:     { weights: { plot:1, execution:4, acting:1, production:4, enjoyability:1, rewatchability:1, ending:1, uniqueness:2 }, quote: '"Cinema is first an aesthetic experience."' },
+  Revisionist:    { weights: { plot:1, execution:2, acting:1, production:1, enjoyability:1, rewatchability:4, ending:2, uniqueness:3 }, quote: '"My first watch is just the beginning."' },
+  Absolutist:     { weights: { plot:3, execution:2, acting:1, production:1, enjoyability:1, rewatchability:1, ending:4, uniqueness:2 }, quote: '"The ending is the argument."' },
+  Atmospherist:   { weights: { plot:1, execution:2, acting:1, production:2, enjoyability:3, rewatchability:5, ending:1, uniqueness:1 }, quote: '"The right film at the right moment is everything."' },
+};
+
+let obAnswers = {};
+let obStep = 0; // 'name' | 0..5 | 'reveal'
+let obDisplayName = '';
+
+function launchOnboarding() {
+  const overlay = document.getElementById('onboarding-overlay');
+  overlay.style.display = 'flex';
+  obStep = 'name';
+  obAnswers = {};
+  renderObStep();
+}
+
+function renderObStep() {
+  const card = document.getElementById('ob-card-content');
+  if (obStep === 'name') {
+    card.innerHTML = `
+      <div class="ob-eyebrow">ledger · onboarding</div>
+      <div class="ob-title">What do you call yourself?</div>
+      <div class="ob-sub">No account, no password. Just a name. Your ratings sync to the cloud under this identity. You can open ledger on any device and pick up where you left off.</div>
+      <input class="ob-name-input" id="ob-name-field" type="text" placeholder="e.g. Alex" maxlength="32" oninput="obCheckName()" onkeydown="if(event.key==='Enter') obSubmitName()">
+      <button class="ob-btn" id="ob-name-btn" onclick="obSubmitName()" disabled>Continue →</button>
+    `;
+    setTimeout(() => document.getElementById('ob-name-field')?.focus(), 50);
+  } else if (typeof obStep === 'number') {
+    const q = OB_QUESTIONS[obStep];
+    const pct = Math.round((obStep / 6) * 100);
+    card.innerHTML = `
+      <div class="ob-progress">Question ${obStep + 1} of 6</div>
+      <div class="ob-progress-bar"><div class="ob-progress-fill" style="width:${pct}%"></div></div>
+      <div class="ob-question">${q.q}</div>
+      ${q.options.map(o => `
+        <div class="ob-option ${obAnswers[obStep] === o.key ? 'selected' : ''}" onclick="obSelectAnswer(${obStep}, '${o.key}', this)">
+          <span class="ob-option-key">${o.key}</span>
+          <span class="ob-option-text">${o.text}</span>
+        </div>`).join('')}
+      <div class="ob-nav">
+        ${obStep > 0 ? `<button class="ob-btn-secondary" onclick="obBack()">← Back</button>` : ''}
+        <button class="ob-btn-primary" id="ob-next-btn" onclick="obNext()" ${obAnswers[obStep] ? '' : 'disabled'}>
+          ${obStep === 5 ? 'See my archetype →' : 'Next →'}
+        </button>
+      </div>
+    `;
+  } else if (obStep === 'reveal') {
+    const result = deriveArchetype(obAnswers);
+    const arch = ARCHETYPES[result.primary];
+    const arch2 = ARCHETYPES[result.secondary];
+    card.innerHTML = `
+      <div class="ob-eyebrow">Your taste profile</div>
+      <div class="ob-reveal">
+        <div class="ob-archetype-name">${result.primary}</div>
+        <div class="ob-archetype-quote">${arch.quote}</div>
+        ${result.secondary ? `<div style="font-size:13px;color:var(--dim);margin-bottom:4px">Secondary archetype</div>
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:20px;color:var(--ink);margin-bottom:20px">${result.secondary}</div>` : ''}
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:12px">Your scoring weights</div>
+      <div class="ob-weights-grid">
+        ${Object.entries(arch.weights).map(([k,v]) => `
+          <div class="ob-weight-row">
+            <span class="ob-weight-label">${k.charAt(0).toUpperCase()+k.slice(1)}</span>
+            <span class="ob-weight-val">×${v}</span>
+          </div>`).join('')}
+      </div>
+      <div class="ob-sub" style="margin-top:16px;margin-bottom:24px">Weights shape how your scores are calculated. You can adjust them anytime from the Rankings view.</div>
+      <button class="ob-btn" onclick="obFinish('${result.primary}', '${result.secondary || ''}', ${JSON.stringify(arch.weights)}, ${result.harmonySensitivity})">
+        Enter ledger →
+      </button>
+    `;
+  }
+}
+
+function obCheckName() {
+  const val = document.getElementById('ob-name-field')?.value?.trim();
+  const btn = document.getElementById('ob-name-btn');
+  if (btn) btn.disabled = !val || val.length < 1;
+}
+
+function obSubmitName() {
+  const val = document.getElementById('ob-name-field')?.value?.trim();
+  if (!val) return;
+  obDisplayName = val;
+  obStep = 0;
+  renderObStep();
+}
+
+function obSelectAnswer(qIdx, key, el) {
+  obAnswers[qIdx] = key;
+  el.closest('.ob-card').querySelectorAll('.ob-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  const nextBtn = document.getElementById('ob-next-btn');
+  if (nextBtn) nextBtn.disabled = false;
+}
+
+function obBack() {
+  if (obStep > 0) { obStep--; renderObStep(); }
+  else { obStep = 'name'; renderObStep(); }
+}
+
+function obNext() {
+  if (!obAnswers[obStep]) return;
+  if (obStep < 5) { obStep++; renderObStep(); }
+  else { obStep = 'reveal'; renderObStep(); }
+}
+
+function deriveArchetype(answers) {
+  // Score each archetype based on answer signals
+  const scores = {};
+  Object.keys(ARCHETYPES).forEach(a => scores[a] = 0);
+
+  // Q1
+  if (answers[0] === 'A') { scores.Formalist+=2; scores.Sensualist+=1; scores.Completionist+=1; }
+  if (answers[0] === 'C') { scores.Visceralist+=2; scores.Atmospherist+=1; }
+  if (answers[0] === 'D') { scores.Revisionist+=3; }
+  if (answers[0] === 'B') { scores.Narrativist+=1; scores.Humanist+=1; }
+
+  // Q2
+  if (answers[1] === 'A') { scores.Absolutist+=3; scores.Narrativist+=2; }
+  if (answers[1] === 'C') { scores.Visceralist+=2; scores.Atmospherist+=2; }
+  if (answers[1] === 'D') { scores.Completionist+=1; scores.Revisionist+=1; }
+  if (answers[1] === 'B') { scores.Humanist+=1; scores.Formalist+=1; }
+
+  // Q3
+  if (answers[2] === 'A') { scores.Atmospherist+=3; }
+  if (answers[2] === 'C') { scores.Formalist+=2; scores.Absolutist+=2; }
+  if (answers[2] === 'D') { scores.Completionist+=2; scores.Revisionist -= 1; }
+  if (answers[2] === 'B') { scores.Narrativist+=1; }
+
+  // Q4
+  if (answers[3] === 'A') { scores.Atmospherist+=2; scores.Revisionist+=2; }
+  if (answers[3] === 'C') { scores.Completionist+=3; }
+  if (answers[3] === 'D') { scores.Atmospherist+=1; }
+  if (answers[3] === 'B') { scores.Sensualist+=1; }
+
+  // Q5
+  if (answers[4] === 'A') { scores.Humanist+=3; scores.Visceralist+=1; }
+  if (answers[4] === 'D') { scores.Sensualist+=3; }
+  if (answers[4] === 'C') { scores.Formalist+=1; scores.Completionist+=1; }
+  if (answers[4] === 'B') { scores.Narrativist+=1; scores.Absolutist+=1; }
+
+  // Q6 — harmony sensitivity
+  let harmonySensitivity = 0.3;
+  if (answers[5] === 'A') { scores.Visceralist+=1; harmonySensitivity = 0.0; } // ceiling rater
+  if (answers[5] === 'C') { scores.Absolutist+=1; harmonySensitivity = 1.0; } // floor rater
+  if (answers[5] === 'B') { harmonySensitivity = 0.4; }
+  if (answers[5] === 'D') { harmonySensitivity = 0.3; }
+
+  const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+  return {
+    primary: sorted[0][0],
+    secondary: sorted[1][1] > 0 ? sorted[1][0] : null,
+    harmonySensitivity
+  };
+}
+
+async function obFinish(primary, secondary, weights, harmonySensitivity) {
+  // Generate a user ID and username
+  const id = crypto.randomUUID();
+  const slug = obDisplayName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Math.floor(Math.random()*9000+1000);
+
+  currentUser = {
+    id, username: slug,
+    display_name: obDisplayName,
+    archetype: primary,
+    archetype_secondary: secondary,
+    weights, harmony_sensitivity: harmonySensitivity
+  };
+
+  // Apply weights to CATEGORIES
+  applyUserWeights();
+
+  // Close overlay
+  document.getElementById('onboarding-overlay').style.display = 'none';
+  updateMastheadProfile();
+  renderRankings();
+  updateStorageStatus();
+
+  // Sync to Supabase in background
+  await syncToSupabase();
+}
+
+// ══════════════════════════════════════════
+// LOCALSTORAGE PERSISTENCE
+// ══════════════════════════════════════════
+
+const STORAGE_KEY = 'filmRankings_v1';
+const BASE_TITLES = new Set(MOVIES.map(m => m.title));
+
+function saveToStorage() {
+  // Only save films added beyond the original 94
+  const added = MOVIES.filter(m => !BASE_TITLES.has(m.title) || BASE_TITLES.has(m.title) && MOVIES.filter(x => x.title === m.title).length > 1);
+  // Actually save the full list so edits to existing films persist too
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(MOVIES));
+  } catch(e) {
+    console.warn('localStorage save failed:', e);
+  }
+}
+
+function loadFromStorage() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return;
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed) || parsed.length === 0) return;
+    // If saved list is larger than base, use it (has user additions)
+    if (parsed.length >= MOVIES.length) {
+      MOVIES.length = 0;
+      parsed.forEach(m => MOVIES.push(m));
+      console.log(`Loaded ${MOVIES.length} films from localStorage`);
+    }
+  } catch(e) {
+    console.warn('localStorage load failed:', e);
+  }
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+loadFromStorage();
+
+// Check for existing user session
+loadUserLocally();
+if (currentUser) {
+  // Returning user — load from Supabase, fall back to localStorage
+  setCloudStatus('syncing');
+  updateMastheadProfile();
+  applyUserWeights();
+  loadFromSupabase(currentUser.id).catch(() => setCloudStatus('error'));
+} else {
+  // New user — show onboarding after a brief delay
+  setCloudStatus('local');
+  setTimeout(() => launchOnboarding(), 400);
+}
+
+// Override saveToStorage to also sync to Supabase
+const _origSaveToStorage = saveToStorage;
+function saveToStorage() {
+  _origSaveToStorage();
+  if (currentUser) {
+    clearTimeout(saveToStorage._syncTimer);
+    saveToStorage._syncTimer = setTimeout(() => syncToSupabase(), 2000);
+  }
+}
+
+renderRankings();
+updateStorageStatus();
+
+</script>
+</body>
+</html>
