@@ -110,15 +110,16 @@ function shareCard(user, movies) {
   const avgTotal = movies.length ? (movies.reduce((s, m) => s + m.total, 0) / movies.length).toFixed(1) : '—';
   const arch = ARCHETYPES[user.archetype] || {};
   return `
-    <div style="width:320px;border:1px solid var(--ink);padding:28px 24px 20px;background:var(--paper)">
-      <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:20px">palate map · taste profile</div>
-      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:26px;color:var(--ink);line-height:1;margin-bottom:4px">${user.display_name}</div>
-      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-bottom:16px">${user.username}</div>
-      <div style="border-top:2px solid var(--ink);padding:10px 0;margin-bottom:12px">
-        <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:20px;color:var(--blue);margin-bottom:4px">${user.archetype}</div>
-        ${user.archetype_secondary ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-bottom:8px">+ ${user.archetype_secondary}</div>` : '<div style="margin-bottom:8px"></div>'}
-        <div style="font-family:'DM Sans',sans-serif;font-size:11px;line-height:1.65;color:var(--dim)">${arch.description || ''}</div>
+    <div style="width:320px;border:1px solid var(--ink);background:var(--paper);overflow:hidden">
+      <div style="background:var(--surface-dark);padding:20px 24px 20px;border-bottom:3px solid ${arch.palette || '#3d5a80'}">
+        <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:14px">palate map</div>
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;color:var(--on-dark);line-height:1;margin-bottom:4px">${user.display_name}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);margin-bottom:14px">${user.username}</div>
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:22px;color:${arch.palette || 'var(--on-dark)'};margin-bottom:4px">${user.archetype}</div>
+        ${user.archetype_secondary ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim)">+ ${user.archetype_secondary}</div>` : ''}
       </div>
+      <div style="padding:16px 24px">
+        <div style="font-family:'DM Sans',sans-serif;font-size:11px;line-height:1.65;color:var(--dim);margin-bottom:12px">${arch.description || ''}</div>
       <div style="border-top:1px solid var(--rule);padding-top:12px;margin-bottom:4px">
         ${top3.map(m => `<div style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--ink);margin-bottom:5px;display:flex;justify-content:space-between"><span>${m.title}</span><span style="color:var(--dim);font-family:'DM Mono',monospace;font-size:10px">${m.total}</span></div>`).join('')}
       </div>
@@ -126,6 +127,7 @@ function shareCard(user, movies) {
         <span>${movies.length} films</span>
         <span>avg ${avgTotal}</span>
         <span>palatemap.com</span>
+      </div>
       </div>
     </div>
   `;
@@ -163,9 +165,9 @@ export function renderProfile() {
       <!-- ARCHETYPE -->
       <div style="margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--rule)">
         <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">Palate</div>
-        <div style="background:var(--surface-dark);padding:28px 32px;margin-bottom:20px">
+        <div style="background:var(--surface-dark);padding:28px 32px;margin-bottom:20px;border-top:3px solid ${arch.palette || '#3d5a80'}">
           <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:10px">primary</div>
-          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:40px;color:var(--on-dark);line-height:1;margin-bottom:14px">${user.archetype}</div>
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:40px;color:${arch.palette || 'var(--on-dark)'};line-height:1;margin-bottom:14px">${user.archetype}</div>
           ${user.archetype_secondary ? `
           <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:6px;margin-top:16px">secondary</div>
           <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:22px;color:var(--on-dark);opacity:0.75">${user.archetype_secondary}</div>` : ''}

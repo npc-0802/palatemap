@@ -6,8 +6,8 @@
 <title>Palate Map — taste intelligence</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" crossorigin src="/assets/index-BNtVdzm2.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-W5BqMrH6.css">
+  <script type="module" crossorigin src="/assets/index-9zggKt5p.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-P1UgwFX5.css">
 </head>
 <body>
 
@@ -239,54 +239,65 @@
   <div style="max-width:760px;margin:0 auto">
 
     <div id="cal-setup">
-      <h2 style="font-family:'Playfair Display',serif;font-style:italic;font-size:36px;font-weight:900;letter-spacing:-1px;margin-bottom:6px">Calibration</h2>
-      <p style="color:var(--dim);font-size:13px;margin-bottom:32px;line-height:1.7">The app finds films with similar scores and pits them head-to-head. Your answers recalculate scores using Elo math, then you review every proposed change before anything is saved.</p>
-
-      <div style="margin-bottom:24px">
-        <div class="field-label" style="margin-bottom:10px">Which category to calibrate?</div>
-        <div id="cal-cat-picker" style="display:flex;flex-wrap:wrap;gap:8px">
-          <div class="company-chip checked" id="calcat_all" onclick="selectCalCat('all')">All Categories</div>
-          <div class="company-chip" id="calcat_plot" onclick="selectCalCat('plot')">Plot</div>
-          <div class="company-chip" id="calcat_execution" onclick="selectCalCat('execution')">Execution</div>
-          <div class="company-chip" id="calcat_acting" onclick="selectCalCat('acting')">Acting</div>
-          <div class="company-chip" id="calcat_production" onclick="selectCalCat('production')">Production</div>
-          <div class="company-chip" id="calcat_enjoyability" onclick="selectCalCat('enjoyability')">Enjoyability</div>
-          <div class="company-chip" id="calcat_rewatchability" onclick="selectCalCat('rewatchability')">Rewatchability</div>
-          <div class="company-chip" id="calcat_ending" onclick="selectCalCat('ending')">Ending</div>
-          <div class="company-chip" id="calcat_uniqueness" onclick="selectCalCat('uniqueness')">Uniqueness</div>
-        </div>
+      <div style="margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid var(--ink)">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);margin-bottom:10px">refine your scores</div>
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(32px,4vw,48px);line-height:1;color:var(--ink);letter-spacing:-1px;margin-bottom:10px">Recalibrate.</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.7;color:var(--dim);max-width:480px">Two films, one question. Your instincts sharpen your scores through head-to-head matchups — no math required.</div>
       </div>
 
       <div style="margin-bottom:28px">
-        <div class="field-label" style="margin-bottom:10px">Intensity</div>
-        <div style="display:flex;gap:10px">
-          <div class="company-chip checked" id="calint_focused" onclick="selectCalInt('focused')">Focused — 15 matchups</div>
-          <div class="company-chip" id="calint_thorough" onclick="selectCalInt('thorough')">Thorough — 30 matchups</div>
-          <div class="company-chip" id="calint_deep" onclick="selectCalInt('deep')">Deep dive — 50 matchups</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:14px">Category</div>
+        <div id="cal-cat-picker" style="display:flex;flex-wrap:wrap;gap:6px">
+          <button class="sort-pill active" id="calcat_all" onclick="selectCalCat('all')">All</button>
+          <button class="sort-pill" id="calcat_plot" onclick="selectCalCat('plot')">Plot</button>
+          <button class="sort-pill" id="calcat_execution" onclick="selectCalCat('execution')">Exec</button>
+          <button class="sort-pill" id="calcat_acting" onclick="selectCalCat('acting')">Acting</button>
+          <button class="sort-pill" id="calcat_production" onclick="selectCalCat('production')">Prod</button>
+          <button class="sort-pill" id="calcat_enjoyability" onclick="selectCalCat('enjoyability')">Enjoy</button>
+          <button class="sort-pill" id="calcat_rewatchability" onclick="selectCalCat('rewatchability')">Rewatch</button>
+          <button class="sort-pill" id="calcat_ending" onclick="selectCalCat('ending')">Ending</button>
+          <button class="sort-pill" id="calcat_uniqueness" onclick="selectCalCat('uniqueness')">Unique</button>
         </div>
       </div>
 
-      <button class="btn btn-action" onclick="startCalibration()" style="font-size:15px;padding:14px 32px">Begin Calibration →</button>
+      <div style="margin-bottom:36px">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:14px">Rounds</div>
+        <div style="display:flex;gap:10px">
+          <div class="cal-intensity active" id="calint_focused" onclick="selectCalInt('focused')">
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;line-height:1;margin-bottom:4px">15</div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim)">Quick</div>
+          </div>
+          <div class="cal-intensity" id="calint_thorough" onclick="selectCalInt('thorough')">
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;line-height:1;margin-bottom:4px">30</div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim)">Standard</div>
+          </div>
+          <div class="cal-intensity" id="calint_deep" onclick="selectCalInt('deep')">
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;line-height:1;margin-bottom:4px">50</div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim)">Deep</div>
+          </div>
+        </div>
+      </div>
+
+      <button onclick="startCalibration()" style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:16px 40px;cursor:pointer;transition:opacity 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Begin →</button>
     </div>
 
     <div id="cal-matchups" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim)" id="cal-progress-label">Matchup 1 of 15</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim)" id="cal-progress-label"></div>
         <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)" id="cal-cat-label"></div>
       </div>
-      <div style="height:3px;background:var(--rule);border-radius:2px;margin-bottom:28px">
-        <div id="cal-progress-bar" style="height:100%;background:var(--blue);border-radius:2px;transition:width 0.3s;width:0%"></div>
+      <div style="height:2px;background:var(--rule);margin-bottom:32px">
+        <div id="cal-progress-bar" style="height:100%;background:var(--ink);transition:width 0.3s;width:0%"></div>
       </div>
       <div id="cal-matchup-card"></div>
     </div>
 
     <div id="cal-review" style="display:none">
-      <h2 style="font-family:'Playfair Display',serif;font-style:italic;font-size:30px;font-weight:900;letter-spacing:-1px;margin-bottom:6px">Review proposed changes</h2>
-      <p style="color:var(--dim);font-size:13px;margin-bottom:24px">Uncheck anything you want to keep as-is. Changes are only applied when you hit Apply.</p>
+      <div id="cal-review-header" style="margin-bottom:24px;padding-bottom:20px;border-bottom:2px solid var(--ink)"></div>
       <div id="cal-diff-list"></div>
       <div class="btn-row">
         <button class="btn btn-outline" onclick="resetCalibration()">← Start over</button>
-        <button class="btn btn-primary" onclick="applyCalibration()" id="cal-apply-btn">Apply Changes ✓</button>
+        <button class="btn btn-primary" onclick="applyCalibration()" id="cal-apply-btn">Apply changes</button>
       </div>
     </div>
 

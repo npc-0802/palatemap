@@ -103,19 +103,20 @@ function renderObStep() {
       obRevealResult._slug = obDisplayName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Math.floor(Math.random()*9000+1000);
     }
     const arch = ARCHETYPES[result.primary];
+    const palColor = arch.palette || '#3d5a80';
     card.innerHTML = `
-      <div class="ob-eyebrow">your taste profile</div>
-      <div class="ob-reveal">
-        <div class="ob-archetype-name">${result.primary}</div>
-        <div class="ob-archetype-desc">${arch.description}</div>
-        <div class="ob-archetype-quote">${arch.quote}</div>
+      <div class="ob-eyebrow">your palate</div>
+      <div style="background:var(--surface-dark);padding:28px 32px;margin:16px -4px 20px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:10px">you are —</div>
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(36px,8vw,56px);line-height:1;letter-spacing:-1px;color:${palColor};margin-bottom:16px">${result.primary}</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.75;color:var(--on-dark);margin-bottom:12px;opacity:0.85">${arch.description}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--on-dark-dim);letter-spacing:0.5px">${arch.quote}</div>
         ${result.secondary ? `
-        <div style="margin-top:8px">
-          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--dim);margin-bottom:4px">Secondary archetype</div>
-          <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:22px;color:var(--ink)">${result.secondary}</div>
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(244,239,230,0.1)">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:6px">secondary</div>
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:22px;color:var(--on-dark);opacity:0.75">${result.secondary}</div>
         </div>` : ''}
       </div>
-      <div style="border-top:1px solid var(--rule);margin:28px 0 20px"></div>
       <div style="background:var(--card-bg);border:1px solid var(--rule);padding:12px 16px;margin-bottom:24px;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim)">
         Your username: <strong style="color:var(--ink)" id="ob-reveal-username">—</strong><br>
         <span style="font-size:10px">Save this to restore your profile on any device.</span>
