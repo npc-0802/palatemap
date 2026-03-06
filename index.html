@@ -1957,7 +1957,6 @@ function applyCalibration() {
     console.log('changed:', changed);
     recalcAllTotals();
     saveToStorage();
-    syncToSupabase().catch(e => console.warn('sync error:', e));
     updateStorageStatus();
     renderRankings();
     // Go to rankings
@@ -2544,13 +2543,14 @@ const STORAGE_KEY = 'filmRankings_v1';
 const BASE_TITLES = new Set(OWNER_MOVIES.map(m => m.title));
 
 function saveToStorage() {
-  // Only save films added beyond the original 94
-  const added = MOVIES.filter(m => !BASE_TITLES.has(m.title) || BASE_TITLES.has(m.title) && MOVIES.filter(x => x.title === m.title).length > 1);
-  // Actually save the full list so edits to existing films persist too
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(MOVIES));
   } catch(e) {
     console.warn('localStorage save failed:', e);
+  }
+  if (currentUser) {
+    clearTimeout(saveToStorage._syncTimer);
+    saveToStorage._syncTimer = setTimeout(() => syncToSupabase(), 2000);
   }
 }
 
@@ -2585,16 +2585,6 @@ if (currentUser) {
   // New user — show onboarding after a brief delay
   setCloudStatus('local');
   setTimeout(() => launchOnboarding(), 400);
-}
-
-// Override saveToStorage to also sync to Supabase
-const _origSaveToStorage = saveToStorage;
-function saveToStorage() {
-  _origSaveToStorage();
-  if (currentUser) {
-    clearTimeout(saveToStorage._syncTimer);
-    saveToStorage._syncTimer = setTimeout(() => syncToSupabase(), 2000);
-  }
 }
 
 renderRankings();
