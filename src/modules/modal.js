@@ -41,14 +41,39 @@ function renderModal() {
   const chip = (label, type, value) =>
     `<span class="modal-meta-chip" onclick="exploreEntity('${type}','${value.replace(/'/g, String.fromCharCode(39))}')">${label}</span>`;
 
+  // Merge consecutive single-word names (handles split "Sean","Astin" → "Sean Astin")
+  function mergeSplitNames(arr) {
+    const out = [];
+    let i = 0;
+    while (i < arr.length) {
+      if (!arr[i].includes(' ') && arr[i+1] && !arr[i+1].includes(' ')) {
+        out.push(arr[i] + ' ' + arr[i+1]); i += 2;
+      } else { out.push(arr[i]); i++; }
+    }
+    return out;
+  }
+
   const directorChips = (m.director||'').split(',').map(d=>d.trim()).filter(Boolean).map(d=>chip(d,'director',d)).join('');
   const writerChips = (m.writer||'').split(',').map(w=>w.trim()).filter(Boolean).map(w=>chip(w,'writer',w)).join('');
-  const castChips = (m.cast||'').split(',').map(c=>c.trim()).filter(Boolean).map(c=>chip(c,'actor',c)).join('');
+  const castChips = mergeSplitNames((m.cast||'').split(',').map(c=>c.trim()).filter(Boolean)).map(c=>chip(c,'actor',c)).join('');
   const companyChips = (m.productionCompanies||'').split(',').map(c=>c.trim()).filter(Boolean).map(c=>chip(c,'company',c)).join('');
 
-  const posterHtml = m.poster
-    ? `<img class="modal-poster" src="https://image.tmdb.org/t/p/w780${m.poster}" alt="${m.title}">`
-    : `<div class="modal-poster-placeholder">${m.title} · ${m.year||''}</div>`;
+  const headerHtml = m.poster
+    ? `<div style="position:relative;display:flex;align-items:stretch;background:var(--surface-dark);margin:-40px -40px 28px;padding:28px 32px">
+         <button onclick="closeModal()" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--on-dark-dim);line-height:1;padding:4px 8px;transition:color 0.15s" onmouseover="this.style.color='var(--on-dark)'" onmouseout="this.style.color='var(--on-dark-dim)'">×</button>
+         <img style="width:100px;height:150px;object-fit:cover;flex-shrink:0;display:block" src="https://image.tmdb.org/t/p/w342${m.poster}" alt="">
+         <div style="flex:1;padding:0 40px 0 20px;display:flex;flex-direction:column;justify-content:flex-end">
+           <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px">Rank #${rank} of ${MOVIES.length}</div>
+           <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(20px,3.5vw,30px);line-height:1.1;color:var(--on-dark);letter-spacing:-0.5px;margin-bottom:8px">${m.title}</div>
+           <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--on-dark-dim)">${m.year||''}</div>
+         </div>
+       </div>`
+    : `<div style="position:relative;background:var(--surface-dark);margin:-40px -40px 28px;padding:32px 40px 28px">
+         <button onclick="closeModal()" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--on-dark-dim);line-height:1;padding:4px 8px">×</button>
+         <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px">Rank #${rank} of ${MOVIES.length}</div>
+         <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(20px,3.5vw,30px);line-height:1.1;color:var(--on-dark);letter-spacing:-0.5px;margin-bottom:8px">${m.title}</div>
+         <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--on-dark-dim)">${m.year||''}</div>
+       </div>`;
 
   const scores = editMode ? editScores : m.scores;
   const previewTotal = editMode ? calcTotal(editScores) : m.total;
@@ -81,11 +106,7 @@ function renderModal() {
   }).join('');
 
   document.getElementById('modalContent').innerHTML = `
-    ${posterHtml}
-    <button class="modal-close" onclick="closeModal()" style="position:sticky;top:8px;float:right;z-index:10">×</button>
-    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">Rank #${rank} of ${MOVIES.length}</div>
-    <div class="modal-title">${m.title}</div>
-    <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);margin-bottom:16px">${m.year||''}</div>
+    ${headerHtml}
     ${m.overview ? `<div class="modal-overview">${m.overview}</div>` : ''}
     <div style="margin-bottom:20px">
       ${directorChips ? `<div style="margin-bottom:8px"><span style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);margin-right:8px">Dir.</span>${directorChips}</div>` : ''}
