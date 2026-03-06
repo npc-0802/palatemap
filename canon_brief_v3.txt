@@ -1,5 +1,5 @@
 canon
-Product Brief · Living Document · v3.0
+Product Brief · Living Document · v3.1
 Last updated: March 2026
 Confidential — do not distribute
 
@@ -33,7 +33,7 @@ Design Principles
 • Mobile: currently desktop-first. Responsive pass is Phase 4.
 
 03  Current Architecture
-Status: Phase 0.1 complete — Vite multi-file structure. No React (see section 04).
+Status: Phase 1.3 complete — Vite multi-file structure. No React (see section 04).
 
 File Structure
 canon/  (formerly ledger/)
@@ -43,7 +43,7 @@ canon/  (formerly ledger/)
     state.js           shared state: MOVIES, currentUser, CATEGORIES
     data/
       movies.js        94 baseline films (owner only, with TMDB posters/overviews)
-      archetypes.js    9 archetypes + weights + OB_QUESTIONS
+      archetypes.js    9 archetypes + weights + descriptions + OB_QUESTIONS
       categories.js    8 scoring categories
     modules/
       rankings.js      sortable table, row rendering
@@ -53,7 +53,8 @@ canon/  (formerly ledger/)
       calibrate.js     Elo calibration system
       analysis.js      analysis screen
       onboarding.js    quiz, archetype reveal, import, cold landing flow
-      archetypemodal.js  profile modal, weight editor, sign out
+      profile.js        taste profile screen (fingerprint, radar, signature films, card)
+      archetypemodal.js  weight editor modal, sign out
       supabase.js      all cloud sync logic
       storage.js       localStorage helpers
     styles/
@@ -118,7 +119,7 @@ Cold Landing
 Full-screen overlay for new/logged-out users. Headline: "Make it canon." Supporting copy: "Everyone has a palate. The films you love are trying to tell you something about yourself. Canon listens — and shows you the pattern." Single persimmon CTA: "Discover your taste →". Footer note: "Starting with film. Expanding to everything."
 
 Onboarding (3 entry points)
-New user: cold landing → name → poetic intro + 6-question quiz → archetype reveal (shows username — save it!) → Enter canon.
+New user: cold landing → name → poetic intro + 6-question quiz → archetype reveal (name + description + quote + secondary + username — save it!) → Enter canon.
 Returning user: username lookup → fetches profile + films from Supabase → loads directly.
 Import: drag-and-drop film_rankings.json → validates → loads MOVIES → proceeds to quiz.
 
@@ -143,8 +144,17 @@ Elo-based head-to-head system. Choose category + intensity (15/30/50 matchups). 
 Add Film
 4-step: TMDB search → cast/crew/company curation → 8-category scoring (sliders + head-to-head comparison) → result. Poster and overview saved on film push.
 
-Profile / Archetype Modal
-Click username in masthead. Shows archetype, secondary, username. Weight inputs editable with live bar preview. Save immediately recalcs all totals + syncs. Sign out button clears localStorage and reloads to cold landing.
+Profile Screen
+Nav screen. Sections: archetype deep-dive (name, description, quote, secondary), taste fingerprint (radar chart of weights vs archetype baseline + avg score bars per category + key stats), signature films (top 5 by total, clickable), Canon Card (shareable screenshot card with archetype description). Sign out at bottom.
+
+Archetype / Weight Editor Modal
+Accessible via "Edit weights →" in Profile screen. Weight inputs with live bar preview. Save recalcs all totals + syncs. Sign out also available here.
+
+Masthead
+Clicking display name navigates to Profile screen.
+
+Empty State (Rankings)
+When 0 films: 60vh centered CTA — "Start with one you love." + persimmon "Rate your first film →" button. Column headers hidden.
 
 07  Known Issues & Tech Debt
 • Production companies missing from 94 baseline films — needs TMDB backfill pass.
@@ -159,11 +169,11 @@ Phase 0 — Foundation [COMPLETE]
 • 0.2 Git + GitHub Pages setup. ✓
 • 0.3 Backfill posters + overviews for 94 baseline films. ✓
 
-Phase 1 — Identity & Value Prop [IN PROGRESS]
-• 1.1 Product narrative reframe + Canon rebrand. ✓ (cold landing, masthead, onboarding copy)
-• 1.2 Onboarding rewrite — feels like a personality reveal. In progress.
-• 1.3 Taste identity / profile screen — full screen taste fingerprint, signature films, archetype deep-dive, shareable card.
-• 1.4 Cold landing experience — complete. ✓
+Phase 1 — Identity & Value Prop [COMPLETE]
+• 1.1 Product narrative reframe + Canon rebrand. ✓
+• 1.2 Onboarding rewrite — archetype reveal redesigned, descriptions added, feels like a personality reveal. ✓
+• 1.3 Taste identity / profile screen — fingerprint, radar chart, signature films, shareable card. ✓
+• 1.4 Cold landing experience. ✓
 
 Phase 2 — Polish [Depends on: Phase 1]
 • 2.1 UI design pass — spacing system, card treatments, interaction states.
