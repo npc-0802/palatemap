@@ -1,0 +1,274 @@
+import { MOVIES, CATEGORIES, currentUser, scoreClass, getLabel, calcTotal } from '../state.js';
+
+const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
+const TMDB = 'https://api.themoviedb.org/3';
+const PROXY_URL = 'https://ledger-proxy.noahparikhcott.workers.dev';
+
+let predictDebounceTimer = null;
+let predictSelectedFilm = null;
+
+export function initPredict() {
+  document.getElementById('predict-search').value = '';
+  document.getElementById('predict-search-results').innerHTML = '';
+  document.getElementById('predict-result').innerHTML = '';
+  predictSelectedFilm = null;
+  setTimeout(() => document.getElementById('predict-search')?.focus(), 50);
+}
+
+export function predictSearchDebounce() {
+  clearTimeout(predictDebounceTimer);
+  predictDebounceTimer = setTimeout(predictSearch, 500);
+}
+
+export async function predictSearch() {
+  const q = document.getElementById('predict-search').value.trim();
+  if (!q || q.length < 2) return;
+  const resultsEl = document.getElementById('predict-search-results');
+  resultsEl.innerHTML = `<div class="tmdb-loading">Searching…</div>`;
+  try {
+    const res = await fetch(`${TMDB}/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}&language=en-US&page=1`);
+    const data = await res.json();
+    const results = (data.results || []).slice(0, 5);
+    if (!results.length) { resultsEl.innerHTML = `<div class="tmdb-error">No results found.</div>`; return; }
+
+    const myTitles = new Set(MOVIES.map(m => m.title.toLowerCase()));
+
+    resultsEl.innerHTML = results.map(m => {
+      const year = m.release_date?.slice(0,4) || '';
+      const poster = m.poster_path
+        ? `<img class="tmdb-result-poster" src="https://image.tmdb.org/t/p/w92${m.poster_path}">`
+        : `<div class="tmdb-result-poster-placeholder">no img</div>`;
+      const alreadyRated = myTitles.has(m.title.toLowerCase());
+      return `<div class="tmdb-result ${alreadyRated ? 'opacity-50' : ''}" onclick="${alreadyRated ? '' : `predictSelectFilm(${m.id}, '${m.title.replace(/'/g,"\\'")}', '${year}')`}" style="${alreadyRated ? 'opacity:0.4;cursor:default' : ''}">
+        ${poster}
+        <div class="tmdb-result-info">
+          <div class="tmdb-result-title">${m.title}</div>
+          <div class="tmdb-result-meta">${year}${alreadyRated ? ' · already in your list' : ''}</div>
+          <div class="tmdb-result-overview">${(m.overview||'').slice(0,100)}${m.overview?.length > 100 ? '…':''}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    resultsEl.innerHTML = `<div class="tmdb-error">Search failed — check connection.</div>`;
+  }
+}
+
+export async function predictSelectFilm(tmdbId, title, year) {
+  document.getElementById('predict-search-results').innerHTML = '';
+  document.getElementById('predict-search').value = title;
+  document.getElementById('predict-result').innerHTML = `
+    <div class="predict-loading">
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:22px;color:var(--dim)">Analysing your taste profile…</div>
+      <div class="predict-loading-label">Reading ${MOVIES.length} films · building your fingerprint · predicting scores</div>
+    </div>`;
+
+  let detail = {}, credits = {};
+  try {
+    const [dRes, cRes] = await Promise.all([
+      fetch(`${TMDB}/movie/${tmdbId}?api_key=${TMDB_KEY}`),
+      fetch(`${TMDB}/movie/${tmdbId}/credits?api_key=${TMDB_KEY}`)
+    ]);
+    detail = await dRes.json();
+    credits = await cRes.json();
+  } catch(e) {}
+
+  const director = (credits.crew||[]).filter(c=>c.job==='Director').map(c=>c.name).join(', ');
+  const writer = (credits.crew||[]).filter(c=>['Screenplay','Writer','Story'].includes(c.job)).map(c=>c.name).slice(0,2).join(', ');
+  const cast = (credits.cast||[]).slice(0,8).map(c=>c.name).join(', ');
+  const genres = (detail.genres||[]).map(g=>g.name).join(', ');
+  const overview = detail.overview || '';
+  const poster = detail.poster_path || null;
+
+  predictSelectedFilm = { tmdbId, title, year, director, writer, cast, genres, overview, poster };
+  await runPrediction(predictSelectedFilm);
+}
+
+function buildTasteProfile() {
+  const cats = ['plot','execution','acting','production','enjoyability','rewatchability','ending','uniqueness'];
+  const stats = {};
+  cats.forEach(cat => {
+    const vals = MOVIES.filter(m => m.scores[cat] != null).map(m => m.scores[cat]);
+    if (!vals.length) { stats[cat] = { mean: 70, std: 10, min: 0, max: 100 }; return; }
+    const mean = vals.reduce((s,v)=>s+v,0) / vals.length;
+    const std = Math.sqrt(vals.reduce((s,v)=>s+(v-mean)**2,0) / vals.length);
+    stats[cat] = { mean: Math.round(mean*10)/10, std: Math.round(std*10)/10, min: Math.min(...vals), max: Math.max(...vals) };
+  });
+
+  const sorted = [...MOVIES].sort((a,b) => b.total - a.total);
+  const top10 = sorted.slice(0,10).map(m => `${m.title} (${m.total})`).join(', ');
+  const bottom5 = sorted.slice(-5).map(m => `${m.title} (${m.total})`).join(', ');
+  const weightStr = CATEGORIES.map(c => `${c.label}×${c.weight}`).join(', ');
+
+  return { stats, top10, bottom5, weightStr, archetype: currentUser?.archetype, archetypeSecondary: currentUser?.archetype_secondary, totalFilms: MOVIES.length };
+}
+
+function findComparableFilms(film) {
+  const directorNames = (film.director||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const castNames = (film.cast||'').split(',').map(s=>s.trim()).filter(Boolean);
+  return MOVIES.filter(m => {
+    const mDirectors = (m.director||'').split(',').map(s=>s.trim());
+    const mCast = (m.cast||'').split(',').map(s=>s.trim());
+    return directorNames.some(d => mDirectors.includes(d)) || castNames.some(c => mCast.includes(c));
+  }).sort((a,b) => b.total - a.total).slice(0,8);
+}
+
+async function runPrediction(film) {
+  const profile = buildTasteProfile();
+  const comps = findComparableFilms(film);
+
+  const compStr = comps.length
+    ? comps.map(m => `- ${m.title} (${m.year||''}): total=${m.total}, plot=${m.scores.plot}, execution=${m.scores.execution}, acting=${m.scores.acting}, production=${m.scores.production}, enjoyability=${m.scores.enjoyability}, rewatchability=${m.scores.rewatchability}, ending=${m.scores.ending}, uniqueness=${m.scores.uniqueness}`).join('\n')
+    : 'No direct comparisons found in rated list.';
+
+  const statsStr = Object.entries(profile.stats).map(([k,v]) =>
+    `${k}: mean=${v.mean}, std=${v.std}, range=${v.min}–${v.max}`
+  ).join('\n');
+
+  const systemPrompt = `You are a precise film taste prediction engine. Your job is to predict how a specific user would score an unrated film, based on their detailed rating history and taste profile. You must respond ONLY with valid JSON — no preamble, no markdown, no explanation outside the JSON.`;
+
+  const userPrompt = `USER TASTE PROFILE:
+Archetype: ${profile.archetype || 'unknown'} (secondary: ${profile.archetypeSecondary || 'none'})
+Total films rated: ${profile.totalFilms}
+Weighting formula: ${profile.weightStr}
+
+Category score statistics (across all rated films):
+${statsStr}
+
+Top 10 films: ${profile.top10}
+Bottom 5 films: ${profile.bottom5}
+
+FILMS WITH SHARED DIRECTOR/CAST (most relevant comparisons):
+${compStr}
+
+FILM TO PREDICT:
+Title: ${film.title}
+Year: ${film.year}
+Director: ${film.director || 'unknown'}
+Writer: ${film.writer || 'unknown'}
+Cast: ${film.cast || 'unknown'}
+Genres: ${film.genres || 'unknown'}
+Synopsis: ${film.overview || 'not available'}
+
+TASK:
+Predict the scores this user would give this film across all 8 categories. Use the comparable films as the strongest signal — if the director or cast appear in the rated list, weight those patterns heavily. Use the category statistics to calibrate.
+
+Respond with this exact JSON structure:
+{
+  "predicted_scores": {
+    "plot": <integer 1-100>,
+    "execution": <integer 1-100>,
+    "acting": <integer 1-100>,
+    "production": <integer 1-100>,
+    "enjoyability": <integer 1-100>,
+    "rewatchability": <integer 1-100>,
+    "ending": <integer 1-100>,
+    "uniqueness": <integer 1-100>
+  },
+  "confidence": "high" | "medium" | "low",
+  "reasoning": "<2-4 sentences explaining the prediction, referencing specific comparable films and patterns>",
+  "key_comparables": ["<film title>", "<film title>"]
+}`;
+
+  try {
+    const res = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }]
+      })
+    });
+
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '';
+    const clean = text.replace(/```json|```/g, '').trim();
+    const prediction = JSON.parse(clean);
+
+    renderPrediction(film, prediction, comps);
+  } catch(e) {
+    document.getElementById('predict-result').innerHTML = `
+      <div class="tmdb-error">Prediction failed: ${e.message}. Check that the proxy is running and your API key is valid.</div>`;
+  }
+}
+
+function renderPrediction(film, prediction, comps) {
+  let sum = 0, wsum = 0;
+  CATEGORIES.forEach(cat => {
+    const v = prediction.predicted_scores[cat.key];
+    if (v != null) { sum += v * cat.weight; wsum += cat.weight; }
+  });
+  const predictedTotal = wsum > 0 ? Math.round((sum / wsum) * 100) / 100 : 0;
+
+  const posterHtml = film.poster
+    ? `<img class="predict-poster" src="https://image.tmdb.org/t/p/w185${film.poster}" alt="${film.title}">`
+    : `<div class="predict-poster-placeholder">${film.title}</div>`;
+
+  const confClass = { high: 'conf-high', medium: 'conf-medium', low: 'conf-low' }[prediction.confidence] || 'conf-medium';
+  const confLabel = { high: 'High confidence', medium: 'Medium confidence', low: 'Low confidence' }[prediction.confidence] || '';
+
+  document.getElementById('predict-result').innerHTML = `
+    <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--dim);margin-bottom:16px">Prediction</div>
+
+    <div class="predict-film-card">
+      ${posterHtml}
+      <div style="flex:1">
+        <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;letter-spacing:-0.5px;margin-bottom:2px">${film.title}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);margin-bottom:16px">${film.year}${film.director ? ' · ' + film.director : ''}</div>
+        <div style="display:flex;align-items:baseline;gap:8px">
+          <div class="predict-total-display">${predictedTotal}</div>
+          <div>
+            <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--dim)">${getLabel(predictedTotal)}</div>
+            <span class="predict-confidence ${confClass}">${confLabel}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:12px">Predicted category scores</div>
+    <div class="predict-score-grid">
+      ${CATEGORIES.map(cat => {
+        const v = prediction.predicted_scores[cat.key];
+        return `<div class="predict-score-cell">
+          <div class="predict-score-cell-label">${cat.label}</div>
+          <div class="predict-score-cell-val ${v ? scoreClass(v) : ''}">${v ?? '—'}</div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:10px">Reasoning</div>
+    <div class="predict-reasoning">${prediction.reasoning}</div>
+
+    ${comps.length > 0 ? `
+      <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin:24px 0 10px">Comparisons from your list</div>
+      ${comps.slice(0,5).map(m => {
+        const diff = (predictedTotal - m.total).toFixed(1);
+        const sign = diff > 0 ? '+' : '';
+        return `<div class="predict-comp-row" onclick="openModal(${MOVIES.indexOf(m)})">
+          <div class="predict-comp-title">${m.title} <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);font-weight:400">${m.year||''}</span></div>
+          <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--dim)">${m.total}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;${parseFloat(diff)>0?'color:var(--green)':'color:var(--red)'}">${sign}${diff} predicted</div>
+        </div>`;
+      }).join('')}
+    ` : ''}
+
+    <div class="btn-row" style="margin-top:32px">
+      <button class="btn btn-outline" onclick="initPredict()">← New prediction</button>
+      <button class="btn btn-action" onclick="predictAddToList()">Add to list & rate it →</button>
+    </div>
+  `;
+}
+
+export function predictAddToList() {
+  if (!predictSelectedFilm) return;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('add').classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.nav-btn[onclick*="add"]').classList.add('active');
+  setTimeout(() => {
+    const searchInput = document.getElementById('f-search');
+    if (searchInput) {
+      searchInput.value = predictSelectedFilm.title;
+      import('./addfilm.js').then(m => m.liveSearch(predictSelectedFilm.title));
+    }
+  }, 100);
+}

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ledger — personal film record</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="src/styles/main.css">
+<link rel="stylesheet" href="src/styles/components.css">
+</head>
+<body>
+
+<!-- ══════════════ ONBOARDING OVERLAY ══════════════ -->
+<div id="onboarding-overlay" style="display:none">
+  <div class="ob-card" id="ob-card-content"></div>
+</div>
+
+<div class="masthead">
+  <span class="masthead-wordmark">ledger</span>
+  <div class="masthead-rules">
+    <div class="masthead-rule-thick"></div>
+    <div class="masthead-rule-thin"></div>
+  </div>
+  <div class="masthead-meta">
+    <div class="masthead-meta-left" id="mastheadLeft">A personal film record &nbsp;·&nbsp; ongoing</div>
+    <div class="masthead-meta-right">
+      <span class="cloud-status" id="cloudStatus" onclick="showSyncPanel()" title="Cloud sync">
+        <span class="cloud-dot" id="cloudDot"></span>
+        <span id="cloudLabel">local</span>
+      </span>
+      <span id="storageStatus" class="masthead-util"></span>
+      <span class="masthead-util" onclick="exportData()">Export</span>
+      <span class="masthead-util" onclick="resetStorage()">Reset</span>
+      <span class="masthead-count" id="mastheadCount">94 films ranked</span>
+    </div>
+  </div>
+</div>
+
+<div class="nav-strip">
+  <button class="nav-btn active" onclick="showScreen('rankings')">Rankings</button>
+  <button class="nav-btn" onclick="showScreen('explore')">Explore</button>
+  <button class="nav-btn" onclick="showScreen('predict')">Predict</button>
+  <button class="nav-btn" onclick="showScreen('analysis')">Analysis</button>
+  <button class="nav-btn" onclick="showScreen('calibration')">Calibrate</button>
+  <button class="nav-btn action-tab" onclick="showScreen('add')">+ Add Film</button>
+</div>
+
+<!-- ══════════════ RANKINGS ══════════════ -->
+<div id="rankings" class="screen active">
+  <div class="rankings-header">
+    <div class="col-head sortable" onclick="sortBy('rank')" id="sort-rank"># <span class="sort-arrow active-sort">↓</span></div>
+    <div class="col-head sortable" style="text-align:left;padding-left:8px" onclick="sortBy('title')">Film <span class="sort-arrow" id="sort-title-arrow"></span></div>
+    <div class="col-head sortable" onclick="sortBy('plot')">Plot <span class="sort-arrow" id="sort-plot-arrow"></span></div>
+    <div class="col-head sortable" onclick="sortBy('execution')">Exec <span class="sort-arrow" id="sort-execution-arrow"></span></div>
+    <div class="col-head sortable" onclick="sortBy('acting')">Act <span class="sort-arrow" id="sort-acting-arrow"></span></div>
+    <div class="col-head sortable" onclick="sortBy('production')">Prod <span class="sort-arrow" id="sort-production-arrow"></span></div>
+    <div class="col-head sortable" onclick="sortBy('enjoyability')">Enjoy <span class="sort-arrow" id="sort-enjoyability-arrow"></span></div>
+    <div class="col-head sortable" onclick="sortBy('rewatchability')">Rewch <span class="sort-arrow" id="sort-rewatchability-arrow"></span></div>
+    <div class="col-head sortable" onclick="sortBy('ending')">End <span class="sort-arrow" id="sort-ending-arrow"></span></div>
+    <div class="col-head sortable" onclick="sortBy('uniqueness')">Uniq <span class="sort-arrow" id="sort-uniqueness-arrow"></span></div>
+    <div class="col-head sortable" onclick="sortBy('total')">Total <span class="sort-arrow" id="sort-total-arrow"></span></div>
+  </div>
+  <div id="filmList"></div>
+</div>
+
+<!-- ══════════════ ADD FILM ══════════════ -->
+<div id="add" class="screen">
+<div class="add-layout">
+  <h1 class="add-title">Rate a new film</h1>
+  <p class="add-sub">The calibration system uses your existing rankings as anchors — instead of picking numbers in isolation, you'll compare against films you already know. Produces more consistent, defensible scores.</p>
+
+  <div class="steps-bar">
+    <div class="step-item">
+      <div class="step-num active" id="sn1">1</div>
+      <div class="step-label active" id="sl1">Details</div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-item">
+      <div class="step-num" id="sn2">2</div>
+      <div class="step-label" id="sl2">Calibrate</div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-item">
+      <div class="step-num" id="sn3">3</div>
+      <div class="step-label" id="sl3">Refine</div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-item" style="flex:0">
+      <div class="step-num" id="sn4">4</div>
+      <div class="step-label" id="sl4">Confirm</div>
+    </div>
+  </div>
+
+  <!-- STEP 1: TMDB Search + Cast Curation -->
+  <div class="step-panel active" id="step1">
+    <div id="tmdb-search-phase">
+      <div class="field-group">
+        <label class="field-label">Film Title — start typing to search</label>
+        <div style="position:relative;max-width:520px">
+          <input class="field-input" id="f-search" placeholder="e.g. The Substance"
+            type="text" autocomplete="off" oninput="liveSearch(this.value)"
+            style="width:100%;padding-right:36px">
+          <span id="searchSpinner" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--dim);display:none">⌛</span>
+        </div>
+      </div>
+      <div id="tmdb-results" style="max-width:520px"></div>
+    </div>
+
+    <div id="tmdb-curation-phase" style="display:none">
+      <div id="tmdb-film-header" style="display:flex;gap:20px;align-items:flex-start;margin-bottom:28px;padding-bottom:24px;border-bottom:2px solid var(--ink)"></div>
+
+      <div style="margin-bottom:28px">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:4px">Director</div>
+        <div id="curate-directors" style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700"></div>
+      </div>
+
+      <div style="margin-bottom:28px">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:4px">Writer(s)</div>
+        <div id="curate-writers" style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600"></div>
+      </div>
+
+      <div style="margin-bottom:28px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px">
+          <div>
+            <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:2px">Cast — check who's load-bearing</div>
+            <div style="font-size:12px;color:var(--dim)">Top 8 billed pre-checked. Uncheck cameos/extras, add others if needed.</div>
+          </div>
+          <button class="btn btn-outline" onclick="showMoreCast()" id="moreCastBtn" style="font-size:12px;padding:8px 14px">+ More cast</button>
+        </div>
+        <div id="curate-cast"></div>
+      </div>
+
+      <div style="margin-bottom:28px">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:10px">Production Companies — uncheck distributors</div>
+        <div id="curate-companies"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="resetToSearch()">← Search again</button>
+        <button class="btn btn-primary" onclick="confirmTmdbData()">Looks good — Calibrate →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Calibrate -->
+  <div class="step-panel" id="step2">
+    <div class="calibration-intro">
+      <strong>How this works:</strong> For each category, you'll pick an anchor film — one from your list that feels closest to the new film in that dimension. The slider then lets you fine-tune relative to that anchor. This stops you from inflating scores in isolation.
+    </div>
+    <div id="calibrationCategories"></div>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goToStep(1)">← Back</button>
+      <button class="btn btn-primary" onclick="goToStep3()">Continue to Refinement →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Head-to-Head Refinement -->
+  <div class="step-panel" id="step3">
+    <div class="calibration-intro">
+      <strong>Head-to-head check:</strong> For categories where your score puts the new film near another film on your list, we'll do a quick direct comparison. "Is <em>this</em> ending really better than <em>that</em> ending?" Answer honestly — you can always adjust.
+    </div>
+    <div id="hthContainer"></div>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goToStep(2)">← Back</button>
+      <button class="btn btn-primary" onclick="goToStep4()">See Final Score →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: Confirm -->
+  <div class="step-panel" id="step4">
+    <div class="result-card" id="resultCard"></div>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goToStep(2)">← Adjust Scores</button>
+      <button class="btn btn-action" onclick="saveFilm()">Save to Rankings ✓</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════ ANALYSIS ══════════════ -->
+<div id="analysis" class="screen">
+  <div id="analysisContent"></div>
+</div>
+
+<!-- ══════════════ EXPLORE ══════════════ -->
+<div id="explore" class="screen">
+  <div id="exploreContent"></div>
+</div>
+
+<!-- ══════════════ PREDICT ══════════════ -->
+<div id="predict" class="screen">
+  <div style="max-width:800px;margin:0 auto">
+    <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:6px">
+      <h2 style="font-family:'Playfair Display',serif;font-style:italic;font-size:36px;font-weight:900;letter-spacing:-1px">Predict</h2>
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px">powered by Claude</span>
+    </div>
+    <p style="color:var(--dim);font-size:13px;margin-bottom:32px;line-height:1.7;max-width:560px">Search for a film you haven't rated yet. Based on your taste profile and rating history, ledger will predict how you'd score it — category by category.</p>
+    <div style="display:flex;gap:10px;margin-bottom:8px">
+      <input class="field-input" id="predict-search" type="text" placeholder="Search for a film…" style="flex:1" oninput="predictSearchDebounce()" onkeydown="if(event.key==='Enter') predictSearch()">
+      <button class="btn btn-primary" onclick="predictSearch()" id="predict-search-btn">Search</button>
+    </div>
+    <div id="predict-search-results" style="margin-bottom:24px"></div>
+    <div id="predict-result"></div>
+  </div>
+</div>
+
+<!-- ══════════════ CALIBRATION ══════════════ -->
+<div id="calibration" class="screen">
+  <div style="max-width:760px;margin:0 auto">
+
+    <div id="cal-setup">
+      <h2 style="font-family:'Playfair Display',serif;font-style:italic;font-size:36px;font-weight:900;letter-spacing:-1px;margin-bottom:6px">Calibration</h2>
+      <p style="color:var(--dim);font-size:13px;margin-bottom:32px;line-height:1.7">The app finds films with similar scores and pits them head-to-head. Your answers recalculate scores using Elo math, then you review every proposed change before anything is saved.</p>
+
+      <div style="margin-bottom:24px">
+        <div class="field-label" style="margin-bottom:10px">Which category to calibrate?</div>
+        <div id="cal-cat-picker" style="display:flex;flex-wrap:wrap;gap:8px">
+          <div class="company-chip checked" id="calcat_all" onclick="selectCalCat('all')">All Categories</div>
+          <div class="company-chip" id="calcat_plot" onclick="selectCalCat('plot')">Plot</div>
+          <div class="company-chip" id="calcat_execution" onclick="selectCalCat('execution')">Execution</div>
+          <div class="company-chip" id="calcat_acting" onclick="selectCalCat('acting')">Acting</div>
+          <div class="company-chip" id="calcat_production" onclick="selectCalCat('production')">Production</div>
+          <div class="company-chip" id="calcat_enjoyability" onclick="selectCalCat('enjoyability')">Enjoyability</div>
+          <div class="company-chip" id="calcat_rewatchability" onclick="selectCalCat('rewatchability')">Rewatchability</div>
+          <div class="company-chip" id="calcat_ending" onclick="selectCalCat('ending')">Ending</div>
+          <div class="company-chip" id="calcat_uniqueness" onclick="selectCalCat('uniqueness')">Uniqueness</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:28px">
+        <div class="field-label" style="margin-bottom:10px">Intensity</div>
+        <div style="display:flex;gap:10px">
+          <div class="company-chip checked" id="calint_focused" onclick="selectCalInt('focused')">Focused — 15 matchups</div>
+          <div class="company-chip" id="calint_thorough" onclick="selectCalInt('thorough')">Thorough — 30 matchups</div>
+          <div class="company-chip" id="calint_deep" onclick="selectCalInt('deep')">Deep dive — 50 matchups</div>
+        </div>
+      </div>
+
+      <button class="btn btn-action" onclick="startCalibration()" style="font-size:15px;padding:14px 32px">Begin Calibration →</button>
+    </div>
+
+    <div id="cal-matchups" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim)" id="cal-progress-label">Matchup 1 of 15</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)" id="cal-cat-label"></div>
+      </div>
+      <div style="height:3px;background:var(--rule);border-radius:2px;margin-bottom:28px">
+        <div id="cal-progress-bar" style="height:100%;background:var(--blue);border-radius:2px;transition:width 0.3s;width:0%"></div>
+      </div>
+      <div id="cal-matchup-card"></div>
+    </div>
+
+    <div id="cal-review" style="display:none">
+      <h2 style="font-family:'Playfair Display',serif;font-style:italic;font-size:30px;font-weight:900;letter-spacing:-1px;margin-bottom:6px">Review proposed changes</h2>
+      <p style="color:var(--dim);font-size:13px;margin-bottom:24px">Uncheck anything you want to keep as-is. Changes are only applied when you hit Apply.</p>
+      <div id="cal-diff-list"></div>
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="resetCalibration()">← Start over</button>
+        <button class="btn btn-primary" onclick="applyCalibration()" id="cal-apply-btn">Apply Changes ✓</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════ MODALS ══════════════ -->
+<div class="modal-overlay" id="archetypeModal" onclick="closeArchetypeModal(event)">
+  <div class="modal" style="max-width:520px">
+    <div id="archetypeModalContent"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="filmModal" onclick="closeModal(event)">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
