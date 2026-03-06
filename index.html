@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>canon — taste intelligence</title>
+<title>Palate Map — taste intelligence</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="src/styles/main.css">
@@ -14,7 +14,7 @@
 <!-- ══════════════ COLD LANDING ══════════════ -->
 <div id="cold-landing" style="display:none;position:fixed;inset:0;background:var(--paper);z-index:200;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px">
   <div style="max-width:560px;width:100%;text-align:center">
-    <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:32px">canon</div>
+    <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:32px">palate map</div>
     <h1 style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(36px,6vw,64px);line-height:1.1;letter-spacing:-1px;color:var(--ink);margin:0 0 24px">
       Make it canon.
     </h1>
@@ -22,7 +22,7 @@
       Everyone has a palate.
     </p>
     <p style="font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.7;color:var(--dim);margin:0 0 48px;font-weight:300">
-      The films you love are trying to tell you something about yourself. Canon listens — and shows you the pattern.
+      The films you love are trying to tell you something about yourself. Palate Map listens — and shows you the pattern.
     </p>
     <button onclick="startFromLanding()" style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;background:#E8623A;color:white;border:none;padding:16px 40px;cursor:pointer;transition:opacity 0.2s" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
       Discover your taste →
@@ -39,7 +39,7 @@
 </div>
 
 <div class="masthead">
-  <span class="masthead-wordmark">canon</span>
+  <span class="masthead-wordmark">palate map</span>
   <div class="masthead-rules">
     <div class="masthead-rule-thick"></div>
     <div class="masthead-rule-thin"></div>
@@ -224,7 +224,7 @@
       <h2 style="font-family:'Playfair Display',serif;font-style:italic;font-size:36px;font-weight:900;letter-spacing:-1px">Predict</h2>
       <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px">powered by Claude</span>
     </div>
-    <p style="color:var(--dim);font-size:13px;margin-bottom:32px;line-height:1.7;max-width:560px">Search for a film you haven't rated yet. Based on your taste profile and rating history, ledger will predict how you'd score it — category by category.</p>
+    <p style="color:var(--dim);font-size:13px;margin-bottom:32px;line-height:1.7;max-width:560px">Search for a film you haven't rated yet. Based on your taste profile and rating history, Palate Map will predict how you'd score it — category by category.</p>
     <div style="display:flex;gap:10px;margin-bottom:8px">
       <input class="field-input" id="predict-search" type="text" placeholder="Search for a film…" style="flex:1" oninput="predictSearchDebounce()" onkeydown="if(event.key==='Enter') predictSearch()">
       <button class="btn btn-primary" onclick="predictSearch()" id="predict-search-btn">Search</button>

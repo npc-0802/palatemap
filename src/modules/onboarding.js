@@ -23,7 +23,7 @@ function renderObStep() {
 
   if (obStep === 'name') {
     card.innerHTML = `
-      <div class="ob-eyebrow">canon · let's begin</div>
+      <div class="ob-eyebrow">palate map · let's begin</div>
       <div class="ob-title">What do you call yourself?</div>
       <div class="ob-sub">No account required. Just a name — your ratings sync to the cloud under this identity, so you can pick up where you left off on any device.</div>
       <input class="ob-name-input" id="ob-name-field" type="text" placeholder="e.g. Alex" maxlength="32" oninput="obCheckName()" onkeydown="if(event.key==='Enter') obSubmitName()">
@@ -41,7 +41,7 @@ function renderObStep() {
 
   } else if (obStep === 'returning') {
     card.innerHTML = `
-      <div class="ob-eyebrow">canon · welcome back</div>
+      <div class="ob-eyebrow">palate map · welcome back</div>
       <div class="ob-title">Welcome back.</div>
       <div class="ob-sub">Enter your username to restore your profile and film list from the cloud. It looks like <em>alex-7742</em>.</div>
       <input class="ob-name-input" id="ob-returning-field" type="text" placeholder="e.g. alex-7742" maxlength="64" onkeydown="if(event.key==='Enter') obLookupUser()">
@@ -55,9 +55,9 @@ function renderObStep() {
 
   } else if (obStep === 'import') {
     card.innerHTML = `
-      <div class="ob-eyebrow">canon · import</div>
+      <div class="ob-eyebrow">palate map · import</div>
       <div class="ob-title">Import your films.</div>
-      <div class="ob-sub">Select your <em>film_rankings.json</em> exported from a previous version of ledger.</div>
+      <div class="ob-sub">Select your <em>film_rankings.json</em> exported from a previous version of Palate Map.</div>
       <div id="ob-import-drop" style="border:2px dashed var(--rule-dark);padding:40px 24px;text-align:center;cursor:pointer;margin-bottom:16px;transition:border-color 0.15s"
         onclick="document.getElementById('ob-import-file').click()"
         ondragover="event.preventDefault();this.style.borderColor='var(--blue)'"
@@ -120,7 +120,7 @@ function renderObStep() {
         Your username: <strong style="color:var(--ink)" id="ob-reveal-username">—</strong><br>
         <span style="font-size:10px">Save this to restore your profile on any device.</span>
       </div>
-      <button class="ob-btn" onclick="obFinishFromReveal()">Enter canon →</button>
+      <button class="ob-btn" onclick="obFinishFromReveal()">Enter Palate Map →</button>
     `;
     setTimeout(() => {
       const el = document.getElementById('ob-reveal-username');
@@ -174,7 +174,7 @@ function obReadImportFile(file) {
       document.getElementById('ob-import-drop').innerHTML = `<div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--green)">${file.name}</div>`;
       document.getElementById('ob-import-btn').disabled = false;
     } catch(err) {
-      document.getElementById('ob-import-status').textContent = "That doesn't look like a valid ledger JSON file.";
+      document.getElementById('ob-import-status').textContent = "That doesn't look like a valid Palate Map JSON file.";
       document.getElementById('ob-import-status').style.color = 'var(--red)';
     }
   };

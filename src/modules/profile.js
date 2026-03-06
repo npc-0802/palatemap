@@ -111,7 +111,7 @@ function shareCard(user, movies) {
   const arch = ARCHETYPES[user.archetype] || {};
   return `
     <div style="width:320px;border:1px solid var(--ink);padding:28px 24px 20px;background:var(--paper)">
-      <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:20px">canon · taste profile</div>
+      <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:20px">palate map · taste profile</div>
       <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:26px;color:var(--ink);line-height:1;margin-bottom:4px">${user.display_name}</div>
       <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-bottom:16px">${user.username}</div>
       <div style="border-top:2px solid var(--ink);padding:10px 0;margin-bottom:12px">
@@ -125,7 +125,7 @@ function shareCard(user, movies) {
       <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--rule);font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);display:flex;justify-content:space-between">
         <span>${movies.length} films</span>
         <span>avg ${avgTotal}</span>
-        <span>makeitcanon.com</span>
+        <span>palatemap.com</span>
       </div>
     </div>
   `;
@@ -220,7 +220,7 @@ export function renderProfile() {
 
       <!-- CANON CARD -->
       <div style="margin-bottom:40px">
-        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Your Canon Card</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Your Palate Map Card</div>
         <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--dim);margin-bottom:20px">Screenshot to share.</div>
         ${shareCard(user, movies)}
       </div>

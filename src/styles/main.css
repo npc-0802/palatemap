@@ -57,9 +57,9 @@ body {
   font-family: 'Playfair Display', serif;
   font-style: italic;
   font-weight: 400;
-  font-size: 80px;
+  font-size: clamp(40px, 6vw, 72px);
   line-height: 1;
-  letter-spacing: -3px;
+  letter-spacing: -2px;
   color: var(--ink);
   display: block;
   user-select: none;
