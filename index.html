@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1998,8 +1999,7 @@ function updateStorageStatus() {
 
 const SUPABASE_URL = 'https://gzuuhjjedrzeqbgxhfip.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_OprjtxkrwknRf8jSZ7bYWg_GGqRiu4z';
-const { createClient } = supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null; // { id, username, display_name, archetype, archetype_secondary, weights, harmony_sensitivity }
 
@@ -2334,7 +2334,6 @@ function deriveArchetype(answers) {
 }
 
 async function obFinish(primary, secondary, weights, harmonySensitivity) {
-  // Generate a user ID and username
   const id = crypto.randomUUID();
   const slug = obDisplayName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Math.floor(Math.random()*9000+1000);
 
@@ -2346,17 +2345,17 @@ async function obFinish(primary, secondary, weights, harmonySensitivity) {
     weights, harmony_sensitivity: harmonySensitivity
   };
 
-  // Apply weights to CATEGORIES
   applyUserWeights();
 
-  // Close overlay
+  // Close overlay and enter the app immediately — don't wait on Supabase
   document.getElementById('onboarding-overlay').style.display = 'none';
   updateMastheadProfile();
   renderRankings();
   updateStorageStatus();
+  saveUserLocally();
 
-  // Sync to Supabase in background
-  await syncToSupabase();
+  // Sync to Supabase in background, fail silently
+  syncToSupabase().catch(e => console.warn('Initial sync failed:', e));
 }
 
 // ══════════════════════════════════════════
