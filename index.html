@@ -626,6 +626,146 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); 
 .company-chip.checked { background: var(--blue); color: white; border-color: var(--blue); }
 .company-chip.unchecked { opacity: 0.35; }
 
+/* Sortable columns */
+.col-head.sortable { cursor: pointer; user-select: none; transition: color 0.1s; }
+.col-head.sortable:hover { color: var(--ink); }
+.sort-arrow { font-size: 9px; opacity: 0; transition: opacity 0.15s; }
+.sort-arrow.active-sort { opacity: 1; color: var(--blue); }
+
+/* Explore screen */
+.explore-entity-header {
+  display: flex; align-items: baseline; gap: 16px;
+  margin-bottom: 6px; padding-bottom: 16px;
+  border-bottom: 2px solid var(--ink);
+}
+.explore-entity-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 36px; font-weight: 900; letter-spacing: -1px;
+}
+.explore-entity-role {
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  color: var(--dim); text-transform: uppercase; letter-spacing: 1.5px;
+}
+.explore-stat-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  margin: 24px 0;
+}
+.explore-stat {
+  background: var(--card-bg); border: 1px solid var(--rule);
+  padding: 16px; text-align: center;
+}
+.explore-stat-val {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px; font-weight: 900; color: var(--blue); letter-spacing: -1px;
+}
+.explore-stat-label {
+  font-family: 'DM Mono', monospace; font-size: 9px;
+  text-transform: uppercase; letter-spacing: 1px; color: var(--dim);
+  margin-top: 4px;
+}
+.explore-back {
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  color: var(--blue); cursor: pointer; text-decoration: underline;
+  text-underline-offset: 2px; margin-bottom: 24px; display: inline-block;
+}
+.explore-back:hover { color: var(--blue-dark); }
+.explore-cat-breakdown {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  margin: 20px 0;
+}
+.explore-cat-cell {
+  background: white; border: 1px solid var(--rule); padding: 12px;
+  text-align: center;
+}
+.explore-cat-cell-label {
+  font-family: 'DM Mono', monospace; font-size: 9px;
+  text-transform: uppercase; letter-spacing: 1px; color: var(--dim);
+  margin-bottom: 6px;
+}
+.explore-cat-cell-val {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px; font-weight: 700;
+}
+.explore-index {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+}
+.explore-index-card {
+  background: var(--card-bg); border: 1px solid var(--rule);
+  padding: 16px; cursor: pointer; transition: all 0.15s;
+}
+.explore-index-card:hover { border-color: var(--blue); transform: translateY(-1px); }
+.explore-index-name {
+  font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700;
+  margin-bottom: 4px; line-height: 1.3;
+}
+.explore-index-meta {
+  font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim);
+}
+.explore-tabs {
+  display: flex; gap: 0; margin-bottom: 28px;
+  border-bottom: 1px solid var(--rule-dark);
+}
+.explore-tab {
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 10px 20px; cursor: pointer;
+  color: var(--dim); border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: all 0.15s; background: none; border-top: none; border-left: none; border-right: none;
+}
+.explore-tab:hover { color: var(--ink); }
+.explore-tab.active { color: var(--ink); border-bottom-color: var(--ink); }
+
+/* Film modal enhancements */
+.modal-poster {
+  width: 100%; max-height: 280px; object-fit: cover;
+  margin: -40px -40px 28px; width: calc(100% + 80px);
+  display: block;
+}
+.modal-poster-placeholder {
+  height: 120px; background: var(--cream);
+  display: flex; align-items: center; justify-content: center;
+  margin: -40px -40px 28px; width: calc(100% + 80px);
+  font-family: 'DM Mono', monospace; font-size: 11px; color: var(--dim);
+}
+.modal-meta-chips {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px;
+}
+.modal-meta-chip {
+  padding: 4px 12px;
+  border: 1px solid var(--rule-dark); border-radius: 20px;
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  color: var(--dim); cursor: pointer; transition: all 0.15s;
+  background: white;
+}
+.modal-meta-chip:hover { border-color: var(--blue); color: var(--blue); }
+.modal-overview {
+  font-size: 13px; color: var(--dim); line-height: 1.7;
+  margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--rule);
+}
+.modal-cat-rank {
+  font-family: 'DM Mono', monospace; font-size: 9px;
+  color: var(--rule-dark); width: 32px; text-align: right;
+  flex-shrink: 0;
+}
+
+/* Archetype modal */
+.archetype-weight-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid var(--rule);
+}
+.archetype-weight-label {
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 1px; width: 110px; flex-shrink: 0;
+}
+.archetype-weight-input {
+  width: 52px; padding: 5px 8px; text-align: center;
+  border: 1px solid var(--rule-dark); background: white;
+  font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500;
+  color: var(--ink);
+}
+.archetype-weight-input:focus { outline: none; border-color: var(--blue); }
+.archetype-weight-bar-wrap { flex: 1; height: 3px; background: var(--rule); border-radius: 2px; }
+.archetype-weight-bar { height: 100%; background: var(--blue); border-radius: 2px; transition: width 0.3s; }
+
 /* ── ONBOARDING OVERLAY ── */
 #onboarding-overlay {
   position: fixed; inset: 0; background: var(--paper);
@@ -804,6 +944,7 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); 
 
 <div class="nav-strip">
   <button class="nav-btn active" onclick="showScreen('rankings')">Rankings</button>
+  <button class="nav-btn" onclick="showScreen('explore')">Explore</button>
   <button class="nav-btn" onclick="showScreen('analysis')">Analysis</button>
   <button class="nav-btn" onclick="showScreen('calibration')">Calibrate</button>
   <button class="nav-btn action-tab" onclick="showScreen('add')">+ Add Film</button>
@@ -812,17 +953,17 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); 
 <!-- ══════════════ RANKINGS ══════════════ -->
 <div id="rankings" class="screen active">
   <div class="rankings-header">
-    <div class="col-head">#</div>
-    <div class="col-head" style="text-align:left;padding-left:8px">Film</div>
-    <div class="col-head">Plot</div>
-    <div class="col-head">Exec</div>
-    <div class="col-head">Act</div>
-    <div class="col-head">Prod</div>
-    <div class="col-head">Enjoy</div>
-    <div class="col-head">Rewch</div>
-    <div class="col-head">End</div>
-    <div class="col-head">Uniq</div>
-    <div class="col-head">Total</div>
+    <div class="col-head sortable" onclick="sortBy('rank')" id="sort-rank"># <span class="sort-arrow active-sort">↓</span></div>
+    <div class="col-head sortable" style="text-align:left;padding-left:8px" onclick="sortBy('title')">Film <span class="sort-arrow" id="sort-title-arrow"></span></div>
+    <div class="col-head sortable" onclick="sortBy('plot')">Plot <span class="sort-arrow" id="sort-plot-arrow"></span></div>
+    <div class="col-head sortable" onclick="sortBy('execution')">Exec <span class="sort-arrow" id="sort-execution-arrow"></span></div>
+    <div class="col-head sortable" onclick="sortBy('acting')">Act <span class="sort-arrow" id="sort-acting-arrow"></span></div>
+    <div class="col-head sortable" onclick="sortBy('production')">Prod <span class="sort-arrow" id="sort-production-arrow"></span></div>
+    <div class="col-head sortable" onclick="sortBy('enjoyability')">Enjoy <span class="sort-arrow" id="sort-enjoyability-arrow"></span></div>
+    <div class="col-head sortable" onclick="sortBy('rewatchability')">Rewch <span class="sort-arrow" id="sort-rewatchability-arrow"></span></div>
+    <div class="col-head sortable" onclick="sortBy('ending')">End <span class="sort-arrow" id="sort-ending-arrow"></span></div>
+    <div class="col-head sortable" onclick="sortBy('uniqueness')">Uniq <span class="sort-arrow" id="sort-uniqueness-arrow"></span></div>
+    <div class="col-head sortable" onclick="sortBy('total')">Total <span class="sort-arrow" id="sort-total-arrow"></span></div>
   </div>
   <div id="filmList"></div>
 </div>
@@ -949,6 +1090,11 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); 
   <div id="analysisContent"></div>
 </div>
 
+<!-- ══════════════ EXPLORE ══════════════ -->
+<div id="explore" class="screen">
+  <div id="exploreContent"></div>
+</div>
+
 <!-- ══════════════ CALIBRATION ══════════════ -->
 <div id="calibration" class="screen">
   <div style="max-width:760px;margin:0 auto">
@@ -1011,7 +1157,12 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); 
   </div>
 </div>
 
-<!-- ══════════════ FILM MODAL ══════════════ -->
+<!-- ══════════════ ARCHETYPE MODAL ══════════════ -->
+<div class="modal-overlay" id="archetypeModal" onclick="closeArchetypeModal(event)">
+  <div class="modal" style="max-width:520px">
+    <div id="archetypeModalContent"></div>
+  </div>
+</div>
 <div class="modal-overlay" id="filmModal" onclick="closeModal(event)">
   <div class="modal" id="modalContent"></div>
 </div>
@@ -1075,14 +1226,46 @@ function scoreClass(s) {
 // RANKINGS
 // ══════════════════════════════════════════
 
+let currentSort = { key: 'rank', dir: 'desc' };
+
+function sortBy(key) {
+  if (currentSort.key === key) {
+    currentSort.dir = currentSort.dir === 'desc' ? 'asc' : 'desc';
+  } else {
+    currentSort.key = key;
+    currentSort.dir = 'desc';
+  }
+  // Update arrows
+  document.querySelectorAll('.sort-arrow').forEach(a => a.classList.remove('active-sort'));
+  const arrowEl = document.getElementById('sort-' + key + '-arrow') || document.getElementById('sort-' + key);
+  if (arrowEl) {
+    const arrow = arrowEl.querySelector ? arrowEl.querySelector('.sort-arrow') : arrowEl;
+    if (arrow) { arrow.classList.add('active-sort'); arrow.textContent = currentSort.dir === 'desc' ? '↓' : '↑'; }
+  }
+  renderRankings();
+}
+
 function renderRankings() {
-  const sorted = [...MOVIES].sort((a, b) => b.total - a.total);
+  const baseSort = [...MOVIES].sort((a, b) => b.total - a.total);
+  const rankMap = new Map(baseSort.map((m, i) => [m.title, i + 1]));
+
+  let sorted;
+  const { key, dir } = currentSort;
+  if (key === 'rank' || key === 'total') {
+    sorted = [...MOVIES].sort((a, b) => dir === 'desc' ? b.total - a.total : a.total - b.total);
+  } else if (key === 'title') {
+    sorted = [...MOVIES].sort((a, b) => dir === 'desc' ? b.title.localeCompare(a.title) : a.title.localeCompare(b.title));
+  } else {
+    sorted = [...MOVIES].sort((a, b) => dir === 'desc' ? (b.scores[key]||0) - (a.scores[key]||0) : (a.scores[key]||0) - (b.scores[key]||0));
+  }
+
   document.getElementById('mastheadCount').textContent = sorted.length + ' films ranked';
   const list = document.getElementById('filmList');
-  list.innerHTML = sorted.map((m, i) => {
+  list.innerHTML = sorted.map((m) => {
     const s = m.scores;
+    const rank = rankMap.get(m.title);
     return `<div class="film-row" onclick="openModal(${MOVIES.indexOf(m)})">
-      <div class="film-rank">${i+1}</div>
+      <div class="film-rank">${rank}</div>
       <div class="film-title-cell">
         <div class="film-title-main">${m.title}</div>
         <div class="film-title-sub">${m.year || ''} ${m.director ? '· ' + m.director.split(',')[0] : ''}</div>
@@ -1105,36 +1288,58 @@ function openModal(idx) {
   const rank = sorted.indexOf(m) + 1;
   const nearby = sorted.filter(x => x !== m && Math.abs(x.total - m.total) < 6).slice(0,5);
 
+  // Per-category ranks
+  const catRanks = {};
+  CATEGORIES.forEach(cat => {
+    const cs = [...MOVIES].sort((a,b) => (b.scores[cat.key]||0) - (a.scores[cat.key]||0));
+    catRanks[cat.key] = cs.indexOf(m) + 1;
+  });
+
+  const chip = (label, type, value) =>
+    `<span class="modal-meta-chip" onclick="exploreEntity('${type}','${value.replace(/'/g,String.fromCharCode(39))}')">${label}</span>`;
+
+  const directorChips = (m.director||'').split(',').map(d=>d.trim()).filter(Boolean).map(d=>chip(d,'director',d)).join('');
+  const writerChips = (m.writer||'').split(',').map(w=>w.trim()).filter(Boolean).filter(w=>!(m.director||'').includes(w)).map(w=>chip(w,'writer',w)).join('');
+  const castChips = (m.cast||'').split(',').map(c=>c.trim()).filter(Boolean).map(c=>chip(c,'actor',c)).join('');
+
+  const posterHtml = m.poster
+    ? `<img class="modal-poster" src="https://image.tmdb.org/t/p/w780${m.poster}" alt="${m.title}">`
+    : `<div class="modal-poster-placeholder">${m.title} · ${m.year||''}</div>`;
+
   document.getElementById('modalContent').innerHTML = `
-    <button class="modal-close" onclick="closeModal()">×</button>
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">Rank #${rank} of ${MOVIES.length}</div>
+    ${posterHtml}
+    <button class="modal-close" onclick="closeModal()" style="position:sticky;top:8px;float:right;z-index:10">×</button>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">Rank #${rank} of ${MOVIES.length}</div>
     <div class="modal-title">${m.title}</div>
-    <div class="modal-sub">${[m.year, m.director, m.writer !== m.director ? m.writer : ''].filter(Boolean).join(' · ')}</div>
-    ${m.productionCompanies ? `<div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">${m.productionCompanies}</div>` : ''}
-    ${m.cast ? `<div style="font-size:12px;color:var(--dim);margin-bottom:20px">${m.cast}</div>` : ''}
-
-    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:6px">
-      <span style="font-family:'Playfair Display',serif;font-size:52px;font-weight:900;color:var(--gold)">${m.total}</span>
-      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim)">${getLabel(m.total)}</span>
+    <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);margin-bottom:16px">${m.year||''}</div>
+    ${m.overview ? `<div class="modal-overview">${m.overview}</div>` : ''}
+    <div style="margin-bottom:20px">
+      ${directorChips ? `<div style="margin-bottom:8px"><span style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);margin-right:8px">Dir.</span>${directorChips}</div>` : ''}
+      ${writerChips ? `<div style="margin-bottom:8px"><span style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);margin-right:8px">Wri.</span>${writerChips}</div>` : ''}
+      ${castChips ? `<div style="margin-bottom:8px"><span style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);margin-right:8px">Cast</span><div style="display:inline">${castChips}</div></div>` : ''}
     </div>
-
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:20px">
+      <span style="font-family:'Playfair Display',serif;font-size:52px;font-weight:900;color:var(--blue);letter-spacing:-2px">${m.total}</span>
+      <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--dim)">${getLabel(m.total)}</span>
+    </div>
     <div>${CATEGORIES.map(cat => {
       const v = m.scores[cat.key];
+      const cr = catRanks[cat.key];
       return `<div class="breakdown-row">
         <div class="breakdown-cat">${cat.label}</div>
         <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${v||0}%"></div></div>
         <div class="breakdown-val ${v ? scoreClass(v) : ''}">${v ?? '—'}</div>
         <div class="breakdown-wt">×${cat.weight}</div>
+        <div class="modal-cat-rank">#${cr}</div>
       </div>`;
     }).join('')}</div>
-
     ${nearby.length > 0 ? `<div class="compare-section">
       <div class="compare-title">Nearby in the rankings</div>
       ${nearby.map(x => {
         const diff = (x.total - m.total).toFixed(2);
         const sign = diff > 0 ? '+' : '';
-        return `<div class="compare-film">
-          <div class="compare-film-title">${x.title} <span style="font-family:'IBM Plex Mono';font-size:10px;color:var(--dim);font-weight:400">${x.year||''}</span></div>
+        return `<div class="compare-film" style="cursor:pointer" onclick="closeModal();openModal(${MOVIES.indexOf(x)})">
+          <div class="compare-film-title">${x.title} <span style="font-family:'DM Mono';font-size:10px;color:var(--dim);font-weight:400">${x.year||''}</span></div>
           <div class="compare-film-score">${x.total}</div>
           <div class="compare-diff ${diff > 0 ? 'diff-pos' : 'diff-neg'}">${sign}${diff}</div>
         </div>`;
@@ -1142,6 +1347,7 @@ function openModal(idx) {
     </div>` : ''}
   `;
   document.getElementById('filmModal').classList.add('open');
+  localStorage.setItem('ledger_last_modal', idx);
 }
 
 function closeModal(e) {
@@ -1164,6 +1370,8 @@ function showScreen(id) {
   event.target.classList.add('active');
   if (id === 'analysis') renderAnalysis();
   if (id === 'calibration') resetCalibration();
+  if (id === 'explore') renderExploreIndex();
+  localStorage.setItem('ledger_last_screen', id);
 }
 
 function updateStepUI(step) {
@@ -1585,6 +1793,8 @@ function saveFilm() {
     writer: newFilm.writer,
     cast: newFilm.cast,
     productionCompanies: newFilm.productionCompanies || '',
+    poster: newFilm._tmdbDetail?.poster_path || null,
+    overview: newFilm._tmdbDetail?.overview || '',
     scores: { ...newFilm.scores }
   });
   saveToStorage();
@@ -1612,6 +1822,160 @@ function saveFilm() {
 // ══════════════════════════════════════════
 // ANALYSIS
 // ══════════════════════════════════════════
+
+// ══════════════════════════════════════════
+// EXPLORE
+// ══════════════════════════════════════════
+
+let exploreActiveTab = 'directors';
+
+function renderExploreIndex(tab) {
+  if (tab) exploreActiveTab = tab;
+  const tabs = ['directors','writers','actors'];
+  const tabLabels = { directors: 'Directors', writers: 'Writers', actors: 'Actors' };
+
+  const getEntities = (type) => {
+    const map = {};
+    MOVIES.forEach(m => {
+      let names = [];
+      if (type === 'directors') names = (m.director||'').split(',').map(s=>s.trim()).filter(Boolean);
+      else if (type === 'writers') names = (m.writer||'').split(',').map(s=>s.trim()).filter(Boolean);
+      else if (type === 'actors') names = (m.cast||'').split(',').map(s=>s.trim()).filter(Boolean);
+      names.forEach(name => {
+        if (!map[name]) map[name] = [];
+        map[name].push(m);
+      });
+    });
+    return Object.entries(map)
+      .filter(([, films]) => films.length >= 2)
+      .map(([name, films]) => ({
+        name,
+        films,
+        avg: (films.reduce((s,f) => s + f.total, 0) / films.length).toFixed(1)
+      }))
+      .sort((a,b) => b.avg - a.avg);
+  };
+
+  const entities = getEntities(exploreActiveTab);
+
+  document.getElementById('exploreContent').innerHTML = `
+    <div style="max-width:960px">
+      <h2 style="font-family:'Playfair Display',serif;font-style:italic;font-size:36px;font-weight:900;letter-spacing:-1px;margin-bottom:6px">Explore</h2>
+      <p style="color:var(--dim);font-size:13px;margin-bottom:28px">Click any name to see their full filmography in your list, scored by category.</p>
+
+      <div class="explore-tabs">
+        ${tabs.map(t => `<button class="explore-tab ${t===exploreActiveTab?'active':''}" onclick="renderExploreIndex('${t}')">${tabLabels[t]}</button>`).join('')}
+      </div>
+
+      ${entities.length === 0 ? `<div style="color:var(--dim);font-style:italic;padding:40px 0">Not enough data yet — add more films to see patterns.</div>` :
+        `<div class="explore-index">
+          ${entities.map(e => `
+            <div class="explore-index-card" onclick="exploreEntity('${exploreActiveTab.slice(0,-1)}','${e.name.replace(/'/g,"\\'")}')">
+              <div class="explore-index-name">${e.name}</div>
+              <div class="explore-index-meta">${e.films.length} film${e.films.length!==1?'s':''} · avg ${e.avg}</div>
+            </div>`).join('')}
+        </div>`}
+    </div>
+  `;
+}
+
+function exploreEntity(type, name) {
+  // Close film modal if open
+  document.getElementById('filmModal').classList.remove('open');
+
+  // Navigate to explore screen
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('explore').classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn')[1].classList.add('active'); // explore tab
+
+  const films = MOVIES.filter(m => {
+    if (type === 'director') return (m.director||'').split(',').map(s=>s.trim()).includes(name);
+    if (type === 'writer') return (m.writer||'').split(',').map(s=>s.trim()).includes(name);
+    if (type === 'actor') return (m.cast||'').split(',').map(s=>s.trim()).includes(name);
+    return false;
+  }).sort((a,b) => b.total - a.total);
+
+  if (films.length === 0) {
+    renderExploreIndex();
+    return;
+  }
+
+  const avg = (films.reduce((s,f) => s+f.total, 0) / films.length).toFixed(1);
+  const best = films[0];
+  const typeLabel = type === 'director' ? 'Director' : type === 'writer' ? 'Writer' : 'Actor';
+
+  // Category averages
+  const catAvgs = CATEGORIES.map(cat => {
+    const vals = films.filter(f => f.scores[cat.key] != null).map(f => f.scores[cat.key]);
+    return { ...cat, avg: vals.length ? (vals.reduce((s,v)=>s+v,0)/vals.length).toFixed(1) : '—' };
+  });
+
+  // Strengths / weaknesses
+  const scored = catAvgs.filter(c => c.avg !== '—').sort((a,b) => b.avg - a.avg);
+  const strength = scored[0];
+  const weakness = scored[scored.length-1];
+
+  document.getElementById('exploreContent').innerHTML = `
+    <div style="max-width:960px">
+      <span class="explore-back" onclick="renderExploreIndex()">← Back to Explore</span>
+
+      <div class="explore-entity-header">
+        <div class="explore-entity-name">${name}</div>
+        <div class="explore-entity-role">${typeLabel}</div>
+      </div>
+
+      <div class="explore-stat-row">
+        <div class="explore-stat">
+          <div class="explore-stat-val">${avg}</div>
+          <div class="explore-stat-label">Avg score</div>
+        </div>
+        <div class="explore-stat">
+          <div class="explore-stat-val">${films.length}</div>
+          <div class="explore-stat-label">Films in list</div>
+        </div>
+        <div class="explore-stat">
+          <div class="explore-stat-val ${scoreClass(best.total)}">${best.total}</div>
+          <div class="explore-stat-label">Best: ${best.title.length > 14 ? best.title.slice(0,13)+'…' : best.title}</div>
+        </div>
+        <div class="explore-stat">
+          <div class="explore-stat-val">${strength ? strength.avg : '—'}</div>
+          <div class="explore-stat-label">Best: ${strength ? strength.label : '—'}</div>
+        </div>
+      </div>
+
+      ${scored.length > 0 ? `
+        <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:12px">Category averages</div>
+        <div class="explore-cat-breakdown">
+          ${scored.map(c => `
+            <div class="explore-cat-cell">
+              <div class="explore-cat-cell-label">${c.label}</div>
+              <div class="explore-cat-cell-val ${scoreClass(parseFloat(c.avg))}">${c.avg}</div>
+            </div>`).join('')}
+        </div>
+
+        ${strength && weakness && strength.key !== weakness.key ? `
+          <div style="background:var(--blue-pale);border:1px solid var(--rule);padding:16px 20px;margin:20px 0;font-size:13px;line-height:1.7;color:var(--ink)">
+            You rate ${name}'s <strong>${strength.label.toLowerCase()}</strong> highest (avg ${strength.avg})${weakness.avg < 70 ? `, but find their <strong>${weakness.label.toLowerCase()}</strong> less compelling (avg ${weakness.avg})` : ''}.
+          </div>` : ''}
+      ` : ''}
+
+      <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin:24px 0 12px">Films</div>
+      ${films.map((f,i) => `
+        <div class="film-row" onclick="openModal(${MOVIES.indexOf(f)})" style="cursor:pointer">
+          <div class="film-rank">${i+1}</div>
+          <div class="film-title-cell">
+            <div class="film-title-main">${f.title}</div>
+            <div class="film-title-sub">${f.year||''} · ${f.director||''}</div>
+          </div>
+          ${['plot','execution','acting','production','enjoyability','rewatchability','ending','uniqueness'].map(k =>
+            `<div class="film-score ${f.scores[k]?scoreClass(f.scores[k]):''}">${f.scores[k]??'—'}</div>`
+          ).join('')}
+          <div class="film-total">${f.total}</div>
+        </div>`).join('')}
+    </div>
+  `;
+}
 
 function renderAnalysis() {
   const directors = {}, actors = {}, years = {};
@@ -2116,14 +2480,88 @@ function updateMastheadProfile() {
 }
 
 function showSyncPanel() {
-  if (!currentUser) {
-    launchOnboarding();
-    return;
+  if (!currentUser) { launchOnboarding(); return; }
+  openArchetypeModal();
+}
+
+function openArchetypeModal() {
+  if (!currentUser) return;
+  const weights = currentUser.weights || {};
+  const maxWeight = Math.max(...Object.values(weights));
+
+  document.getElementById('archetypeModalContent').innerHTML = `
+    <button class="modal-close" onclick="closeArchetypeModal()">×</button>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--dim);margin-bottom:6px">Your archetype</div>
+    <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:32px;font-weight:900;color:var(--blue);margin-bottom:4px">${currentUser.archetype || '—'}</div>
+    ${currentUser.archetype_secondary ? `<div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);margin-bottom:4px">Secondary: ${currentUser.archetype_secondary}</div>` : ''}
+    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-bottom:28px">${currentUser.username || ''}</div>
+
+    <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--rule)">
+      Weighting formula <span style="font-weight:400;font-style:italic;letter-spacing:0;text-transform:none"> — edit to customize</span>
+    </div>
+
+    <div id="archetype-weights-form">
+      ${CATEGORIES.map(cat => {
+        const w = weights[cat.key] || 1;
+        const pct = Math.round((w / maxWeight) * 100);
+        return `<div class="archetype-weight-row">
+          <div class="archetype-weight-label">${cat.label}</div>
+          <div class="archetype-weight-bar-wrap"><div class="archetype-weight-bar" id="awbar_${cat.key}" style="width:${pct}%"></div></div>
+          <input class="archetype-weight-input" type="number" min="1" max="10" value="${w}"
+            id="awval_${cat.key}" oninput="previewWeight('${cat.key}', this.value)">
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="btn-row" style="margin-top:24px">
+      <button class="btn btn-outline" onclick="resetArchetypeWeights()">Reset to archetype</button>
+      <button class="btn btn-primary" onclick="saveArchetypeWeights()">Apply weights</button>
+    </div>
+  `;
+  document.getElementById('archetypeModal').classList.add('open');
+}
+
+function previewWeight(key, val) {
+  const allInputs = CATEGORIES.map(c => ({
+    key: c.key,
+    val: parseFloat(document.getElementById('awval_' + c.key)?.value) || 1
+  }));
+  const max = Math.max(...allInputs.map(x => x.val));
+  allInputs.forEach(x => {
+    const bar = document.getElementById('awbar_' + x.key);
+    if (bar) bar.style.width = Math.round((x.val / max) * 100) + '%';
+  });
+}
+
+function resetArchetypeWeights() {
+  if (!currentUser || !currentUser.archetype) return;
+  const archWeights = ARCHETYPES[currentUser.archetype]?.weights;
+  if (!archWeights) return;
+  CATEGORIES.forEach(cat => {
+    const input = document.getElementById('awval_' + cat.key);
+    if (input) input.value = archWeights[cat.key] || 1;
+  });
+  previewWeight();
+}
+
+function saveArchetypeWeights() {
+  const newWeights = {};
+  CATEGORIES.forEach(cat => {
+    const v = parseFloat(document.getElementById('awval_' + cat.key)?.value);
+    newWeights[cat.key] = isNaN(v) || v < 1 ? 1 : Math.min(10, v);
+  });
+  currentUser.weights = newWeights;
+  saveUserLocally();
+  applyUserWeights();
+  renderRankings();
+  saveToStorage();
+  closeArchetypeModal();
+}
+
+function closeArchetypeModal(e) {
+  if (!e || e.target === document.getElementById('archetypeModal')) {
+    document.getElementById('archetypeModal').classList.remove('open');
   }
-  const name = currentUser.display_name;
-  const arch = currentUser.archetype || '—';
-  const arch2 = currentUser.archetype_secondary || '—';
-  alert(`Signed in as: ${name}\nArchetype: ${arch} + ${arch2}\nUsername: ${currentUser.username}\n\nYour films sync automatically to the cloud.`);
 }
 
 // ══════════════════════════════════════════
@@ -2589,6 +3027,19 @@ if (currentUser) {
 
 renderRankings();
 updateStorageStatus();
+
+// Restore last screen
+const lastScreen = localStorage.getItem('ledger_last_screen');
+if (lastScreen && lastScreen !== 'rankings' && document.getElementById(lastScreen)) {
+  const navBtns = document.querySelectorAll('.nav-btn');
+  navBtns.forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(lastScreen).classList.add('active');
+  // Activate matching nav button
+  navBtns.forEach(b => { if (b.getAttribute('onclick')?.includes(lastScreen)) b.classList.add('active'); });
+  if (lastScreen === 'analysis') renderAnalysis();
+  if (lastScreen === 'explore') renderExploreIndex();
+}
 
 </script>
 </body>
