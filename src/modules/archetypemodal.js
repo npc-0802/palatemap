@@ -44,6 +44,9 @@ export function openArchetypeModal() {
       <button class="btn btn-outline" onclick="resetArchetypeWeights()">Reset to archetype</button>
       <button class="btn btn-primary" onclick="saveArchetypeWeights()">Apply weights</button>
     </div>
+    <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--rule);text-align:center">
+      <span onclick="logOutUser()" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--dim);cursor:pointer;text-decoration:underline">Sign out</span>
+    </div>
   `;
   document.getElementById('archetypeModal').classList.add('open');
 }
@@ -84,6 +87,12 @@ export function saveArchetypeWeights() {
   saveToStorage();
   closeArchetypeModal();
 }
+
+window.logOutUser = function() {
+  if (!confirm('Sign out? Your data is saved to the cloud under your username.')) return;
+  localStorage.clear();
+  location.reload();
+};
 
 export function closeArchetypeModal(e) {
   if (!e || e.target === document.getElementById('archetypeModal')) {

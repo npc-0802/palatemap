@@ -1,0 +1,216 @@
+canon
+Product Brief · Living Document · v3.0
+Last updated: March 2026
+Confidential — do not distribute
+
+01  North Star
+canon is a taste intelligence platform. It starts with film and expands across all creative domains — restaurants, music, books, travel. The core promise is not "what to watch" but "who you are as a viewer, and what that means for every aesthetic choice you make."
+"Letterboxd tells you what you watched. Canon tells you who you are."
+The product is opinionated, precise, and personal. Every score is user-authored. The system reveals patterns in what you've already decided, rather than deciding for you. It should feel like something you'd want to send to friends — a taste identity, not a database.
+
+Brand name rationale:
+"Make it canon" — already in the cultural zeitgeist. Canon owns the idea that your taste is definitive, not provisional. Works across every domain. "Develop your palate" is the supplementary voice inside the product — warm, equalizing, personal.
+
+02  Design System
+Typography
+• Display: Playfair Display — serif, italic, heavy. Titles, scores, big moments.
+• Body: DM Sans — clean, readable. All prose and UI labels.
+• Data/mono: DM Mono — monospace. All metadata, stats, tags, codes.
+
+Palette
+#F4EFE6   paper — background
+#0C0B09   ink — primary text
+#3D5A80   slate blue — interactive, data highlights, CTAs
+#E8623A   persimmon — primary CTA only (use sparingly)
+#837A6A   dim — secondary text, labels
+#D8D0C0   rule — borders, dividers
+#FAF6F0   card-bg — card surfaces
+
+Design Principles
+• Swiss-editorial. Typographic-first. Feels like a tool a film critic would actually use.
+• No dark mode yet. Clean paper aesthetic is intentional and differentiating.
+• Animations: subtle fadeIn only. No bounces, no flashy transitions.
+• Mobile: currently desktop-first. Responsive pass is Phase 4.
+
+03  Current Architecture
+Status: Phase 0.1 complete — Vite multi-file structure. No React (see section 04).
+
+File Structure
+canon/  (formerly ledger/)
+  index.html          shell only — loads main.js
+  src/
+    main.js            entry point, init, state bootstrap, cold landing
+    state.js           shared state: MOVIES, currentUser, CATEGORIES
+    data/
+      movies.js        94 baseline films (owner only, with TMDB posters/overviews)
+      archetypes.js    9 archetypes + weights + OB_QUESTIONS
+      categories.js    8 scoring categories
+    modules/
+      rankings.js      sortable table, row rendering
+      modal.js         film detail modal + inline score editing
+      predict.js       AI prediction engine (Claude via Cloudflare proxy)
+      explore.js       director/actor/writer/company explore + rankings
+      calibrate.js     Elo calibration system
+      analysis.js      analysis screen
+      onboarding.js    quiz, archetype reveal, import, cold landing flow
+      archetypemodal.js  profile modal, weight editor, sign out
+      supabase.js      all cloud sync logic
+      storage.js       localStorage helpers
+    styles/
+      main.css         layout, nav, masthead
+      components.css   all reusable UI components
+
+Hosting & Deploy
+• Host: GitHub Pages (npc-0802.github.io/ledger/). Will migrate to Netlify at Phase 2.
+• Repo: github.com/npc-0802/ledger (private). Push to main = live deploy.
+• Build: npm run build → mv dist docs → git push. GitHub Pages serves /docs.
+• vite.config.js sets base: '/ledger/' for correct asset paths.
+• Cloudflare Worker: ledger-proxy.noahparikhcott.workers.dev — proxies Anthropic API. ANTHROPIC_KEY stored as encrypted env var. Never in client code.
+
+Dev Workflow
+• npx vite — dev server at localhost:5173/ledger/
+• Claude Code (claude CLI) for all code editing — run from ~/ledger
+• Push to GitHub at end of each session or after stable feature checkpoint
+• Brief (this file) lives in project root. Read at start of each Claude Code session.
+
+04  React: The Decision
+Start with Vite + vanilla JS, migrate to React in Phase 3 when the friends layer lands.
+Why not React now: The app is data-rendering with light interactivity. Vanilla JS handles it fine. React's component model only pays off when many interactive stateful components need to re-render independently.
+Why we'll want React later: Friends layer introduces real-time updates (friend activity, shared lists, group views). At that point, managing UI state manually becomes painful.
+Decision: Build Phase 0–2 in vanilla JS. Reassess at Phase 3 kickoff.
+
+05  Data Model
+Supabase: ledger_users table
+id                  uuid primary key
+username            text unique  e.g. "alex-7742"
+display_name        text
+archetype           text  e.g. "Narrativist"
+archetype_secondary text
+weights             jsonb  { plot, execution, acting, production,
+                            enjoyability, rewatchability, ending, uniqueness }
+harmony_sensitivity numeric 0.0–1.0
+movies              jsonb  [ array of film objects ]
+created_at / updated_at  timestamp
+
+Film Object Schema
+title               string
+year                number
+total               number (recalculated on weight change — never trust cached)
+director            string comma-separated
+writer              string comma-separated
+cast                string comma-separated (top 8 from TMDB)
+productionCompanies string comma-separated
+poster              string  TMDB path e.g. "/abc123.jpg"
+overview            string  synopsis from TMDB
+scores              object  { plot, execution, acting, production,
+                             enjoyability, rewatchability, ending, uniqueness }
+
+Scoring Formula
+total = Σ(score[cat] × weight[cat]) / Σ(weight[cat])
+Weights are user-specific. recalcAllTotals() must be called after any weight change.
+
+9 Archetypes
+Visceralist · Formalist · Narrativist · Humanist · Completionist · Sensualist · Revisionist · Absolutist · Atmospherist
+Each has a distinct weight distribution. Derived from 6-question onboarding quiz. Editable post-onboarding via archetype modal (click username in masthead).
+
+06  Screens & Features (Current)
+Cold Landing
+Full-screen overlay for new/logged-out users. Headline: "Make it canon." Supporting copy: "Everyone has a palate. The films you love are trying to tell you something about yourself. Canon listens — and shows you the pattern." Single persimmon CTA: "Discover your taste →". Footer note: "Starting with film. Expanding to everything."
+
+Onboarding (3 entry points)
+New user: cold landing → name → poetic intro + 6-question quiz → archetype reveal (shows username — save it!) → Enter canon.
+Returning user: username lookup → fetches profile + films from Supabase → loads directly.
+Import: drag-and-drop film_rankings.json → validates → loads MOVIES → proceeds to quiz.
+
+Rankings
+Sortable table — all 8 category columns + total. Click any header to sort asc/desc. Click any row to open film modal. Rank shown based on total score regardless of current sort.
+
+Film Modal
+TMDB poster · synopsis · rank #X of N · clickable director/writer/cast/company chips (navigate to Explore) · per-category scores + rank + weight bars · inline score editing (Edit scores button → sliders with live score + label updates → Save) · nearby films in rankings (clickable).
+
+Explore
+Index tabs: Directors / Writers / Actors / Companies. Shows entities with 2+ films, sorted by avg score. Each card shows rank among peers (#3 of 24). Entity view: avg score, rank among peers, film count, per-category breakdown with per-category rank, insight blurb, full film list.
+
+Predict
+Search unrated films. Builds taste fingerprint (per-category mean/std/range, top 10, bottom 5, weights, archetype). Finds comparable films by shared director/cast. Calls Claude via Cloudflare proxy. Returns: predicted score per category, confidence level, reasoning in 2nd person ("you") anchored to user's specific films. "Add to list" button pre-fills Add Film search.
+
+Analysis
+Top directors, actors, genre patterns, score distributions. Rendered dynamically from MOVIES array.
+
+Calibrate
+Elo-based head-to-head system. Choose category + intensity (15/30/50 matchups). Review proposed changes with checkboxes. Apply writes scores + recalcs totals + syncs.
+
+Add Film
+4-step: TMDB search → cast/crew/company curation → 8-category scoring (sliders + head-to-head comparison) → result. Poster and overview saved on film push.
+
+Profile / Archetype Modal
+Click username in masthead. Shows archetype, secondary, username. Weight inputs editable with live bar preview. Save immediately recalcs all totals + syncs. Sign out button clears localStorage and reloads to cold landing.
+
+07  Known Issues & Tech Debt
+• Production companies missing from 94 baseline films — needs TMDB backfill pass.
+• Cloud sync failures are silent — console.warn only. No user-facing error state. (Phase 2.4)
+• No test coverage. Shipping by feel.
+• Supabase table still named ledger_users — rename to canon_users at Phase 2.
+• localStorage keys still use ledger_ prefix — update at Phase 2.
+
+08  Full Product Roadmap
+Phase 0 — Foundation [COMPLETE]
+• 0.1 Architecture migration — Vite multi-file structure. ✓
+• 0.2 Git + GitHub Pages setup. ✓
+• 0.3 Backfill posters + overviews for 94 baseline films. ✓
+
+Phase 1 — Identity & Value Prop [IN PROGRESS]
+• 1.1 Product narrative reframe + Canon rebrand. ✓ (cold landing, masthead, onboarding copy)
+• 1.2 Onboarding rewrite — feels like a personality reveal. In progress.
+• 1.3 Taste identity / profile screen — full screen taste fingerprint, signature films, archetype deep-dive, shareable card.
+• 1.4 Cold landing experience — complete. ✓
+
+Phase 2 — Polish [Depends on: Phase 1]
+• 2.1 UI design pass — spacing system, card treatments, interaction states.
+• 2.2 Modal polish — better poster treatment, cleaner information hierarchy.
+• 2.3 Calibration UX rewrite — feels like a game, not a lab tool.
+• 2.4 Error surfaces + sync reliability — toast notifications, retry logic, offline indicator. Required before public launch.
+• 2.5 Rename Supabase tables + localStorage keys from ledger_ to canon_.
+• 2.6 Migrate hosting to Netlify for auto-deploy.
+
+Phase 3 — Growth Features [PRIORITY after Phase 2]
+• 3.1 Friends layer — real accounts with passwords, invite links, Supabase friendships table, friend profiles, taste overlap visualization. First paid feature candidate. Reassess React migration here.
+• 3.2 Prediction engine polish — discovery mode, prediction history, confidence calibration.
+• 3.3 Tagging system — context tags (alone / with someone / rewatch / bad week).
+
+Phase 4 — Platform
+• 4.1 Cross-genre v1: Restaurants — same framework, new categories.
+• 4.2 Public launch prep — custom domain, landing page, pricing.
+• 4.3 Mobile — responsive pass or dedicated mobile view.
+
+09  Session Workflow
+Starting a session (Claude Code)
+• cd ~/ledger && claude
+• Say: "Read the brief at ./canon_brief_v3.docx and the file structure, then let's work on [phase/task]."
+• Claude Code will read files directly — no need to upload anything.
+
+Starting a session (claude.ai chat)
+• Upload this brief + a zip of src/ folder.
+• State what phase/task you're working on.
+
+Ending a session
+• npm run build && rm -rf docs && mv dist docs
+• git add . && git commit -m "[description]" && git push origin main
+• Update this brief if any schema, architecture, or product decisions changed.
+
+Efficient communication
+• Separate design sessions from build sessions.
+• For bug reports: describe what you did, what you expected, what happened. Console errors if visible.
+• For features: describe the user experience you want, not the implementation.
+
+10  Credentials & Config
+Never share this section. Never paste keys into Claude chat or Claude Code.
+TMDB API key:          f5a446a5f70a9f6a16a8ddd052c121f2
+Supabase URL:          https://gzuuhjjedrzeqbgxhfip.supabase.co
+Supabase key:          sb_publishable_OprjtxkrwknRf8jSZ7bYWg_GGqRiu4z
+Cloudflare Worker:     https://ledger-proxy.noahparikhcott.workers.dev
+Anthropic key:         stored in Cloudflare env var ANTHROPIC_KEY only
+GitHub repo:           github.com/npc-0802/ledger (private)
+GitHub Pages:          npc-0802.github.io/ledger/
+
+canon · private product brief · v3.0 · do not distribute

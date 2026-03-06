@@ -121,13 +121,18 @@ body {
 .nav-btn:hover { color: var(--ink); }
 .nav-btn.active { color: var(--ink); border-bottom-color: var(--ink); }
 .nav-btn.action-tab {
-  color: var(--action);
+  color: white;
+  background: var(--action);
   font-weight: 600;
   margin-left: auto;
+  margin-top: 4px;
+  margin-bottom: 4px;
   letter-spacing: 2px;
+  border-bottom-color: transparent;
 }
-.nav-btn.action-tab:hover { color: var(--action-dark); }
-.nav-btn.action-tab.active { border-bottom-color: var(--action); color: var(--action-dark); }
+.nav-btn.action-tab:hover { background: var(--action-dark); color: white; border-bottom-color: transparent; }
+.nav-btn.action-tab.active { background: var(--action-dark); color: white; border-bottom-color: transparent; }
+#rankings.empty .rankings-header { display: none; }
 
 /* ── SCREENS ── */
 .screen { display: none; padding: 40px 56px 80px; animation: fadeIn 0.2s ease; }

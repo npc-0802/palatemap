@@ -23,9 +23,9 @@ function renderObStep() {
 
   if (obStep === 'name') {
     card.innerHTML = `
-      <div class="ob-eyebrow">ledger · onboarding</div>
+      <div class="ob-eyebrow">canon · let's begin</div>
       <div class="ob-title">What do you call yourself?</div>
-      <div class="ob-sub">No account, no password. Just a name. Your ratings sync to the cloud under this identity. You can open ledger on any device and pick up where you left off.</div>
+      <div class="ob-sub">No account required. Just a name — your ratings sync to the cloud under this identity, so you can pick up where you left off on any device.</div>
       <input class="ob-name-input" id="ob-name-field" type="text" placeholder="e.g. Alex" maxlength="32" oninput="obCheckName()" onkeydown="if(event.key==='Enter') obSubmitName()">
       <button class="ob-btn" id="ob-name-btn" onclick="obSubmitName()" disabled>Continue →</button>
       <div style="text-align:center;margin-top:20px">
@@ -41,7 +41,7 @@ function renderObStep() {
 
   } else if (obStep === 'returning') {
     card.innerHTML = `
-      <div class="ob-eyebrow">ledger · returning user</div>
+      <div class="ob-eyebrow">canon · welcome back</div>
       <div class="ob-title">Welcome back.</div>
       <div class="ob-sub">Enter your username to restore your profile and film list from the cloud. It looks like <em>alex-7742</em>.</div>
       <input class="ob-name-input" id="ob-returning-field" type="text" placeholder="e.g. alex-7742" maxlength="64" onkeydown="if(event.key==='Enter') obLookupUser()">
@@ -55,7 +55,7 @@ function renderObStep() {
 
   } else if (obStep === 'import') {
     card.innerHTML = `
-      <div class="ob-eyebrow">ledger · import</div>
+      <div class="ob-eyebrow">canon · import</div>
       <div class="ob-title">Import your films.</div>
       <div class="ob-sub">Select your <em>film_rankings.json</em> exported from a previous version of ledger.</div>
       <div id="ob-import-drop" style="border:2px dashed var(--rule-dark);padding:40px 24px;text-align:center;cursor:pointer;margin-bottom:16px;transition:border-color 0.15s"
@@ -77,7 +77,9 @@ function renderObStep() {
   } else if (typeof obStep === 'number') {
     const q = OB_QUESTIONS[obStep];
     const pct = Math.round((obStep / 6) * 100);
+    const intro = obStep === 0 ? `<div style="font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.8;color:var(--dim);margin-bottom:28px;font-style:italic">The films you're drawn to reveal something consistent about you — a set of values, sensitivities, and hungers that show up again and again. A few questions to surface them.</div>` : '';
     card.innerHTML = `
+      ${intro}
       <div class="ob-progress">Question ${obStep + 1} of 6</div>
       <div class="ob-progress-bar"><div class="ob-progress-fill" style="width:${pct}%"></div></div>
       <div class="ob-question">${q.q}</div>
@@ -102,27 +104,23 @@ function renderObStep() {
     }
     const arch = ARCHETYPES[result.primary];
     card.innerHTML = `
-      <div class="ob-eyebrow">Your taste profile</div>
+      <div class="ob-eyebrow">your taste profile</div>
       <div class="ob-reveal">
         <div class="ob-archetype-name">${result.primary}</div>
+        <div class="ob-archetype-desc">${arch.description}</div>
         <div class="ob-archetype-quote">${arch.quote}</div>
-        ${result.secondary ? `<div style="font-size:13px;color:var(--dim);margin-bottom:4px">Secondary archetype</div>
-        <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:20px;color:var(--ink);margin-bottom:20px">${result.secondary}</div>` : ''}
+        ${result.secondary ? `
+        <div style="margin-top:8px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--dim);margin-bottom:4px">Secondary archetype</div>
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:22px;color:var(--ink)">${result.secondary}</div>
+        </div>` : ''}
       </div>
-      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:12px">Your scoring weights</div>
-      <div class="ob-weights-grid">
-        ${Object.entries(arch.weights).map(([k,v]) => `
-          <div class="ob-weight-row">
-            <span class="ob-weight-label">${k.charAt(0).toUpperCase()+k.slice(1)}</span>
-            <span class="ob-weight-val">×${v}</span>
-          </div>`).join('')}
-      </div>
-      <div class="ob-sub" style="margin-top:16px;margin-bottom:8px">Weights shape how your scores are calculated. You can adjust them anytime from your profile.</div>
-      <div style="background:var(--cream);border:1px solid var(--rule);padding:12px 16px;margin-bottom:24px;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim)">
+      <div style="border-top:1px solid var(--rule);margin:28px 0 20px"></div>
+      <div style="background:var(--card-bg);border:1px solid var(--rule);padding:12px 16px;margin-bottom:24px;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim)">
         Your username: <strong style="color:var(--ink)" id="ob-reveal-username">—</strong><br>
         <span style="font-size:10px">Save this to restore your profile on any device.</span>
       </div>
-      <button class="ob-btn" onclick="obFinishFromReveal()">Enter ledger →</button>
+      <button class="ob-btn" onclick="obFinishFromReveal()">Enter canon →</button>
     `;
     setTimeout(() => {
       const el = document.getElementById('ob-reveal-username');

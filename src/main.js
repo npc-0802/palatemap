@@ -13,6 +13,7 @@ import {
   resetToSearch, confirmTmdbData, goToStep3, goToStep4, saveFilm, goToStep
 } from './modules/addfilm.js';
 import { showSyncPanel, openArchetypeModal, closeArchetypeModal, previewWeight, resetArchetypeWeights, saveArchetypeWeights } from './modules/archetypemodal.js';
+import { renderProfile } from './modules/profile.js';
 
 // ── SCREEN NAVIGATION ──
 export function showScreen(id) {
@@ -24,6 +25,7 @@ export function showScreen(id) {
   if (id === 'calibration') resetCalibration();
   if (id === 'explore') renderExploreIndex();
   if (id === 'predict') initPredict();
+  if (id === 'profile') renderProfile();
   localStorage.setItem('ledger_last_screen', id);
 }
 
@@ -43,10 +45,8 @@ export function updateMastheadProfile() {
   const user = currentUser;
   if (!user) return;
   const left = document.getElementById('mastheadLeft');
-  left.innerHTML = `<span class="profile-chip" onclick="window.__ledger.showSyncPanel()">
-    <span style="font-size:9px">▾</span>
-    <strong style="color:var(--ink)">${user.display_name}</strong>
-    &nbsp;·&nbsp; ${user.archetype || 'film watcher'}
+  left.innerHTML = `<span class="profile-chip" onclick="document.getElementById('nav-profile').click()">
+    <strong style="color:var(--ink);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.5px">${user.display_name}</strong>
   </span>`;
 }
 
@@ -66,6 +66,21 @@ export function resetStorage() {
 }
 
 // ── INIT ──
+export function showColdLanding() {
+  const el = document.getElementById('cold-landing');
+  if (el) {
+    el.style.display = 'flex';
+  } else {
+    launchOnboarding();
+  }
+}
+
+window.startFromLanding = function() {
+  const el = document.getElementById('cold-landing');
+  if (el) el.style.display = 'none';
+  launchOnboarding();
+};
+
 async function init() {
   loadFromStorage();
   loadUserLocally();
@@ -77,7 +92,7 @@ async function init() {
     loadFromSupabase(currentUser.id).catch(() => setCloudStatus('error'));
   } else {
     setCloudStatus('local');
-    setTimeout(() => launchOnboarding(), 400);
+    setTimeout(() => showColdLanding(), 400);
   }
 
   renderRankings();
@@ -93,6 +108,7 @@ async function init() {
     navBtns.forEach(b => { if (b.getAttribute('onclick')?.includes(lastScreen)) b.classList.add('active'); });
     if (lastScreen === 'analysis') renderAnalysis();
     if (lastScreen === 'explore') renderExploreIndex();
+    if (lastScreen === 'profile') renderProfile();
   }
 }
 
@@ -114,6 +130,7 @@ window.__ledger = {
   selectCalInt, applyCalibration, resetCalibration, launchOnboarding,
   liveSearch, tmdbSelect, toggleCast, showMoreCast, toggleCompany,
   resetToSearch, confirmTmdbData, goToStep3, goToStep4, saveFilm, goToStep,
+  renderProfile,
   showSyncPanel, openArchetypeModal, closeArchetypeModal, previewWeight,
   resetArchetypeWeights, saveArchetypeWeights, exportData, resetStorage,
   updateStorageStatus, updateMastheadProfile, setCloudStatus
@@ -126,6 +143,7 @@ const bridge = [
   'startCalibration','selectCalCat','selectCalInt','applyCalibration','resetCalibration',
   'launchOnboarding','liveSearch','tmdbSelect','toggleCast','showMoreCast','toggleCompany',
   'resetToSearch','confirmTmdbData','goToStep3','goToStep4','saveFilm','goToStep',
+  'renderProfile',
   'showSyncPanel','openArchetypeModal','closeArchetypeModal','previewWeight',
   'resetArchetypeWeights','saveArchetypeWeights','exportData','resetStorage'
 ];
