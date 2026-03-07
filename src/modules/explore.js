@@ -62,7 +62,11 @@ export function renderExploreIndex(tab) {
       ${tabs.map(t => `<button class="explore-tab ${t===exploreActiveTab?'active':''}" onclick="renderExploreIndex('${t}')">${tabLabels[t]}</button>`).join('')}
     </div>
     ${entities.length === 0
-      ? `<div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dim);font-style:italic;padding:48px 0">Not enough data yet — add more films to see patterns.</div>`
+      ? `<div style="border:1.5px dashed var(--rule-dark);padding:40px 32px;text-align:center;margin:8px 0">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:12px">— uncharted —</div>
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:22px;color:var(--ink);margin-bottom:8px">Terra incognita.</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);font-weight:300">Rate at least two films from the same ${exploreActiveTab === 'companies' ? 'company' : exploreActiveTab.slice(0,-1)} to map this territory.</div>
+        </div>`
       : entities.map((e, i) => {
           const safeName = e.name.replace(/'/g, "\\'");
           const singularType = exploreActiveTab === 'companies' ? 'company' : exploreActiveTab === 'years' ? 'year' : exploreActiveTab.slice(0, -1);
@@ -135,7 +139,7 @@ export function exploreEntity(type, name) {
   document.getElementById('analysisContent').innerHTML = `
     <div style="max-width:800px">
 
-      <div style="background:var(--surface-dark);margin:-40px -56px 32px;padding:40px 56px 32px">
+      <div class="dark-grid" style="background:var(--surface-dark);margin:-40px -56px 32px;padding:40px 56px 32px">
         <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:14px">
           ${typeLabel} &nbsp;·&nbsp; <span onclick="renderAnalysis()" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px">← all ${pluralType}</span>
         </div>
