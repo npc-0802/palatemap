@@ -9,6 +9,8 @@ const PROXY_URL = 'https://ledger-proxy.noahparikhcott.workers.dev';
 let friendsCache = null;
 let inviteToken = null;
 let searchDebounceTimer = null;
+let friendMoviesCache = null;
+let friendColorCache = null;
 
 // ── PUBLIC ──
 
@@ -260,15 +262,19 @@ window.cancelRequest = async function(addresseeId, addresseeName) {
 };
 
 window.showOutgoing = function() {
-  document.getElementById('friends-main-tab')?.classList.remove('active-tab');
-  document.getElementById('friends-outgoing-tab')?.classList.add('active-tab');
+  const main = document.getElementById('friends-main-tab');
+  const out = document.getElementById('friends-outgoing-tab');
+  if (main) { main.style.borderBottomColor = 'transparent'; main.style.color = 'var(--dim)'; }
+  if (out)  { out.style.borderBottomColor = 'var(--ink)';   out.style.color = 'var(--ink)'; }
   document.getElementById('friends-main-list')?.style && (document.getElementById('friends-main-list').style.display = 'none');
   document.getElementById('friends-outgoing-list')?.style && (document.getElementById('friends-outgoing-list').style.display = 'block');
 };
 
 window.showMainFriends = function() {
-  document.getElementById('friends-outgoing-tab')?.classList.remove('active-tab');
-  document.getElementById('friends-main-tab')?.classList.add('active-tab');
+  const main = document.getElementById('friends-main-tab');
+  const out = document.getElementById('friends-outgoing-tab');
+  if (main) { main.style.borderBottomColor = 'var(--ink)'; main.style.color = 'var(--ink)'; }
+  if (out)  { out.style.borderBottomColor = 'transparent'; out.style.color = 'var(--dim)'; }
   document.getElementById('friends-outgoing-list')?.style && (document.getElementById('friends-outgoing-list').style.display = 'none');
   document.getElementById('friends-main-list')?.style && (document.getElementById('friends-main-list').style.display = 'block');
 };
@@ -436,11 +442,20 @@ function renderFriendProfile(el, friend) {
       </div>
 
       <div style="display:flex;gap:0;border-bottom:1px solid var(--rule);margin-bottom:28px">
-        <button onclick="showFriendTab('overlap')" id="tab-overlap" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid var(--ink);padding:10px 20px 10px 0;cursor:pointer;color:var(--ink);margin-bottom:-1px">Overlap</button>
-        <button onclick="showFriendTab('rankings')" id="tab-rankings" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid transparent;padding:10px 20px;cursor:pointer;color:var(--dim);margin-bottom:-1px">Their Rankings (${(friend.movies||[]).length})</button>
+        <button onclick="showFriendTab('rankings')" id="tab-rankings" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid var(--ink);padding:10px 20px 10px 0;cursor:pointer;color:var(--ink);margin-bottom:-1px">Rankings (${(friend.movies||[]).length})</button>
+        <button onclick="showFriendTab('taste')" id="tab-taste" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid transparent;padding:10px 20px;cursor:pointer;color:var(--dim);margin-bottom:-1px">Taste</button>
+        <button onclick="showFriendTab('overlap')" id="tab-overlap" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid transparent;padding:10px 20px;cursor:pointer;color:var(--dim);margin-bottom:-1px">Overlap</button>
       </div>
 
-      <div id="friend-overlap-panel">
+      <div id="friend-rankings-panel" style="padding-bottom:48px">
+        ${friendRankingsHTML(friend, color)}
+      </div>
+
+      <div id="friend-taste-panel" style="display:none;padding-bottom:48px">
+        ${friendTasteHTML(friend, color)}
+      </div>
+
+      <div id="friend-overlap-panel" style="display:none">
         <div style="padding-bottom:28px;margin-bottom:28px;border-bottom:1px solid var(--rule)">
           <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">Compatibility</div>
           <div style="display:flex;align-items:center;gap:32px;flex-wrap:wrap">
@@ -475,53 +490,142 @@ function renderFriendProfile(el, friend) {
         </div>
       </div>
 
-      <div id="friend-rankings-panel" style="display:none;padding-bottom:48px">
-        ${friendRankingsHTML(friend, color)}
-      </div>
-
     </div>`;
 
   loadFriendInsight(friend, compat, color);
 }
 
 window.showFriendTab = function(tab) {
-  const overlap = document.getElementById('friend-overlap-panel');
-  const rankings = document.getElementById('friend-rankings-panel');
-  const tabO = document.getElementById('tab-overlap');
-  const tabR = document.getElementById('tab-rankings');
-  if (tab === 'overlap') {
-    if (overlap) overlap.style.display = 'block';
-    if (rankings) rankings.style.display = 'none';
-    if (tabO) { tabO.style.borderBottomColor = 'var(--ink)'; tabO.style.color = 'var(--ink)'; }
-    if (tabR) { tabR.style.borderBottomColor = 'transparent'; tabR.style.color = 'var(--dim)'; }
-  } else {
-    if (overlap) overlap.style.display = 'none';
-    if (rankings) rankings.style.display = 'block';
-    if (tabR) { tabR.style.borderBottomColor = 'var(--ink)'; tabR.style.color = 'var(--ink)'; }
-    if (tabO) { tabO.style.borderBottomColor = 'transparent'; tabO.style.color = 'var(--dim)'; }
-  }
+  const panels = { overlap: 'friend-overlap-panel', rankings: 'friend-rankings-panel', taste: 'friend-taste-panel' };
+  const tabIds = { overlap: 'tab-overlap', rankings: 'tab-rankings', taste: 'tab-taste' };
+  Object.entries(panels).forEach(([key, id]) => {
+    const panel = document.getElementById(id);
+    if (panel) panel.style.display = key === tab ? 'block' : 'none';
+  });
+  Object.entries(tabIds).forEach(([key, id]) => {
+    const btn = document.getElementById(id);
+    if (btn) { btn.style.borderBottomColor = key === tab ? 'var(--ink)' : 'transparent'; btn.style.color = key === tab ? 'var(--ink)' : 'var(--dim)'; }
+  });
 };
+
+window.loadMoreFriendRankings = function(fromIndex) {
+  if (!friendMoviesCache) return;
+  const container = document.getElementById('friend-rankings-rows');
+  const btn = document.getElementById('friend-load-more-btn');
+  if (btn) btn.remove();
+  const newEnd = fromIndex + 10;
+  const slice = friendMoviesCache.slice(fromIndex, newEnd);
+  const color = friendColorCache || 'var(--blue)';
+  const rows = slice.map((m, i) => friendMovieRow(m, fromIndex + i + 1, color)).join('');
+  const hasMore = newEnd < friendMoviesCache.length;
+  const more = hasMore ? `<button id="friend-load-more-btn" onclick="loadMoreFriendRankings(${newEnd})" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:1px solid var(--rule-dark);color:var(--dim);padding:10px 24px;cursor:pointer;display:block;margin:24px auto 0">Load more (${friendMoviesCache.length - newEnd} remaining)</button>` : '';
+  if (container) container.insertAdjacentHTML('beforeend', rows + more);
+};
+
+function friendMovieRow(m, rank, color) {
+  const total = m.total != null ? (Math.round(m.total * 10) / 10).toFixed(1) : '—';
+  const poster = m.poster
+    ? `<img src="https://image.tmdb.org/t/p/w92${m.poster}" style="width:32px;height:48px;object-fit:cover;flex-shrink:0" loading="lazy">`
+    : `<div style="width:32px;height:48px;background:var(--cream);flex-shrink:0"></div>`;
+  return `<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--rule)">
+    ${poster}
+    <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);width:24px;text-align:center;flex-shrink:0">${rank}</div>
+    <div style="flex:1;min-width:0">
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.title}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px">${m.year || ''}${m.director ? ' · ' + m.director.split(',')[0] : ''}</div>
+    </div>
+    <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:20px;color:${color};letter-spacing:-0.5px;flex-shrink:0">${total}</div>
+  </div>`;
+}
 
 function friendRankingsHTML(friend, color) {
   const movies = [...(friend.movies || [])].sort((a, b) => b.total - a.total);
+  friendMoviesCache = movies;
+  friendColorCache = color;
   if (movies.length === 0) {
     return `<div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);padding:32px 0;text-align:center">${friend.display_name} hasn't rated any films yet.</div>`;
   }
-  return movies.map((m, i) => {
-    const total = m.total != null ? (Math.round(m.total * 10) / 10).toFixed(1) : '—';
-    const poster = m.poster
-      ? `<img src="https://image.tmdb.org/t/p/w92${m.poster}" style="width:32px;height:48px;object-fit:cover;flex-shrink:0" loading="lazy">`
-      : `<div style="width:32px;height:48px;background:var(--cream);flex-shrink:0"></div>`;
-    return `<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--rule)">
-      ${poster}
-      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);width:24px;text-align:center;flex-shrink:0">${i + 1}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.title}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px">${m.year || ''}${m.director ? ' · ' + m.director.split(',')[0] : ''}</div>
+  const first10 = movies.slice(0, 10);
+  const hasMore = movies.length > 10;
+  const rows = first10.map((m, i) => friendMovieRow(m, i + 1, color)).join('');
+  const more = hasMore ? `<button id="friend-load-more-btn" onclick="loadMoreFriendRankings(10)" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:1px solid var(--rule-dark);color:var(--dim);padding:10px 24px;cursor:pointer;display:block;margin:24px auto 0">Load more (${movies.length - 10} remaining)</button>` : '';
+  return `<div id="friend-rankings-rows">${rows}</div>${more}`;
+}
+
+function friendTasteHTML(friend, color) {
+  const movies = friend.movies || [];
+  if (movies.length === 0) return `<div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);padding:32px 0;text-align:center">No films rated yet.</div>`;
+
+  const avg = arr => arr.length ? Math.round(arr.reduce((s,v)=>s+v,0)/arr.length * 100)/100 : null;
+  const craftKeys = ['plot','execution','acting','production'];
+  const experienceKeys = ['enjoyability','rewatchability','ending','uniqueness'];
+  const catLabels = { plot:'Plot', execution:'Execution', acting:'Acting', production:'Production', enjoyability:'Enjoyability', rewatchability:'Rewatchability', ending:'Ending', uniqueness:'Uniqueness' };
+
+  function barColor(v) {
+    if (v >= 90) return '#C4922A';
+    if (v >= 80) return '#1F4A2A';
+    if (v >= 70) return '#4A5830';
+    if (v >= 60) return '#6B4820';
+    return 'rgba(12,11,9,0.65)';
+  }
+
+  function catGroup(label, keys) {
+    const items = keys.map(k => ({ key: k, label: catLabels[k], avg: avg(movies.map(m => m.scores?.[k]).filter(v => v != null)) })).filter(c => c.avg != null);
+    if (!items.length) return '';
+    return `<div style="margin-bottom:24px">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);opacity:0.6;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--rule)">${label}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 40px">
+        ${items.map(c => `<div style="display:flex;align-items:center;gap:12px;padding:6px 0">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);width:88px;flex-shrink:0">${c.label}</div>
+          <div style="flex:1;height:2px;background:var(--rule);position:relative">
+            <div style="position:absolute;top:0;left:0;height:100%;background:${barColor(c.avg)};width:${Math.round(c.avg)}%"></div>
+          </div>
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:18px;color:var(--ink);width:36px;text-align:right;letter-spacing:-0.5px">${c.avg}</div>
+        </div>`).join('')}
       </div>
-      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:20px;color:${color};letter-spacing:-0.5px;flex-shrink:0">${total}</div>
     </div>`;
-  }).join('');
+  }
+
+  function splitNames(str) { return (str||'').split(',').map(s=>s.trim()).filter(Boolean); }
+  function topEntities(type, label) {
+    const map = {};
+    movies.forEach(m => {
+      let names = [];
+      if (type === 'directors') names = splitNames(m.director);
+      else if (type === 'writers') names = splitNames(m.writer);
+      else if (type === 'actors') names = splitNames(m.cast);
+      else if (type === 'companies') names = splitNames(m.productionCompanies);
+      names.forEach(n => { if (!map[n]) map[n] = []; map[n].push(m.total); });
+    });
+    const entities = Object.entries(map)
+      .filter(([,scores]) => scores.length >= 2)
+      .map(([name, scores]) => ({ name, count: scores.length, avg: parseFloat((scores.reduce((s,v)=>s+v,0)/scores.length).toFixed(1)) }))
+      .sort((a,b) => b.avg - a.avg).slice(0, 5);
+    if (!entities.length) return '';
+    return `<div style="margin-bottom:28px">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);opacity:0.6;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--rule)">${label}</div>
+      ${entities.map((e,i) => `<div style="display:flex;align-items:baseline;gap:12px;padding:7px 0;border-bottom:1px solid var(--rule)">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);width:16px;flex-shrink:0">${i+1}</div>
+        <div style="flex:1;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink)">${e.name}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">${e.count} film${e.count!==1?'s':''}</div>
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:18px;color:${color};letter-spacing:-0.5px;width:36px;text-align:right">${e.avg}</div>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  return `
+    <div style="margin-bottom:36px;padding-bottom:28px;border-bottom:1px solid var(--rule)">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:20px">Category averages · all films</div>
+      ${catGroup('Craft', craftKeys)}
+      ${catGroup('Experience', experienceKeys)}
+    </div>
+    <div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:20px">Top 5 by avg score · min 2 films</div>
+      ${topEntities('directors','Directors')}
+      ${topEntities('actors','Actors')}
+      ${topEntities('writers','Writers')}
+      ${topEntities('companies','Production Companies')}
+    </div>`;
 }
 
 function coRatedHTML(coRated, friendColor) {
