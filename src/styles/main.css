@@ -116,15 +116,17 @@ body {
 .masthead-util.highlight { color: var(--blue); }
 
 /* ── NAV ── */
+#sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--cream);
+}
 .nav-strip {
   display: flex;
   border-top: 1px solid var(--rule-dark);
   border-bottom: 1px solid var(--rule-dark);
   padding: 0 56px;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: var(--cream);
 }
 .nav-btn {
   font-family: 'DM Mono', monospace;
@@ -362,6 +364,7 @@ body {
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
   .nav-strip { display: none; }
+  #global-taste-banner > div { padding-left: 20px; padding-right: 20px; }
   .nav-mobile { display: flex; }
 
   .masthead { padding: 24px 20px 0; }

@@ -35,6 +35,33 @@ function getSorted() {
   }
 }
 
+export function updateTasteBanner() {
+  const banner = document.getElementById('global-taste-banner');
+  if (!banner) return;
+  const MIN = 10;
+  if (MOVIES.length > 0 && MOVIES.length < MIN) {
+    const remaining = MIN - MOVIES.length;
+    const pct = Math.round((MOVIES.length / MIN) * 100);
+    banner.innerHTML = `
+      <div style="background:#FDF1EC;border-bottom:1px solid rgba(232,98,58,0.25);padding:10px 56px;display:flex;align-items:center;justify-content:space-between;gap:20px">
+        <div style="flex:1;min-width:0;display:flex;align-items:center;gap:16px">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+              <span style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--action)">Your palate is forming &nbsp;·&nbsp; ${MOVIES.length} of ${MIN}</span>
+              <span style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink)">Rate <strong>${remaining} more film${remaining !== 1 ? 's' : ''}</strong> to unlock Predict and full taste insights.</span>
+            </div>
+            <div style="height:2px;background:rgba(232,98,58,0.18);border-radius:1px">
+              <div style="height:2px;width:${pct}%;background:var(--action);border-radius:1px;transition:width 0.4s ease"></div>
+            </div>
+          </div>
+        </div>
+        <button onclick="document.querySelector('.nav-btn.action-tab').click()" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:8px 16px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:opacity 0.15s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Add a film →</button>
+      </div>`;
+  } else {
+    banner.innerHTML = '';
+  }
+}
+
 export function setViewMode(mode) {
   viewMode = mode;
   renderRankings();
@@ -80,27 +107,7 @@ export function renderRankings() {
   rankingsEl.classList.remove('empty');
   document.getElementById('mastheadCount').textContent = MOVIES.length + ' films ranked';
 
-  const banner = document.getElementById('rankings-banner');
-  if (banner) {
-    const MIN = 10;
-    if (MOVIES.length < MIN) {
-      const remaining = MIN - MOVIES.length;
-      const pct = Math.round((MOVIES.length / MIN) * 100);
-      banner.innerHTML = `
-        <div style="background:#FDF1EC;border-left:3px solid var(--action);padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:20px">
-          <div style="flex:1;min-width:0">
-            <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--action);margin-bottom:5px">Your palate is forming &nbsp;·&nbsp; ${MOVIES.length} of ${MIN}</div>
-            <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);line-height:1.5">Rate <strong>${remaining} more film${remaining !== 1 ? 's' : ''}</strong> to unlock Predict and deeper taste insights.</div>
-            <div style="height:2px;background:rgba(232,98,58,0.2);border-radius:1px;margin-top:10px">
-              <div style="height:2px;width:${pct}%;background:var(--action);border-radius:1px;transition:width 0.4s ease"></div>
-            </div>
-          </div>
-          <button onclick="document.querySelector('.nav-btn.action-tab').click()" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:9px 16px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:opacity 0.15s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Add a film →</button>
-        </div>`;
-    } else {
-      banner.innerHTML = '';
-    }
-  }
+  updateTasteBanner();
 
   const sorted = getSorted();
   viewMode === 'grid' ? renderGrid(sorted, list, controls, rankingsEl) : renderTable(sorted, list, controls, rankingsEl);

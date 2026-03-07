@@ -59,13 +59,16 @@
   </div>
 </div>
 
-<div class="nav-strip">
-  <button class="nav-btn active" onclick="showScreen('rankings')">Rankings</button>
-  <button class="nav-btn" onclick="showScreen('predict')">Predict</button>
-  <button class="nav-btn" onclick="showScreen('analysis')">Analysis</button>
-  <button class="nav-btn" onclick="showScreen('calibration')">Calibrate</button>
-  <button class="nav-btn" id="nav-profile" onclick="showScreen('profile')">Profile</button>
-  <button class="nav-btn action-tab" onclick="showScreen('add')">+ Add Film</button>
+<div id="sticky-header">
+  <div class="nav-strip">
+    <button class="nav-btn active" onclick="showScreen('rankings')">Rankings</button>
+    <button class="nav-btn" onclick="showScreen('predict')">Predict</button>
+    <button class="nav-btn" onclick="showScreen('analysis')">Analysis</button>
+    <button class="nav-btn" onclick="showScreen('calibration')">Calibrate</button>
+    <button class="nav-btn" id="nav-profile" onclick="showScreen('profile')">Profile</button>
+    <button class="nav-btn action-tab" onclick="showScreen('add')">+ Add Film</button>
+  </div>
+  <div id="global-taste-banner"></div>
 </div>
 
 <nav class="nav-mobile">
@@ -95,7 +98,6 @@
 <!-- ══════════════ RANKINGS ══════════════ -->
 <div id="rankings" class="screen active">
   <div id="rankings-controls"></div>
-  <div id="rankings-banner"></div>
   <div class="rankings-header">
     <div class="col-head"></div>
     <div class="col-head sortable" onclick="sortBy('rank')" id="sort-rank"># <span class="sort-arrow active-sort">↓</span></div>
