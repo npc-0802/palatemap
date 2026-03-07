@@ -25,6 +25,19 @@ export const LABELS = [
   [15, 'So bad I stopped watching'], [10, 'Disgusting'], [2, 'Insulting'], [0, 'Unwatchable']
 ];
 
+// Merge consecutive single-word entries caused by split-name storage bug
+// e.g. ["Kirsten", "Dunst"] → ["Kirsten Dunst"]
+export function mergeSplitNames(arr) {
+  const out = [];
+  let i = 0;
+  while (i < arr.length) {
+    if (!arr[i].includes(' ') && arr[i + 1] && !arr[i + 1].includes(' ')) {
+      out.push(arr[i] + ' ' + arr[i + 1]); i += 2;
+    } else { out.push(arr[i]); i++; }
+  }
+  return out;
+}
+
 export function getLabel(score) {
   if (score === 100) return 'No better exists';
   if (score === 1) return 'No worse exists';

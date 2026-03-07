@@ -1,15 +1,19 @@
-import { MOVIES, CATEGORIES, scoreClass } from '../state.js';
+import { MOVIES, CATEGORIES, scoreClass, mergeSplitNames } from '../state.js';
 
 let exploreActiveTab = 'directors';
+
+function splitNames(str) {
+  return mergeSplitNames((str||'').split(',').map(s => s.trim()).filter(Boolean));
+}
 
 function buildEntityMap(type) {
   const map = {};
   MOVIES.forEach(m => {
     let names = [];
-    if (type === 'directors') names = (m.director||'').split(',').map(s=>s.trim()).filter(Boolean);
-    else if (type === 'writers') names = (m.writer||'').split(',').map(s=>s.trim()).filter(Boolean);
-    else if (type === 'actors') names = (m.cast||'').split(',').map(s=>s.trim()).filter(Boolean);
-    else if (type === 'companies') names = (m.productionCompanies||'').split(',').map(s=>s.trim()).filter(Boolean);
+    if (type === 'directors') names = splitNames(m.director);
+    else if (type === 'writers') names = splitNames(m.writer);
+    else if (type === 'actors') names = splitNames(m.cast);
+    else if (type === 'companies') names = splitNames(m.productionCompanies);
     names.forEach(name => {
       if (!map[name]) map[name] = [];
       map[name].push(m);
@@ -34,33 +38,48 @@ function getEntities(type) {
     .sort((a,b) => b.avg - a.avg);
 }
 
+function badgeColor(score) {
+  if (score >= 90) return '#C4922A';
+  if (score >= 80) return '#1F4A2A';
+  if (score >= 70) return '#4A5830';
+  if (score >= 60) return '#6B4820';
+  return 'rgba(12,11,9,0.55)';
+}
+
 export function renderExploreIndex(tab) {
   if (tab) exploreActiveTab = tab;
   const tabs = ['directors','writers','actors','companies'];
-  const tabLabels = { directors: 'Directors', writers: 'Writers', actors: 'Actors', companies: 'Companies' };
+  const tabLabels = { directors: 'Directors', writers: 'Writers', actors: 'Actors', companies: 'Production Co.' };
 
   const entities = getEntities(exploreActiveTab);
 
   document.getElementById('exploreContent').innerHTML = `
-    <div style="max-width:960px">
-      <h2 style="font-family:'Playfair Display',serif;font-style:italic;font-size:36px;font-weight:900;letter-spacing:-1px;margin-bottom:6px">Explore</h2>
-      <p style="color:var(--dim);font-size:13px;margin-bottom:28px">Click any name to see their full filmography in your list, scored by category.</p>
+    <div style="max-width:800px">
+      <div style="margin-bottom:28px">
+        <h2 style="font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(28px,4vw,42px);font-weight:900;letter-spacing:-1px;margin-bottom:4px">Explore</h2>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px">Ranked by your average score</div>
+      </div>
 
       <div class="explore-tabs">
         ${tabs.map(t => `<button class="explore-tab ${t===exploreActiveTab?'active':''}" onclick="renderExploreIndex('${t}')">${tabLabels[t]}</button>`).join('')}
       </div>
 
-      ${entities.length === 0 ? `<div style="color:var(--dim);font-style:italic;padding:40px 0">Not enough data yet — add more films to see patterns.</div>` :
-        `<div class="explore-index">
-          ${entities.map((e, i) => `
-            <div class="explore-index-card" onclick="exploreEntity('${exploreActiveTab.slice(0,-1)}','${e.name.replace(/'/g,"\\'")}')">
-              <div style="display:flex;align-items:baseline;gap:10px">
-                <div class="explore-index-name">${e.name}</div>
-                <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.5px">#${i+1} of ${entities.length}</div>
+      <div style="height:28px"></div>
+      ${entities.length === 0
+        ? `<div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dim);font-style:italic;padding:48px 0">Not enough data yet — add more films to see patterns.</div>`
+        : entities.map((e, i) => {
+            const safeName = e.name.replace(/'/g, "\\'");
+            const singularType = exploreActiveTab.slice(0, -1);
+            return `<div style="display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid var(--rule);cursor:pointer" onclick="exploreEntity('${singularType}','${safeName}')" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+              <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);min-width:28px;text-align:right">${i+1}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:18px;font-weight:700;color:var(--ink);line-height:1.2">${e.name}</div>
+                <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px">${e.films.length} film${e.films.length!==1?'s':''}</div>
               </div>
-              <div class="explore-index-meta">${e.films.length} film${e.films.length!==1?'s':''} · avg ${e.avg.toFixed(1)}</div>
-            </div>`).join('')}
-        </div>`}
+              <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:17px;color:white;padding:4px 11px 3px;background:${badgeColor(e.avg)};border-radius:4px;flex-shrink:0">${e.avg.toFixed(1)}</div>
+            </div>`;
+          }).join('')
+      }
     </div>
   `;
 }
@@ -80,10 +99,10 @@ export function exploreEntity(type, name) {
   const typeLabel = type === 'director' ? 'Director' : type === 'writer' ? 'Writer' : type === 'actor' ? 'Actor' : 'Company';
 
   const films = MOVIES.filter(m => {
-    if (type === 'director') return (m.director||'').split(',').map(s=>s.trim()).includes(name);
-    if (type === 'writer') return (m.writer||'').split(',').map(s=>s.trim()).includes(name);
-    if (type === 'actor') return (m.cast||'').split(',').map(s=>s.trim()).includes(name);
-    if (type === 'company') return (m.productionCompanies||'').split(',').map(s=>s.trim()).includes(name);
+    if (type === 'director') return splitNames(m.director).includes(name);
+    if (type === 'writer') return splitNames(m.writer).includes(name);
+    if (type === 'actor') return splitNames(m.cast).includes(name);
+    if (type === 'company') return splitNames(m.productionCompanies).includes(name);
     return false;
   }).sort((a,b) => b.total - a.total);
 
@@ -118,55 +137,50 @@ export function exploreEntity(type, name) {
   const weakness = scored[scored.length-1];
 
   document.getElementById('exploreContent').innerHTML = `
-    <div style="max-width:960px">
-      <span class="explore-back" onclick="renderExploreIndex('${pluralType}')">← Back to Explore</span>
+    <div style="max-width:800px">
 
-      <div class="explore-entity-header">
-        <div class="explore-entity-name">${name}</div>
-        <div class="explore-entity-role">${typeLabel}</div>
-      </div>
-
-      <div class="explore-stat-row">
-        <div class="explore-stat">
-          <div class="explore-stat-val">${avg}</div>
-          <div class="explore-stat-label">Avg score</div>
+      <div style="background:var(--surface-dark);margin:-40px -56px 32px;padding:40px 56px 32px">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:14px">
+          ${typeLabel} &nbsp;·&nbsp; <span onclick="renderExploreIndex('${pluralType}')" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px">← all ${pluralType}</span>
         </div>
-        <div class="explore-stat">
-          <div class="explore-stat-val" style="color:var(--blue)">#${entityRank} <span style="font-size:16px;color:var(--dim)">of ${totalEntities}</span></div>
-          <div class="explore-stat-label">Rank among ${pluralType}</div>
-        </div>
-        <div class="explore-stat">
-          <div class="explore-stat-val">${films.length}</div>
-          <div class="explore-stat-label">Films in list</div>
-        </div>
-        <div class="explore-stat">
-          <div class="explore-stat-val ${scoreClass(best.total)}">${best.total}</div>
-          <div class="explore-stat-label">Best: ${best.title.length > 14 ? best.title.slice(0,13)+'…' : best.title}</div>
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(26px,4vw,44px);color:var(--on-dark);letter-spacing:-1.5px;line-height:1.1;margin-bottom:20px">${name}</div>
+        <div style="display:flex;align-items:baseline;gap:20px;flex-wrap:wrap">
+          <div style="display:flex;align-items:baseline;gap:10px">
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(36px,5vw,52px);color:var(--on-dark);letter-spacing:-2px;line-height:1">${avg}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);text-transform:uppercase;letter-spacing:1px">avg score</div>
+          </div>
+          <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--on-dark-dim)">#${entityRank} of ${totalEntities} ${pluralType}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--on-dark-dim)">${films.length} film${films.length!==1?'s':''} rated</div>
         </div>
       </div>
 
       ${scored.length > 0 ? `
-        <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:12px">Category averages · with rank among ${pluralType}</div>
-        <div class="explore-cat-breakdown">
+        ${strength && weakness && strength.key !== weakness.key ? `
+          <div style="font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.7;color:var(--ink);margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid var(--rule)">
+            You rate ${name}'s <strong>${strength.label.toLowerCase()}</strong> highest (avg ${strength.avg.toFixed(1)})${weakness.avg < 70 ? `, but find their <strong>${weakness.label.toLowerCase()}</strong> less compelling (avg ${weakness.avg.toFixed(1)})` : ''}.${entityRank <= 3 ? ` Ranks <strong>#${entityRank}</strong> among all ${pluralType} in your list.` : ''}
+          </div>` : ''}
+
+        <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:16px">Category averages</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 40px;margin-bottom:32px">
           ${scored.map(c => {
             const cr = catRanks[c.key];
-            return `
-            <div class="explore-cat-cell">
-              <div class="explore-cat-cell-label">${c.label}</div>
-              <div class="explore-cat-cell-val ${scoreClass(c.avg)}">${c.avg.toFixed(1)}</div>
-              ${cr ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-top:2px">#${cr.rank} of ${cr.total}</div>` : ''}
+            return `<div style="border-bottom:1px solid var(--rule);padding:10px 0">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+                <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--dim)">${c.label}</div>
+                <div style="display:flex;align-items:baseline;gap:8px">
+                  ${cr ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">#${cr.rank}</div>` : ''}
+                  <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:18px;color:var(--ink)">${c.avg.toFixed(1)}</div>
+                </div>
+              </div>
+              <div style="height:2px;background:var(--rule);border-radius:1px">
+                <div style="height:2px;width:${c.avg}%;background:${badgeColor(c.avg)};border-radius:1px"></div>
+              </div>
             </div>`;
           }).join('')}
         </div>
-
-        ${strength && weakness && strength.key !== weakness.key ? `
-          <div style="background:var(--blue-pale);border:1px solid var(--rule);padding:16px 20px;margin:20px 0;font-size:13px;line-height:1.7;color:var(--ink)">
-            You rate ${name}'s <strong>${strength.label.toLowerCase()}</strong> highest (avg ${strength.avg.toFixed(1)})${weakness.avg < 70 ? `, but find their <strong>${weakness.label.toLowerCase()}</strong> less compelling (avg ${weakness.avg.toFixed(1)})` : ''}.
-            ${entityRank <= 3 ? ` Ranks <strong>#${entityRank}</strong> among all ${pluralType} in your list.` : ''}
-          </div>` : ''}
       ` : ''}
 
-      <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin:24px 0 12px">Films</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:12px">Films</div>
       ${films.map((f,i) => {
         const poster = f.poster
           ? `<img class="film-poster-thumb" src="https://image.tmdb.org/t/p/w92${f.poster}" alt="" loading="lazy">`

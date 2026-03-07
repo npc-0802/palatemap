@@ -1,4 +1,4 @@
-import { MOVIES, CATEGORIES, scoreClass, getLabel, calcTotal, recalcAllTotals } from '../state.js';
+import { MOVIES, CATEGORIES, scoreClass, getLabel, calcTotal, recalcAllTotals, mergeSplitNames } from '../state.js';
 import { saveToStorage } from './storage.js';
 import { syncToSupabase } from './supabase.js';
 import { renderRankings } from './rankings.js';
@@ -40,18 +40,6 @@ function renderModal() {
 
   const chip = (label, type, value) =>
     `<span class="modal-meta-chip" onclick="exploreEntity('${type}','${value.replace(/'/g, String.fromCharCode(39))}')">${label}</span>`;
-
-  // Merge consecutive single-word names (handles split "Sean","Astin" → "Sean Astin")
-  function mergeSplitNames(arr) {
-    const out = [];
-    let i = 0;
-    while (i < arr.length) {
-      if (!arr[i].includes(' ') && arr[i+1] && !arr[i+1].includes(' ')) {
-        out.push(arr[i] + ' ' + arr[i+1]); i += 2;
-      } else { out.push(arr[i]); i++; }
-    }
-    return out;
-  }
 
   const directorChips = (m.director||'').split(',').map(d=>d.trim()).filter(Boolean).map(d=>chip(d,'director',d)).join('');
   const writerChips = (m.writer||'').split(',').map(w=>w.trim()).filter(Boolean).map(w=>chip(w,'writer',w)).join('');
