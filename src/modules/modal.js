@@ -43,6 +43,7 @@ function renderModal() {
 
   const directorChips = mergeSplitNames((m.director||'').split(',').map(d=>d.trim()).filter(Boolean)).map(d=>chip(d,'director',d)).join('');
   const writerChips = mergeSplitNames((m.writer||'').split(',').map(w=>w.trim()).filter(Boolean)).map(w=>chip(w,'writer',w)).join('');
+  window.__debugCast = m.cast;
   const castChips = mergeSplitNames((m.cast||'').split(',').map(c=>c.trim()).filter(Boolean)).map(c=>chip(c,'actor',c)).join('');
   const companyChips = mergeSplitNames((m.productionCompanies||'').split(',').map(c=>c.trim()).filter(Boolean)).map(c=>chip(c,'company',c)).join('');
 
