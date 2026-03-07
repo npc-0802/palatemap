@@ -289,9 +289,11 @@ export function goToStep3() {
 
 let hthComparisons = [];
 let hthIdx = 0;
+let hthHistory = [];
 
 function renderHth() {
   hthComparisons = [];
+  hthHistory = [];
   CATEGORIES.forEach(cat => {
     const myScore = newFilm.scores[cat.key];
     if (!myScore) return;
@@ -335,11 +337,15 @@ function renderHthCard() {
         <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:4px">${getLabel(film.scores[cat.key])}</div>
       </div>
     </div>
-    <div class="hth-skip" onclick="hthSkip()">They're equal / skip this one</div>
+    <div style="display:flex;justify-content:center;align-items:center;gap:24px;margin-top:4px">
+      ${hthIdx > 0 ? `<span class="hth-skip" onclick="hthUndo()">← Undo</span>` : ''}
+      <span class="hth-skip" onclick="hthSkip()">They're equal / skip this one</span>
+    </div>
   `;
 }
 
 window.hthChoice = function(winner, catKey, existingScore) {
+  hthHistory.push({ idx: hthIdx, scores: { ...newFilm.scores } });
   const myScore = newFilm.scores[catKey];
   if (winner === 'new' && myScore <= existingScore) newFilm.scores[catKey] = existingScore + 1;
   else if (winner === 'existing' && myScore >= existingScore) newFilm.scores[catKey] = existingScore - 1;
@@ -347,7 +353,19 @@ window.hthChoice = function(winner, catKey, existingScore) {
   renderHthCard();
 };
 
-window.hthSkip = function() { hthIdx++; renderHthCard(); };
+window.hthSkip = function() {
+  hthHistory.push({ idx: hthIdx, scores: { ...newFilm.scores } });
+  hthIdx++;
+  renderHthCard();
+};
+
+window.hthUndo = function() {
+  if (hthHistory.length === 0) return;
+  const prev = hthHistory.pop();
+  hthIdx = prev.idx;
+  newFilm.scores = prev.scores;
+  renderHthCard();
+};
 
 export function goToStep4() {
   renderResult();
