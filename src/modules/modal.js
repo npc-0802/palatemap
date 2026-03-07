@@ -56,7 +56,7 @@ function renderModal() {
   const directorChips = (m.director||'').split(',').map(d=>d.trim()).filter(Boolean).map(d=>chip(d,'director',d)).join('');
   const writerChips = (m.writer||'').split(',').map(w=>w.trim()).filter(Boolean).map(w=>chip(w,'writer',w)).join('');
   const castChips = mergeSplitNames((m.cast||'').split(',').map(c=>c.trim()).filter(Boolean)).map(c=>chip(c,'actor',c)).join('');
-  const companyChips = (m.productionCompanies||'').split(',').map(c=>c.trim()).filter(Boolean).map(c=>chip(c,'company',c)).join('');
+  const companyChips = mergeSplitNames((m.productionCompanies||'').split(',').map(c=>c.trim()).filter(Boolean)).map(c=>chip(c,'company',c)).join('');
 
   const headerHtml = m.poster
     ? `<div style="position:relative;display:flex;align-items:stretch;background:var(--surface-dark);margin:-40px -40px 28px;padding:28px 32px">
