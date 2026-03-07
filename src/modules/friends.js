@@ -4,15 +4,32 @@ import { sb, loadFriends, loadFriendFull, acceptFriendInvite, confirmFriendInvit
 
 const CATS = ['plot','execution','acting','production','enjoyability','rewatchability','ending','uniqueness'];
 const CAT_SHORT = { plot:'Plot', execution:'Exec', acting:'Acting', production:'Prod', enjoyability:'Enjoy', rewatchability:'Rewatch', ending:'Ending', uniqueness:'Unique' };
+const CAT_LABEL = { plot:'Plot', execution:'Execution', acting:'Acting', production:'Production', enjoyability:'Enjoyability', rewatchability:'Rewatchability', ending:'Ending', uniqueness:'Uniqueness' };
 const PROXY_URL = 'https://ledger-proxy.noahparikhcott.workers.dev';
+const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 
 let friendsCache = null;
 let inviteToken = null;
 let searchDebounceTimer = null;
 let friendMoviesCache = null;
 let friendColorCache = null;
+let friendEntityMapsCache = {};
 
 // ── PUBLIC ──
+
+export function updateFriendsNotificationDot(count) {
+  ['nav-friends', 'nav-mobile-friends'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.querySelector('.friends-notif-dot')?.remove();
+    if (count > 0) {
+      const dot = document.createElement('span');
+      dot.className = 'friends-notif-dot';
+      dot.style.cssText = 'position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:#E8623A;pointer-events:none';
+      btn.appendChild(dot);
+    }
+  });
+}
 
 export function renderFriends() {
   const el = document.getElementById('friendsContent');
@@ -31,12 +48,15 @@ export function renderFriends() {
       <div id="friends-list-area" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);padding:40px 0;text-align:center">Loading…</div>
     </div>`;
 
+  updateFriendsNotificationDot(0);
+
   Promise.all([
     loadFriends(currentUser.id),
     loadPendingIncoming(currentUser.id),
     loadPendingOutgoing(currentUser.id)
   ]).then(([friends, incoming, outgoing]) => {
     friendsCache = friends;
+    updateFriendsNotificationDot(0);
     const area = document.getElementById('friends-list-area');
     if (area) area.outerHTML = friendListHTML(friends, incoming, outgoing);
   }).catch(() => {
@@ -237,6 +257,59 @@ window.addFriendFromSearch = async function(userId) {
     if (btn) { btn.disabled = false; btn.textContent = 'Add'; }
     window.showToast?.('Could not send request.', { type: 'error' });
   }
+};
+
+window.openFriendFilmDetail = function(index) {
+  const m = friendMoviesCache?.[index];
+  if (!m) return;
+  const color = friendColorCache || 'var(--blue)';
+  document.getElementById('friend-film-modal')?.remove();
+
+  const scoreRows = CATS.map(c => {
+    const val = m.scores?.[c];
+    if (val == null) return '';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:5px 0">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);width:96px;flex-shrink:0">${CAT_LABEL[c]}</div>
+      <div style="flex:1;height:2px;background:var(--rule)">
+        <div style="height:100%;width:${val}%;background:${color}"></div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--ink);width:28px;text-align:right">${val}</div>
+    </div>`;
+  }).join('');
+
+  const total = m.total != null ? (Math.round(m.total * 10) / 10).toFixed(1) : '—';
+  const poster = m.poster ? `<img src="https://image.tmdb.org/t/p/w185${m.poster}" style="width:80px;height:120px;object-fit:cover;flex-shrink:0">` : '';
+
+  const overlay = document.createElement('div');
+  overlay.id = 'friend-film-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(12,11,9,0.7);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px';
+  overlay.innerHTML = `
+    <div style="background:var(--paper);max-width:460px;width:100%;padding:32px;border-top:3px solid ${color};max-height:85vh;overflow-y:auto">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+        <span onclick="document.getElementById('friend-film-modal').remove()" style="font-family:'DM Mono',monospace;font-size:18px;color:var(--dim);cursor:pointer;line-height:1">×</span>
+      </div>
+      <div style="display:flex;gap:20px;margin-bottom:24px;align-items:flex-start">
+        ${poster}
+        <div>
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:20px;color:var(--ink);line-height:1.2;margin-bottom:6px">${m.title}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-bottom:16px">${m.year || ''}${m.director ? ' · ' + m.director.split(',')[0] : ''}</div>
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:44px;color:${color};letter-spacing:-1px;line-height:1">${total}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">/100</div>
+        </div>
+      </div>
+      <div>${scoreRows}</div>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+};
+
+window.toggleFriendEntity = function(entityId) {
+  const films = document.getElementById(`${entityId}-films`);
+  const arrow = document.getElementById(`${entityId}-arrow`);
+  if (!films) return;
+  const isOpen = films.style.display !== 'none';
+  films.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.textContent = isOpen ? '▾' : '▴';
 };
 
 window.acceptRequest = async function(requesterId, requesterName) {
@@ -524,10 +597,11 @@ window.loadMoreFriendRankings = function(fromIndex) {
 
 function friendMovieRow(m, rank, color) {
   const total = m.total != null ? (Math.round(m.total * 10) / 10).toFixed(1) : '—';
+  const idx = rank - 1;
   const poster = m.poster
     ? `<img src="https://image.tmdb.org/t/p/w92${m.poster}" style="width:32px;height:48px;object-fit:cover;flex-shrink:0" loading="lazy">`
     : `<div style="width:32px;height:48px;background:var(--cream);flex-shrink:0"></div>`;
-  return `<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--rule)">
+  return `<div onclick="openFriendFilmDetail(${idx})" style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--rule);cursor:pointer;transition:background 0.12s" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
     ${poster}
     <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);width:24px;text-align:center;flex-shrink:0">${rank}</div>
     <div style="flex:1;min-width:0">
@@ -552,6 +626,33 @@ function friendRankingsHTML(friend, color) {
   return `<div id="friend-rankings-rows">${rows}</div>${more}`;
 }
 
+function soloRadar(movies, color, size = 180) {
+  const n = CATS.length;
+  const cx = size / 2, cy = size / 2, r = size * 0.36;
+  const angle = i => (i / n) * Math.PI * 2 - Math.PI / 2;
+  const pt = (i, s) => ({ x: cx + r * s * Math.cos(angle(i)), y: cy + r * s * Math.sin(angle(i)) });
+  const avgs = {};
+  CATS.forEach(c => {
+    const vals = movies.map(m => m.scores?.[c]).filter(v => v != null);
+    avgs[c] = vals.length ? vals.reduce((s,v)=>s+v,0)/vals.length : 0;
+  });
+  const grid = [0.25,0.5,0.75,1].map(s =>
+    `<polygon points="${CATS.map((_,i)=>`${pt(i,s).x},${pt(i,s).y}`).join(' ')}" fill="none" stroke="var(--rule)" stroke-width="0.75"/>`
+  ).join('');
+  const axes = CATS.map((_,i) => { const p = pt(i,1); return `<line x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" stroke="var(--rule)" stroke-width="0.75"/>`; }).join('');
+  const pts = CATS.map((c,i) => { const p = pt(i, avgs[c]/100); return `${p.x},${p.y}`; }).join(' ');
+  const poly = `<polygon points="${pts}" fill="${color}" fill-opacity="0.2" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>`;
+  const dots = CATS.map((c,i) => { const p = pt(i, avgs[c]/100); return `<circle cx="${p.x}" cy="${p.y}" r="2.5" fill="${color}"/>`; }).join('');
+  const lblOff = 22;
+  const lbls = CATS.map((c,i) => {
+    const lp = pt(i, 1 + lblOff/r);
+    const anchor = lp.x < cx-5 ? 'end' : lp.x > cx+5 ? 'start' : 'middle';
+    return `<text x="${lp.x}" y="${lp.y}" font-family="'DM Mono',monospace" font-size="8.5" fill="var(--dim)" text-anchor="${anchor}" dominant-baseline="middle">${CAT_SHORT[c]}</text>`;
+  }).join('');
+  const pad = 36;
+  return `<svg width="${size+pad*2}" height="${size+pad*2}" viewBox="${-pad} ${-pad} ${size+pad*2} ${size+pad*2}" style="overflow:visible;display:block">${grid}${axes}${poly}${dots}${lbls}</svg>`;
+}
+
 function friendTasteHTML(friend, color) {
   const movies = friend.movies || [];
   if (movies.length === 0) return `<div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);padding:32px 0;text-align:center">No films rated yet.</div>`;
@@ -559,18 +660,15 @@ function friendTasteHTML(friend, color) {
   const avg = arr => arr.length ? Math.round(arr.reduce((s,v)=>s+v,0)/arr.length * 100)/100 : null;
   const craftKeys = ['plot','execution','acting','production'];
   const experienceKeys = ['enjoyability','rewatchability','ending','uniqueness'];
-  const catLabels = { plot:'Plot', execution:'Execution', acting:'Acting', production:'Production', enjoyability:'Enjoyability', rewatchability:'Rewatchability', ending:'Ending', uniqueness:'Uniqueness' };
 
   function barColor(v) {
-    if (v >= 90) return '#C4922A';
-    if (v >= 80) return '#1F4A2A';
-    if (v >= 70) return '#4A5830';
-    if (v >= 60) return '#6B4820';
+    if (v >= 90) return '#C4922A'; if (v >= 80) return '#1F4A2A';
+    if (v >= 70) return '#4A5830'; if (v >= 60) return '#6B4820';
     return 'rgba(12,11,9,0.65)';
   }
 
   function catGroup(label, keys) {
-    const items = keys.map(k => ({ key: k, label: catLabels[k], avg: avg(movies.map(m => m.scores?.[k]).filter(v => v != null)) })).filter(c => c.avg != null);
+    const items = keys.map(k => ({ key: k, label: CAT_LABEL[k], avg: avg(movies.map(m => m.scores?.[k]).filter(v => v != null)) })).filter(c => c.avg != null);
     if (!items.length) return '';
     return `<div style="margin-bottom:24px">
       <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);opacity:0.6;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--rule)">${label}</div>
@@ -587,7 +685,19 @@ function friendTasteHTML(friend, color) {
   }
 
   function splitNames(str) { return (str||'').split(',').map(s=>s.trim()).filter(Boolean); }
-  function topEntities(type, label) {
+
+  const entityTypes = [
+    { type: 'directors', label: 'Directors', isPerson: true },
+    { type: 'actors',    label: 'Actors',    isPerson: true },
+    { type: 'writers',   label: 'Writers',   isPerson: true },
+    { type: 'companies', label: 'Production Companies', isPerson: false }
+  ];
+
+  friendEntityMapsCache = {};
+  let entitySections = '';
+  const allEntitiesForImages = {};
+
+  entityTypes.forEach(({ type, label, isPerson }) => {
     const map = {};
     movies.forEach(m => {
       let names = [];
@@ -595,36 +705,89 @@ function friendTasteHTML(friend, color) {
       else if (type === 'writers') names = splitNames(m.writer);
       else if (type === 'actors') names = splitNames(m.cast);
       else if (type === 'companies') names = splitNames(m.productionCompanies);
-      names.forEach(n => { if (!map[n]) map[n] = []; map[n].push(m.total); });
+      names.forEach(n => { if (!map[n]) map[n] = []; map[n].push(m); });
     });
+    friendEntityMapsCache[type] = map;
+
     const entities = Object.entries(map)
-      .filter(([,scores]) => scores.length >= 2)
-      .map(([name, scores]) => ({ name, count: scores.length, avg: parseFloat((scores.reduce((s,v)=>s+v,0)/scores.length).toFixed(1)) }))
+      .filter(([,films]) => films.length >= 2)
+      .map(([name, films]) => ({
+        name, count: films.length,
+        avg: parseFloat((films.reduce((s,f)=>s+f.total,0)/films.length).toFixed(1)),
+        films: [...films].sort((a,b) => b.total - a.total)
+      }))
       .sort((a,b) => b.avg - a.avg).slice(0, 5);
-    if (!entities.length) return '';
-    return `<div style="margin-bottom:28px">
+
+    if (!entities.length) return;
+    allEntitiesForImages[type] = { entities, isPerson };
+
+    const portrait = (i) => isPerson
+      ? `<div style="position:relative;width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--rule)"><img id="fe-img-${type}-${i}" src="" alt="" style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;display:none"></div>`
+      : `<div style="position:relative;width:36px;height:36px;border-radius:4px;flex-shrink:0;background:white;border:1px solid var(--rule);display:flex;align-items:center;justify-content:center;overflow:hidden"><img id="fe-img-${type}-${i}" src="" alt="" style="width:28px;height:28px;object-fit:contain;display:none"></div>`;
+
+    entitySections += `<div style="margin-bottom:28px">
       <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);opacity:0.6;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--rule)">${label}</div>
-      ${entities.map((e,i) => `<div style="display:flex;align-items:baseline;gap:12px;padding:7px 0;border-bottom:1px solid var(--rule)">
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);width:16px;flex-shrink:0">${i+1}</div>
-        <div style="flex:1;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink)">${e.name}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">${e.count} film${e.count!==1?'s':''}</div>
-        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:18px;color:${color};letter-spacing:-0.5px;width:36px;text-align:right">${e.avg}</div>
-      </div>`).join('')}
+      ${entities.map((e, i) => {
+        const entityId = `fe-${type}-${i}`;
+        const filmRows = e.films.map(f => {
+          const t = f.total != null ? (Math.round(f.total*10)/10).toFixed(1) : '—';
+          const p = f.poster ? `<img src="https://image.tmdb.org/t/p/w92${f.poster}" style="width:24px;height:36px;object-fit:cover;flex-shrink:0">` : `<div style="width:24px;height:36px;background:var(--cream);flex-shrink:0"></div>`;
+          return `<div onclick="openFriendFilmDetail(${(friendMoviesCache||[]).findIndex(x=>x.title===f.title&&x.year===f.year)})" style="display:flex;align-items:center;gap:10px;padding:6px 0;cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+            ${p}
+            <div style="flex:1;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink)">${f.title} <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">${f.year||''}</span></div>
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:15px;color:${color}">${t}</div>
+          </div>`;
+        }).join('');
+        return `<div style="border-bottom:1px solid var(--rule)">
+          <div onclick="toggleFriendEntity('${entityId}')" style="display:flex;align-items:center;gap:12px;padding:10px 0;cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+            <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);width:20px;text-align:center;flex-shrink:0">${i+1}</div>
+            ${portrait(i)}
+            <div style="flex:1;min-width:0">
+              <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:16px;color:var(--ink);line-height:1.2">${e.name}</div>
+              <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px">${e.count} film${e.count!==1?'s':''}</div>
+            </div>
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:18px;color:${color};letter-spacing:-0.5px">${e.avg}</div>
+            <div id="${entityId}-arrow" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);width:16px;text-align:center">▾</div>
+          </div>
+          <div id="${entityId}-films" style="display:none;padding:4px 0 12px 68px">${filmRows}</div>
+        </div>`;
+      }).join('')}
     </div>`;
-  }
+  });
+
+  // Load TMDB images async
+  setTimeout(() => {
+    Object.entries(allEntitiesForImages).forEach(([type, { entities, isPerson }]) => {
+      entities.forEach((e, i) => {
+        const url = isPerson
+          ? `https://api.themoviedb.org/3/search/person?api_key=${TMDB_KEY}&query=${encodeURIComponent(e.name)}&language=en-US`
+          : `https://api.themoviedb.org/3/search/company?api_key=${TMDB_KEY}&query=${encodeURIComponent(e.name)}`;
+        fetch(url).then(r=>r.json()).then(d => {
+          const path = isPerson ? d.results?.[0]?.profile_path : d.results?.[0]?.logo_path;
+          if (!path) return;
+          const img = document.getElementById(`fe-img-${type}-${i}`);
+          if (!img) return;
+          img.src = `https://image.tmdb.org/t/p/w185${path}`;
+          img.style.display = 'block';
+        }).catch(()=>{});
+      });
+    });
+  }, 0);
 
   return `
-    <div style="margin-bottom:36px;padding-bottom:28px;border-bottom:1px solid var(--rule)">
-      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:20px">Category averages · all films</div>
-      ${catGroup('Craft', craftKeys)}
-      ${catGroup('Experience', experienceKeys)}
+    <div style="margin-bottom:32px;padding-bottom:28px;border-bottom:1px solid var(--rule)">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:20px">Taste fingerprint · category averages</div>
+      <div style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap">
+        <div style="flex-shrink:0">${soloRadar(movies, color)}</div>
+        <div style="flex:1;min-width:220px">
+          ${catGroup('Craft', craftKeys)}
+          ${catGroup('Experience', experienceKeys)}
+        </div>
+      </div>
     </div>
     <div>
       <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:20px">Top 5 by avg score · min 2 films</div>
-      ${topEntities('directors','Directors')}
-      ${topEntities('actors','Actors')}
-      ${topEntities('writers','Writers')}
-      ${topEntities('companies','Production Companies')}
+      ${entitySections}
     </div>`;
 }
 

@@ -14,7 +14,7 @@ import {
 } from './modules/addfilm.js';
 import { showSyncPanel, openArchetypeModal, closeArchetypeModal, previewWeight, resetArchetypeWeights, saveArchetypeWeights } from './modules/archetypemodal.js';
 import { renderProfile } from './modules/profile.js';
-import { renderFriends, handleFriendInvite } from './modules/friends.js';
+import { renderFriends, handleFriendInvite, updateFriendsNotificationDot } from './modules/friends.js';
 
 // ── SCREEN NAVIGATION ──
 export function showScreen(id) {
@@ -123,6 +123,14 @@ async function init() {
 
   renderRankings();
   updateStorageStatus();
+
+  // Check for pending friend requests and show notification dot
+  if (currentUser) {
+    const { loadPendingIncoming } = await import('./modules/supabase.js');
+    loadPendingIncoming(currentUser.id).then(incoming => {
+      if (incoming.length > 0) updateFriendsNotificationDot(incoming.length);
+    });
+  }
 
   // Handle pending friend invite
   const urlInvite = new URLSearchParams(window.location.search).get('invite');
