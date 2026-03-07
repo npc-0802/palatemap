@@ -168,21 +168,37 @@ export async function loadFriendFull(friendId) {
 }
 
 export async function acceptFriendInvite(token) {
-  if (!currentUser) return null;
+  if (!currentUser) return { error: 'not_authed' };
   try {
     const { data: requester } = await sb.from('palatemap_users')
       .select('id, display_name, archetype, username')
       .eq('invite_token', token).single();
-    if (!requester || requester.id === currentUser.id) return null;
+    if (!requester) return { error: 'invalid' };
+    if (requester.id === currentUser.id) return { error: 'own_link' };
+
+    const { data: ex1 } = await sb.from('palatemap_friendships')
+      .select('id').eq('requester_id', currentUser.id).eq('addressee_id', requester.id)
+      .eq('status', 'accepted').maybeSingle();
+    const { data: ex2 } = await sb.from('palatemap_friendships')
+      .select('id').eq('requester_id', requester.id).eq('addressee_id', currentUser.id)
+      .eq('status', 'accepted').maybeSingle();
+    if (ex1 || ex2) return { error: 'already_friends', requester };
+
+    return { requester };
+  } catch(e) { return { error: 'invalid' }; }
+}
+
+export async function confirmFriendInvite(requesterId) {
+  if (!currentUser) return false;
+  try {
     await sb.from('palatemap_friendships').upsert({
-      requester_id: requester.id,
+      requester_id: requesterId,
       addressee_id: currentUser.id,
       status: 'accepted'
     }, { onConflict: 'requester_id,addressee_id', ignoreDuplicates: true });
-    // Rotate token so link can't be reused
-    await sb.from('palatemap_users').update({ invite_token: null }).eq('id', requester.id);
-    return requester;
-  } catch(e) { return null; }
+    await sb.from('palatemap_users').update({ invite_token: null }).eq('id', requesterId);
+    return true;
+  } catch(e) { return false; }
 }
 
 export async function unfriendUser(friendId) {

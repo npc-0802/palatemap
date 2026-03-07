@@ -1,6 +1,6 @@
 import { MOVIES, currentUser } from '../state.js';
 import { ARCHETYPES } from '../data/archetypes.js';
-import { sb, loadFriends, loadFriendFull, acceptFriendInvite, unfriendUser, searchUsers, addFriendDirect } from './supabase.js';
+import { sb, loadFriends, loadFriendFull, acceptFriendInvite, confirmFriendInvite, unfriendUser, searchUsers, addFriendDirect } from './supabase.js';
 
 const CATS = ['plot','execution','acting','production','enjoyability','rewatchability','ending','uniqueness'];
 const CAT_SHORT = { plot:'Plot', execution:'Exec', acting:'Acting', production:'Prod', enjoyability:'Enjoy', rewatchability:'Rewatch', ending:'Ending', uniqueness:'Unique' };
@@ -65,24 +65,93 @@ window.openFriendProfile = async function(friendId) {
 
 window.backToFriends = function() { renderFriends(); };
 
-window.friendsInvite = async function(e) {
-  if (!currentUser) return;
-  const btn = (e?.target || event?.target)?.closest('button') || (e?.target || event?.target);
-  const origText = btn?.textContent;
-  if (btn) { btn.disabled = true; btn.textContent = 'Generating…'; }
+async function generateInviteToken() {
+  const token = crypto.randomUUID();
+  await sb.from('palatemap_users').update({ invite_token: token }).eq('id', currentUser.id);
+  inviteToken = token;
+  return `${window.location.origin}/?invite=${token}`;
+}
+
+window.openInviteModal = async function() {
+  if (!currentUser) { window.showScreen?.('friends'); return; }
+  document.getElementById('invite-modal-overlay')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'invite-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(12,11,9,0.7);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px';
+  overlay.innerHTML = `
+    <div style="background:var(--paper);max-width:480px;width:100%;padding:40px;border-top:3px solid var(--action)">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px">
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:24px;color:var(--ink)">Invite a friend.</div>
+        <span onclick="document.getElementById('invite-modal-overlay').remove()" style="font-family:'DM Mono',monospace;font-size:18px;color:var(--dim);cursor:pointer;line-height:1;padding:0 4px">×</span>
+      </div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);margin-bottom:24px;line-height:1.6">Share your invite link, or send it directly by email.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-align:center;padding:20px 0" id="invite-modal-loading">Generating link…</div>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+
   try {
-    const token = crypto.randomUUID();
-    await sb.from('palatemap_users').update({ invite_token: token }).eq('id', currentUser.id);
-    inviteToken = token;
-    const link = `${window.location.origin}/?invite=${token}`;
-    await navigator.clipboard.writeText(link);
-    window.showToast?.('Invite link copied!', { type: 'success', duration: 4000 });
+    const link = await generateInviteToken();
+    const loading = document.getElementById('invite-modal-loading');
+    if (loading) loading.outerHTML = `
+      <div style="display:flex;gap:8px;margin-bottom:28px">
+        <input id="invite-link-input" value="${link}" readonly style="flex:1;font-family:'DM Mono',monospace;font-size:10px;background:var(--cream);border:1px solid var(--rule-dark);padding:10px 12px;color:var(--ink);outline:none;letter-spacing:0.3px;cursor:pointer" onclick="this.select()" />
+        <button onclick="copyInviteModalLink()" id="invite-copy-btn" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;background:var(--ink);color:var(--paper);border:none;padding:10px 16px;cursor:pointer;white-space:nowrap">Copy</button>
+      </div>
+      <div style="border-top:1px solid var(--rule);padding-top:24px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:12px">Or send by email</div>
+        <div style="display:flex;gap:8px">
+          <input id="invite-email-input" type="email" placeholder="friend@example.com" style="flex:1;font-family:'DM Mono',monospace;font-size:11px;background:var(--cream);border:1px solid var(--rule-dark);padding:10px 12px;color:var(--ink);outline:none" />
+          <button onclick="sendInviteEmail()" id="invite-send-btn" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:10px 16px;cursor:pointer;white-space:nowrap">Send</button>
+        </div>
+        <div id="invite-email-status" style="font-family:'DM Mono',monospace;font-size:10px;margin-top:8px;min-height:16px"></div>
+      </div>`;
     const statusEl = document.getElementById('friends-invite-status');
     if (statusEl) statusEl.innerHTML = inviteStatusHTML();
   } catch(e) {
     window.showToast?.('Could not generate invite link.', { type: 'error' });
+    document.getElementById('invite-modal-overlay')?.remove();
+  }
+};
+
+window.copyInviteModalLink = async function() {
+  const input = document.getElementById('invite-link-input');
+  const btn = document.getElementById('invite-copy-btn');
+  if (!input) return;
+  await navigator.clipboard.writeText(input.value);
+  if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { if (btn) btn.textContent = 'Copy'; }, 2000); }
+};
+
+window.sendInviteEmail = async function() {
+  const input = document.getElementById('invite-email-input');
+  const status = document.getElementById('invite-email-status');
+  const btn = document.getElementById('invite-send-btn');
+  if (!input || !inviteToken) return;
+  const email = input.value.trim();
+  if (!email || !email.includes('@')) {
+    if (status) { status.style.color = 'var(--red)'; status.textContent = 'Enter a valid email address.'; }
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  if (status) { status.textContent = ''; }
+  try {
+    const link = `${window.location.origin}/?invite=${inviteToken}`;
+    const res = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'send_invite', to: email, from_name: currentUser.display_name, invite_link: link })
+    });
+    if (res.ok) {
+      if (status) { status.style.color = 'var(--green)'; status.textContent = `Sent to ${email} ✓`; }
+      if (input) input.value = '';
+    } else {
+      if (status) { status.style.color = 'var(--red)'; status.textContent = 'Could not send. Try copying the link instead.'; }
+    }
+  } catch(e) {
+    if (status) { status.style.color = 'var(--red)'; status.textContent = 'Could not send. Try copying the link instead.'; }
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = origText; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Send'; }
   }
 };
 
@@ -148,13 +217,60 @@ window.addFriendFromSearch = async function(userId) {
 };
 
 export async function handleFriendInvite(token) {
-  const requester = await acceptFriendInvite(token);
-  if (!requester) return;
-  window.showToast?.(`You and ${requester.display_name} are now connected on Palate Map.`, {
-    type: 'success', duration: 6000,
-    action: { label: 'View profile →', fn: () => { window.showScreen?.('friends'); window.openFriendProfile?.(requester.id); } }
-  });
+  const result = await acceptFriendInvite(token);
+
+  if (result.error === 'own_link') {
+    window.showToast?.("That's your own invite link — share it with a friend, not yourself.", { duration: 6000 });
+    return;
+  }
+  if (result.error === 'already_friends') {
+    window.showToast?.(`You're already connected with ${result.requester.display_name} on Palate Map.`, { duration: 5000 });
+    return;
+  }
+  if (result.error === 'invalid') {
+    window.showToast?.('This invite link has already been used.', { duration: 5000 });
+    return;
+  }
+  if (!result.requester) return;
+
+  showInviteConfirmation(result.requester);
 }
+
+function showInviteConfirmation(requester) {
+  const color = ARCHETYPES[requester.archetype]?.palette || 'var(--blue)';
+  document.getElementById('invite-confirm-overlay')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'invite-confirm-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(12,11,9,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px';
+  overlay.innerHTML = `
+    <div style="background:var(--paper);max-width:460px;width:100%;padding:40px;border-top:3px solid ${color}">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:14px">Invite from</div>
+      ${requester.archetype ? `<div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;color:${color};line-height:1;margin-bottom:6px">${requester.archetype}</div>` : ''}
+      <div style="font-family:'DM Sans',sans-serif;font-size:18px;font-weight:500;color:var(--ink);margin-bottom:6px">${requester.display_name}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);margin-bottom:32px">wants to compare taste on Palate Map</div>
+      <div style="display:flex;gap:10px">
+        <button id="invite-confirm-btn" onclick="confirmInviteAdd('${requester.id}')" style="flex:1;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:14px 20px;cursor:pointer">Add ${requester.display_name} →</button>
+        <button onclick="document.getElementById('invite-confirm-overlay').remove()" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:none;color:var(--dim);border:1px solid var(--rule-dark);padding:14px 20px;cursor:pointer">Dismiss</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+window.confirmInviteAdd = async function(requesterId) {
+  const btn = document.getElementById('invite-confirm-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
+  const ok = await confirmFriendInvite(requesterId);
+  document.getElementById('invite-confirm-overlay')?.remove();
+  if (ok) {
+    friendsCache = null;
+    window.showToast?.('Connected!', {
+      type: 'success', duration: 6000,
+      action: { label: 'View profile →', fn: () => { window.showScreen?.('friends'); window.openFriendProfile?.(requesterId); } }
+    });
+  } else {
+    window.showToast?.('Could not connect. Try again.', { type: 'error' });
+  }
+};
 
 // ── FRIEND LIST ──
 
@@ -183,7 +299,7 @@ function friendListHTML(friends) {
       <div style="background:#FDF1EC;border:1px solid rgba(232,98,58,0.25);border-left:3px solid var(--action);padding:40px;text-align:center">
         <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;color:var(--ink);margin-bottom:10px">Terra incognita.</div>
         <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.5px;margin-bottom:24px">No friends added yet. Invite someone to compare taste.</div>
-        <button onclick="friendsInvite()" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:12px 24px;cursor:pointer;transition:opacity 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">+ Invite a friend</button>
+        <button onclick="openInviteModal()" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:12px 24px;cursor:pointer;transition:opacity 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">+ Invite a friend</button>
       </div>
     </div>`;
   }
