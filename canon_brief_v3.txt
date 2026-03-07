@@ -1,5 +1,5 @@
 Palate Map
-Product Brief · Living Document · v3.3
+Product Brief · Living Document · v3.4
 Last updated: March 2026
 Confidential — do not distribute
 
@@ -150,7 +150,7 @@ Full-screen overlay for new/logged-out users. Headline: "Taste is everything." S
 Onboarding (3 entry points)
 New user: cold landing → name → poetic intro + 6-question quiz → archetype reveal (dark surface: name + description + quote + secondary + username) → "Enter Palate Map →".
 Returning user: username lookup → fetches profile + films from Supabase → loads directly.
-Import: drag-and-drop film_rankings.json → validates → loads MOVIES → proceeds to quiz.
+Letterboxd import: drag-and-drop ratings.csv from Letterboxd export → parses star ratings (×20 = score) → loads films with empty category scores → proceeds to quiz. CTA on name step ("On Letterboxd? Import your ratings →").
 
 Rankings (Main Screen)
 Default: poster grid (5 columns). Sort pills above grid control sort order + which score badge shows on each card. Toggle to table view (8 category columns + total).
@@ -160,11 +160,13 @@ Click any card/row to open film modal.
 Empty state: 60vh centered CTA — "Start with one you love." + persimmon "Rate your first film →" button.
 
 Film Modal
-TMDB poster · synopsis · rank #X of N · clickable director/writer/cast/company chips (→ Explore) · per-category scores + rank + weight bars · inline score editing (Edit scores → sliders → Save) · nearby films in rankings.
+TMDB poster · synopsis · rank #X of N · clickable director/writer/cast/company chips (→ Explore) · per-category scores + rank + weight bars · inline score editing (Edit scores → sliders → Save) · nearby films in rankings (leaderboard style with rank, diff indicator, current film highlighted in ink).
+Chip portraits: director/writer/cast chips show 20px TMDB circle portraits; company chips show 18px rounded-square logo — both load async after modal opens.
 
 Explore
-Index tabs: Directors / Writers / Actors / Companies. Entities with 2+ films, sorted by avg. Each card shows rank among peers.
-Entity page: avg score, rank among peers, film count, per-category breakdown with ranks, insight blurb, full film list with poster thumbnails and score columns.
+Index tabs: Directors / Writers / Actors / Companies / Years. Entities with 2+ films, sorted by avg. Each row shows rank + TMDB portrait (40px circle for persons, 40px rounded-square contained logo for companies) + name + film count + score badge. Images load async.
+Entity page: avg score, rank among peers, film count, TMDB portrait in dark header, per-category breakdown (Craft / Experience axis groups) with per-category ranks, AI insight blurb, full film list with poster thumbnails and score columns.
+Empty state: "Terra incognita." dashed-border uncharted treatment.
 
 Predict
 Search unrated films. Builds taste fingerprint. Finds comparables by shared director/cast. Calls Claude via Cloudflare proxy. Returns predicted score per category, confidence, 2nd-person reasoning anchored to user's specific films. "Add to list" pre-fills Add Film search.
@@ -187,10 +189,11 @@ Sections:
 • Stats row — 3-column editorial grid: films rated / avg total / strongest category (large Playfair numbers).
 • Signature Films — top 5 by total. Each row: poster thumbnail, rank, italic title, score badge (tier-colored).
 • Share cards — two side-by-side 320×440px fixed cards: (1) Palate Map Card: dark header with archetype + top 3 films + stats; (2) Taste Note Card: cream, first-person archetype quote as hero text.
+• Letterboxd import — drag-and-drop ratings.csv; dedupes against existing films (Palate Map wins on conflict); adds net-new films and navigates to Calibrate.
 • Sign out at bottom.
 
 Archetype / Weight Editor Modal
-"Edit weights →" in Profile. Weight inputs + live bar preview. Save recalcs all totals + syncs.
+"Edit weights →" in Profile. Weight inputs capped at 5 (max). Save recalcs all totals, detects archetype shift via cosine similarity, shows toast if primary archetype changes ("OldArchetype → NewArchetype"), syncs to Supabase.
 
 Masthead
 Clicking display name navigates to Profile screen.
@@ -217,12 +220,16 @@ Phase 1 — Identity & Value Prop [COMPLETE]
 • 1.6 Profile + Analysis design pass — dark archetype block, editorial category bars, entity leaderboards. ✓
 
 Phase 2 — Polish [LARGELY COMPLETE]
-• 2.1 Modal polish ✓ — dark grid-texture header, Craft/Experience breakdown grouping, leaderboard nearby section.
+• 2.1 Modal polish ✓ — dark grid-texture header, Craft/Experience breakdown grouping, leaderboard nearby section with diff indicators, chip portraits (person circles + company rounded-square logos).
 • 2.2 Calibration UX rewrite ✓ — Elo head-to-head, natural language prompts, full category names.
 • 2.3 Error surfaces + sync reliability — toast notifications, retry logic. Required before public launch.
 • 2.4 Palate color system ✓ — per-archetype palette on profile, entity details, share cards; cartographic grid texture on dark surfaces; topographic score bars.
 • 2.5 Rename Supabase tables + localStorage keys from ledger_ to palatemap_.
 • 2.6 Migrate hosting to Netlify for auto-deploy.
+• 2.7 Explore polish ✓ — TMDB portraits in rankings list (persons + company logos), Craft/Experience axis on entity pages, uncharted empty state.
+• 2.8 Letterboxd import ✓ — replaces JSON import in onboarding; also accessible from profile for existing users; dedup logic (Palate Map wins).
+• 2.9 Archetype auto-detection ✓ — cosine similarity on weight vectors; toast on shift; weight cap at 5.
+• 2.10 Predict lock ✓ — screen locked with uncharted state until 10 films rated.
 
 Phase 3 — Growth Features [PRIORITY after Phase 2]
 • 3.1 Friends layer — real accounts with passwords, invite links, Supabase friendships table, friend profiles, taste overlap visualization. First paid feature candidate. Reassess React migration here.
@@ -260,4 +267,4 @@ Anthropic key:         stored in Cloudflare env var ANTHROPIC_KEY only
 GitHub repo:           github.com/npc-0802/palatemap (private)
 GitHub Pages:          palatemap.com (custom domain)
 
-Palate Map · private product brief · v3.3 · do not distribute
+Palate Map · private product brief · v3.4 · do not distribute

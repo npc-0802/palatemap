@@ -80,6 +80,30 @@ export function renderRankings() {
   rankingsEl.classList.remove('empty');
   document.getElementById('mastheadCount').textContent = MOVIES.length + ' films ranked';
 
+  const banner = document.getElementById('rankings-banner');
+  if (banner) {
+    const MIN = 10;
+    if (MOVIES.length < MIN) {
+      const remaining = MIN - MOVIES.length;
+      const pct = Math.round((MOVIES.length / MIN) * 100);
+      banner.innerHTML = `
+        <div style="border-bottom:1px solid var(--rule);padding:12px 0 0;margin-bottom:16px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px">
+            <div>
+              <span style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim)">Your palate is forming &nbsp;·&nbsp; ${MOVIES.length} of ${MIN}</span>
+              <span style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);margin-left:14px">Rate ${remaining} more film${remaining !== 1 ? 's' : ''} to unlock Predict and deeper insights.</span>
+            </div>
+            <span onclick="document.querySelector('.nav-btn.action-tab').click()" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--action);cursor:pointer;white-space:nowrap;flex-shrink:0;margin-left:20px">Add a film →</span>
+          </div>
+          <div style="height:2px;background:var(--rule);border-radius:1px">
+            <div style="height:2px;width:${pct}%;background:var(--blue);border-radius:1px;transition:width 0.4s ease"></div>
+          </div>
+        </div>`;
+    } else {
+      banner.innerHTML = '';
+    }
+  }
+
   const sorted = getSorted();
   viewMode === 'grid' ? renderGrid(sorted, list, controls, rankingsEl) : renderTable(sorted, list, controls, rankingsEl);
 }
