@@ -218,7 +218,7 @@ const bridge = [
   'renderProfile', 'setViewMode',
   'showSyncPanel','openArchetypeModal','closeArchetypeModal','previewWeight',
   'resetArchetypeWeights','saveArchetypeWeights','exportData','resetStorage',
-  'renderAnalysis','renderFriends','updateTasteBanner','openInviteModal'
+  'renderAnalysis','renderFriends','updateTasteBanner'
 ];
 bridge.forEach(fn => { window[fn] = window.__ledger[fn]; });
 
