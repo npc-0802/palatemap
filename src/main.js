@@ -26,7 +26,7 @@ export function showScreen(id) {
   if (id === 'calibration') resetCalibration();
   if (id === 'predict') initPredict();
   if (id === 'profile') renderProfile();
-  localStorage.setItem('ledger_last_screen', id);
+  localStorage.setItem('palatemap_last_screen', id);
 }
 
 export function updateStorageStatus() {
@@ -100,7 +100,7 @@ async function init() {
   updateStorageStatus();
 
   // Restore last screen
-  const rawLastScreen = localStorage.getItem('ledger_last_screen');
+  const rawLastScreen = localStorage.getItem('palatemap_last_screen');
   const lastScreen = rawLastScreen === 'explore' ? 'analysis' : rawLastScreen;
   if (lastScreen && lastScreen !== 'rankings' && document.getElementById(lastScreen)) {
     const navBtns = document.querySelectorAll('.nav-btn');
@@ -111,6 +111,33 @@ async function init() {
     if (lastScreen === 'analysis') renderAnalysis();
     if (lastScreen === 'profile') renderProfile();
   }
+}
+
+export function showToast(message, opts = {}) {
+  const { type = 'info', duration = 4000, action = null } = opts;
+  const toasts = document.querySelectorAll('.pm-toast');
+  const offset = toasts.length * 68;
+  const toast = document.createElement('div');
+  toast.className = `pm-toast${type !== 'info' ? ' ' + type : ''}`;
+  toast.style.bottom = (24 + offset) + 'px';
+  const msg = document.createElement('div');
+  msg.className = 'pm-toast-msg';
+  msg.textContent = message;
+  toast.appendChild(msg);
+  if (action) {
+    const btn = document.createElement('div');
+    btn.className = 'pm-toast-action';
+    btn.textContent = action.label;
+    btn.onclick = () => { dismiss(); action.fn(); };
+    toast.appendChild(btn);
+  }
+  document.body.appendChild(toast);
+  const dismiss = () => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 350);
+  };
+  const timer = setTimeout(dismiss, duration);
+  toast.onclick = () => { clearTimeout(timer); dismiss(); };
 }
 
 export function setCloudStatus(state) {
@@ -134,7 +161,7 @@ window.__ledger = {
   renderProfile, setViewMode,
   showSyncPanel, openArchetypeModal, closeArchetypeModal, previewWeight,
   resetArchetypeWeights, saveArchetypeWeights, exportData, resetStorage,
-  updateStorageStatus, updateMastheadProfile, setCloudStatus
+  updateStorageStatus, updateMastheadProfile, setCloudStatus, showToast
 };
 
 // Bridge window globals for inline onclick= attributes in HTML

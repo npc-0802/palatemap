@@ -175,7 +175,7 @@ function renderModal() {
     })() : ''}
   `;
   document.getElementById('filmModal').classList.add('open');
-  localStorage.setItem('ledger_last_modal', idx);
+  localStorage.setItem('palatemap_last_modal', idx);
 
   if (!editMode) { loadModalInsight(m); loadChipImages(m); }
 }

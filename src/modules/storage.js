@@ -25,7 +25,7 @@ export function runMigrations() {
   }
 }
 
-export const STORAGE_KEY = 'filmRankings_v1';
+export const STORAGE_KEY = 'palatemap_films_v1';
 
 export function saveToStorage() {
   try {
@@ -43,12 +43,16 @@ export function saveToStorage() {
 
 export function loadFromStorage() {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    let saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) {
+      // Migrate from legacy key
+      saved = localStorage.getItem('filmRankings_v1');
+      if (saved) { localStorage.setItem(STORAGE_KEY, saved); localStorage.removeItem('filmRankings_v1'); }
+    }
     if (!saved) return;
     const parsed = JSON.parse(saved);
     if (!Array.isArray(parsed) || parsed.length === 0) return;
     setMovies(parsed);
-    console.log(`Loaded ${MOVIES.length} films from localStorage`);
   } catch(e) {
     console.warn('localStorage load failed:', e);
   }

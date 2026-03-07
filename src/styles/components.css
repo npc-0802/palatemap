@@ -1,6 +1,27 @@
 /* ═══════════════════════════════════════════════
-   ledger · Component Styles
+   Palate Map · Component Styles
 ═══════════════════════════════════════════════ */
+
+/* ── TOASTS ── */
+.pm-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  background: var(--surface-dark);
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 14px 18px;
+  max-width: 300px;
+  min-width: 200px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  animation: fadeIn 0.25s ease;
+  transition: opacity 0.35s ease;
+}
+.pm-toast.error { background: #6B2010; border-color: rgba(232,98,58,0.4); }
+.pm-toast.success { background: #1F4A2A; border-color: rgba(60,120,80,0.4); }
+.pm-toast-msg { font-family: 'DM Sans', sans-serif; font-size: 13px; color: white; line-height: 1.45; }
+.pm-toast-action { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; color: rgba(255,255,255,0.7); text-decoration: underline; cursor: pointer; margin-top: 8px; display: inline-block; }
+.pm-toast-action:hover { color: white; }
 
 /* ── SCORE HEAT ── */
 .s90 { color: #1a5c2e; font-weight: 600; }

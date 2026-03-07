@@ -290,7 +290,7 @@ window.obLookupUser = async function() {
   btn.textContent = 'Looking up…';
   errEl.style.display = 'none';
   try {
-    const { data, error } = await sb.from('ledger_users').select('*').eq('username', val).single();
+    const { data, error } = await sb.from('palatemap_users').select('*').eq('username', val).single();
     if (error || !data) throw new Error('not found');
     setCurrentUser({
       id: data.id, username: data.username, display_name: data.display_name,

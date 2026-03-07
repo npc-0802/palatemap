@@ -112,29 +112,8 @@ export function saveArchetypeWeights() {
 
   // Show archetype shift notification if it changed
   if (detected.primary !== prevArchetype) {
-    showArchetypeShiftToast(prevArchetype, detected.primary);
+    window.showToast?.(`${prevArchetype} → ${detected.primary}`, { duration: 5000 });
   }
-}
-
-function showArchetypeShiftToast(from, to) {
-  const existing = document.getElementById('archetype-shift-toast');
-  if (existing) existing.remove();
-
-  const toast = document.createElement('div');
-  toast.id = 'archetype-shift-toast';
-  toast.innerHTML = `
-    <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:6px">Palate shift detected</div>
-    <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:18px;color:white;line-height:1.2">${from} <span style="color:var(--on-dark-dim);font-size:14px">→</span> ${to}</div>
-    <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--on-dark-dim);margin-top:4px">Your archetype has updated.</div>
-  `;
-  toast.style.cssText = `
-    position:fixed;bottom:24px;right:24px;z-index:9999;
-    background:var(--surface-dark);border:1px solid rgba(255,255,255,0.12);
-    padding:16px 20px;max-width:260px;
-    animation:fadeIn 0.25s ease;
-  `;
-  document.body.appendChild(toast);
-  setTimeout(() => { toast.style.transition = 'opacity 0.4s'; toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 4000);
 }
 
 window.logOutUser = function() {

@@ -220,17 +220,15 @@ function profileParseLetterboxd(file) {
       const statusEl = document.getElementById('profile-import-status');
       const btn = document.getElementById('profile-import-btn');
       if (netNew.length === 0) {
-        if (statusEl) { statusEl.textContent = `All ${dupeCount} film${dupeCount!==1?'s':''} already exist — nothing to import.`; statusEl.style.color = 'var(--dim)'; }
-        if (btn) btn.disabled = true;
+        if (statusEl) { statusEl.textContent = `All ${dupeCount} film${dupeCount!==1?'s':''} already in your collection.`; statusEl.style.color = 'var(--dim)'; }
+        window.showToast?.('Nothing new to import — all films already in your collection.');
       } else {
-        if (statusEl) { statusEl.textContent = `${netNew.length} new film${netNew.length!==1?'s':''} found${dupeCount ? ` · ${dupeCount} already rated (skipped)` : ''}`; statusEl.style.color = 'var(--green)'; }
-        const drop = document.getElementById('profile-import-drop');
-        if (drop) { drop.style.borderColor = 'var(--green)'; drop.innerHTML = `<div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--green)">${file.name}</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--green);margin-top:3px">${netNew.length} films ready</div>`; }
-        if (btn) { btn.disabled = false; btn.textContent = `Add ${netNew.length} film${netNew.length!==1?'s':''} →`; }
+        // Auto-confirm — trigger import immediately
+        profileImportedMovies = netNew;
+        window.profileConfirmImport();
       }
     } catch(err) {
-      const statusEl = document.getElementById('profile-import-status');
-      if (statusEl) { statusEl.textContent = "Couldn't parse that file — make sure it's ratings.csv from Letterboxd."; statusEl.style.color = 'var(--red)'; }
+      window.showToast?.("Couldn't read that file — make sure it's ratings.csv from Letterboxd.", { type: 'error' });
     }
   };
   reader.readAsText(file);
@@ -238,13 +236,14 @@ function profileParseLetterboxd(file) {
 
 window.profileConfirmImport = async function() {
   if (!profileImportedMovies || profileImportedMovies.length === 0) return;
+  const count = profileImportedMovies.length;
   const merged = [...MOVIES, ...profileImportedMovies];
   setMovies(merged);
   recalcAllTotals();
   saveToStorage();
   profileImportedMovies = null;
   syncToSupabase().catch(() => {});
-  // Navigate to calibrate for new films
+  window.showToast?.(`${count} film${count !== 1 ? 's' : ''} imported.`, { type: 'success' });
   window.showScreen?.('calibrate');
 };
 
@@ -359,9 +358,7 @@ export function renderProfile() {
           <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--rule-dark)">Letterboxd → Settings → Import & Export → Export Your Data → unzip → ratings.csv</div>
         </div>
         <input type="file" id="profile-import-file" accept=".csv" style="display:none" onchange="profileHandleLetterboxdFile(this)">
-        <div id="profile-import-status" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);margin-bottom:12px;min-height:16px"></div>
-        <button id="profile-import-btn" onclick="profileConfirmImport()" disabled
-          style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;background:var(--ink);color:white;border:none;padding:10px 20px;cursor:pointer;transition:opacity 0.15s">Add new films →</button>
+        <div id="profile-import-status" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);margin-top:8px;min-height:16px"></div>
       </div>
 
       <!-- SIGN OUT -->

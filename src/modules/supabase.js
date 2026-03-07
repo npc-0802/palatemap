@@ -10,26 +10,33 @@ export { sb };
 export async function syncToSupabase() {
   const user = currentUser;
   if (!user) return;
-  const { setCloudStatus } = await import('../main.js');
+  const { setCloudStatus, showToast } = await import('../main.js');
   setCloudStatus('syncing');
-  try {
-    const { error } = await sb.from('ledger_users').upsert({
-      id: user.id,
-      username: user.username,
-      display_name: user.display_name,
-      archetype: user.archetype,
-      archetype_secondary: user.archetype_secondary,
-      weights: user.weights,
-      harmony_sensitivity: user.harmony_sensitivity || 0.3,
-      movies: MOVIES,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'id' });
-    if (error) throw error;
-    setCloudStatus('synced');
-    saveUserLocally();
-  } catch(e) {
-    console.warn('Supabase sync error:', JSON.stringify(e));
-    setCloudStatus('error');
+  const payload = {
+    id: user.id, username: user.username, display_name: user.display_name,
+    archetype: user.archetype, archetype_secondary: user.archetype_secondary,
+    weights: user.weights, harmony_sensitivity: user.harmony_sensitivity || 0.3,
+    movies: MOVIES, updated_at: new Date().toISOString()
+  };
+  const MAX_RETRIES = 2;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 1500 * attempt));
+      const { error } = await sb.from('palatemap_users').upsert(payload, { onConflict: 'id' });
+      if (error) throw error;
+      setCloudStatus('synced');
+      saveUserLocally();
+      return;
+    } catch(e) {
+      if (attempt === MAX_RETRIES) {
+        console.warn('Supabase sync failed after retries:', e);
+        setCloudStatus('error');
+        showToast('Sync failed — changes saved locally.', {
+          type: 'error',
+          action: { label: 'Retry →', fn: syncToSupabase }
+        });
+      }
+    }
   }
 }
 
@@ -38,7 +45,7 @@ export async function loadFromSupabase(userId) {
   const { renderRankings } = await import('./rankings.js');
   setCloudStatus('syncing');
   try {
-    const { data, error } = await sb.from('ledger_users').select('*').eq('id', userId).single();
+    const { data, error } = await sb.from('palatemap_users').select('*').eq('id', userId).single();
     if (error) throw error;
     if (data) {
       setCurrentUser({
@@ -69,12 +76,17 @@ export async function loadFromSupabase(userId) {
 }
 
 export function saveUserLocally() {
-  try { localStorage.setItem('ledger_user', JSON.stringify(currentUser)); } catch(e) {}
+  try { localStorage.setItem('palatemap_user', JSON.stringify(currentUser)); } catch(e) {}
 }
 
 export function loadUserLocally() {
   try {
-    const u = localStorage.getItem('ledger_user');
+    let u = localStorage.getItem('palatemap_user');
+    if (!u) {
+      // Migrate from legacy key
+      u = localStorage.getItem('ledger_user');
+      if (u) { localStorage.setItem('palatemap_user', u); localStorage.removeItem('ledger_user'); }
+    }
     if (u) setCurrentUser(JSON.parse(u));
   } catch(e) {}
 }
