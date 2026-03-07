@@ -23,6 +23,22 @@
 .pm-toast-action { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; color: rgba(255,255,255,0.7); text-decoration: underline; cursor: pointer; margin-top: 8px; display: inline-block; }
 .pm-toast-action:hover { color: white; }
 
+/* ── AUTH UI ── */
+.ob-google-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; padding: 14px 20px; background: white;
+  border: 1.5px solid var(--rule); border-radius: 3px;
+  font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+  color: var(--ink); cursor: pointer; margin-bottom: 20px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ob-google-btn:hover { border-color: var(--dim); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.ob-divider {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+  color: var(--dim); font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px;
+}
+.ob-divider::before, .ob-divider::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+
 /* ── SCORE HEAT ── */
 .s90 { color: #1a5c2e; font-weight: 600; }
 .s80 { color: #2e7d4e; }

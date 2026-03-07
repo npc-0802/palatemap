@@ -201,9 +201,8 @@ Clicking display name navigates to Profile screen.
 07  Known Issues & Tech Debt
 • Cloud sync failures are silent — console.warn only. No user-facing error state. (Phase 2.3)
 • No test coverage. Shipping by feel.
-• Supabase table still named ledger_users — rename at Phase 2.5.
-• localStorage keys still use ledger_ prefix — update at Phase 2.5.
-• Cloudflare Worker URL still uses ledger-proxy — rename at Phase 2.5.
+• Cloudflare Worker URL still uses ledger-proxy.noahparikhcott.workers.dev — cosmetic only, no functional impact. Rename deferred indefinitely.
+• No test coverage. Shipping by feel.
 
 08  Full Product Roadmap
 Phase 0 — Foundation [COMPLETE]
@@ -219,12 +218,12 @@ Phase 1 — Identity & Value Prop [COMPLETE]
 • 1.5 Rankings redesign — poster grid, sort pills, score badge tiers, table toggle. ✓
 • 1.6 Profile + Analysis design pass — dark archetype block, editorial category bars, entity leaderboards. ✓
 
-Phase 2 — Polish [LARGELY COMPLETE]
+Phase 2 — Polish [COMPLETE]
 • 2.1 Modal polish ✓ — dark grid-texture header, Craft/Experience breakdown grouping, leaderboard nearby section with diff indicators, chip portraits (person circles + company rounded-square logos).
 • 2.2 Calibration UX rewrite ✓ — Elo head-to-head, natural language prompts, full category names.
-• 2.3 Error surfaces + sync reliability — toast notifications, retry logic. Required before public launch.
+• 2.3 Error surfaces + sync reliability ✓ — generic showToast system (success/error/info, stacking, action button); syncToSupabase retries 2x with exponential backoff; error toast with Retry action on final failure; archetype shift uses generic toast.
 • 2.4 Palate color system ✓ — per-archetype palette on profile, entity details, share cards; cartographic grid texture on dark surfaces; topographic score bars.
-• 2.5 Rename Supabase tables + localStorage keys from ledger_ to palatemap_.
+• 2.5 Rename ledger_ → palatemap_ ✓ — Supabase table renamed; all localStorage keys migrated; inline migration in loadFromStorage/loadUserLocally so existing users aren't logged out.
 • 2.6 Migrate hosting to Netlify for auto-deploy.
 • 2.7 Explore polish ✓ — TMDB portraits in rankings list (persons + company logos), Craft/Experience axis on entity pages, uncharted empty state.
 • 2.8 Letterboxd import ✓ — replaces JSON import in onboarding; also accessible from profile for existing users; dedup logic (Palate Map wins).

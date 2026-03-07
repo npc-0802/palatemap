@@ -2,19 +2,25 @@ import { MOVIES, setMovies, setCurrentUser, currentUser, applyUserWeights, recal
 import { ARCHETYPES, OB_QUESTIONS } from '../data/archetypes.js';
 import { saveToStorage } from './storage.js';
 import { renderRankings } from './rankings.js';
-import { sb, syncToSupabase, saveUserLocally } from './supabase.js';
+import { sb, syncToSupabase, saveUserLocally, signInWithGoogle, sendMagicLink } from './supabase.js';
 
 let obStep = 'name';
 let obAnswers = {};
 let obDisplayName = '';
 let obRevealResult = null;
 let obImportedMovies = null;
+let obMagicLinkEmail = '';
 
-export function launchOnboarding() {
+export function launchOnboarding(opts = {}) {
   const overlay = document.getElementById('onboarding-overlay');
   overlay.style.display = 'flex';
-  obStep = 'name';
   obAnswers = {};
+  if (opts.skipToQuiz) {
+    obDisplayName = opts.name || '';
+    obStep = 0;
+  } else {
+    obStep = 'name';
+  }
   renderObStep();
 }
 
@@ -24,10 +30,22 @@ function renderObStep() {
   if (obStep === 'name') {
     card.innerHTML = `
       <div class="ob-eyebrow">palate map · let's begin</div>
-      <div class="ob-title">What do you call yourself?</div>
-      <div class="ob-sub">No account required. Just a name — your ratings sync to the cloud under this identity, so you can pick up where you left off on any device.</div>
-      <input class="ob-name-input" id="ob-name-field" type="text" placeholder="e.g. Alex" maxlength="32" oninput="obCheckName()" onkeydown="if(event.key==='Enter') obSubmitName()">
-      <button class="ob-btn" id="ob-name-btn" onclick="obSubmitName()" disabled>Continue →</button>
+      <div class="ob-title">Taste is everything.</div>
+      <div class="ob-sub">Build your taste profile. Syncs to the cloud so you can continue from any device.</div>
+      <button class="ob-google-btn" onclick="obSignInWithGoogle()">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+          <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/>
+          <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853"/>
+          <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05"/>
+          <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58Z" fill="#EA4335"/>
+        </svg>
+        Continue with Google
+      </button>
+      <div class="ob-divider"><span>or</span></div>
+      <input class="ob-name-input" id="ob-ml-name" type="text" placeholder="Your name" maxlength="32" oninput="obCheckMagicLink()" style="margin-bottom:10px">
+      <input class="ob-name-input" id="ob-ml-email" type="email" placeholder="Email address" oninput="obCheckMagicLink()" onkeydown="if(event.key==='Enter') obSendMagicLink()">
+      <div id="ob-ml-error" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--red);margin-bottom:8px;display:none"></div>
+      <button class="ob-btn" id="ob-ml-btn" onclick="obSendMagicLink()" disabled>Send magic link →</button>
       <div style="text-align:center;margin-top:20px">
         <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:1px">Been here before? &nbsp;</span>
         <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);letter-spacing:1px;cursor:pointer;text-decoration:underline" onclick="obShowReturning()">Restore your profile →</span>
@@ -37,7 +55,18 @@ function renderObStep() {
         <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);letter-spacing:1px;cursor:pointer;text-decoration:underline" onclick="obShowImport()">Import your ratings →</span>
       </div>
     `;
-    setTimeout(() => document.getElementById('ob-name-field')?.focus(), 50);
+    setTimeout(() => document.getElementById('ob-ml-name')?.focus(), 50);
+
+  } else if (obStep === 'magic-link-sent') {
+    card.innerHTML = `
+      <div class="ob-eyebrow">palate map · check your inbox</div>
+      <div class="ob-title">Magic link sent.</div>
+      <div class="ob-sub">We sent a sign-in link to <strong>${obMagicLinkEmail}</strong>. Click it to continue — it'll bring you right back.</div>
+      <button class="ob-btn" id="ob-resend-btn" onclick="obResendMagicLink()" style="margin-bottom:16px">Resend link →</button>
+      <div style="text-align:center">
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);letter-spacing:1px;cursor:pointer;text-decoration:underline" onclick="obBack()">← Back</span>
+      </div>
+    `;
 
   } else if (obStep === 'returning') {
     card.innerHTML = `
@@ -144,18 +173,54 @@ function renderObStep() {
 
 // ── WINDOW-EXPOSED HANDLERS ──
 
-window.obCheckName = function() {
-  const val = document.getElementById('ob-name-field')?.value?.trim();
-  const btn = document.getElementById('ob-name-btn');
-  if (btn) btn.disabled = !val || val.length < 1;
+window.obCheckMagicLink = function() {
+  const name = document.getElementById('ob-ml-name')?.value?.trim();
+  const email = document.getElementById('ob-ml-email')?.value?.trim();
+  const btn = document.getElementById('ob-ml-btn');
+  if (btn) btn.disabled = !(name && email && email.includes('@'));
 };
 
-window.obSubmitName = function() {
-  const val = document.getElementById('ob-name-field')?.value?.trim();
-  if (!val) return;
-  obDisplayName = val;
-  obStep = 0;
-  renderObStep();
+window.obSignInWithGoogle = async function() {
+  const name = document.getElementById('ob-ml-name')?.value?.trim();
+  if (name) localStorage.setItem('palatemap_pending_name', name);
+  await signInWithGoogle();
+};
+
+window.obSendMagicLink = async function() {
+  const name = document.getElementById('ob-ml-name')?.value?.trim();
+  const email = document.getElementById('ob-ml-email')?.value?.trim();
+  if (!name || !email) return;
+  const btn = document.getElementById('ob-ml-btn');
+  const errEl = document.getElementById('ob-ml-error');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  if (errEl) errEl.style.display = 'none';
+  try {
+    localStorage.setItem('palatemap_pending_name', name);
+    await sendMagicLink(email);
+    obMagicLinkEmail = email;
+    obStep = 'magic-link-sent';
+    renderObStep();
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Send magic link →';
+    if (errEl) { errEl.textContent = 'Something went wrong. Try again.'; errEl.style.display = 'block'; }
+  }
+};
+
+window.obResendMagicLink = async function() {
+  const btn = document.getElementById('ob-resend-btn');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  try {
+    await sendMagicLink(obMagicLinkEmail);
+    btn.textContent = 'Sent ✓';
+    setTimeout(() => { btn.disabled = false; btn.textContent = 'Resend link →'; }, 3000);
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Resend link →';
+  }
 };
 
 window.obShowReturning = function() { obStep = 'returning'; renderObStep(); };
@@ -387,12 +452,16 @@ function deriveArchetype(answers) {
 async function obFinish(primary, secondary, weights, harmonySensitivity) {
   const id = crypto.randomUUID();
   const slug = obRevealResult._slug || (obDisplayName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'user');
+  const session = window._pendingAuthSession || null;
 
   setCurrentUser({
     id, username: slug, display_name: obDisplayName,
     archetype: primary, archetype_secondary: secondary,
-    weights, harmony_sensitivity: harmonySensitivity
+    weights, harmony_sensitivity: harmonySensitivity,
+    email: session?.user?.email || null,
+    auth_id: session?.user?.id || null
   });
+  window._pendingAuthSession = null;
 
   applyUserWeights();
   recalcAllTotals();

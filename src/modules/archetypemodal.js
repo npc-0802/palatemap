@@ -116,10 +116,10 @@ export function saveArchetypeWeights() {
   }
 }
 
-window.logOutUser = function() {
-  if (!confirm('Sign out? Your data is saved to the cloud under your username.')) return;
-  localStorage.clear();
-  location.reload();
+window.logOutUser = async function() {
+  if (!confirm('Sign out? Your data is saved to the cloud.')) return;
+  const { signOutUser } = await import('./supabase.js');
+  await signOutUser();
 };
 
 export function closeArchetypeModal(e) {

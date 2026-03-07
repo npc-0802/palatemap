@@ -6,7 +6,7 @@ import { renderAnalysis } from './modules/analysis.js';
 import { initPredict, predictSearch, predictSearchDebounce, predictSelectFilm, predictAddToList } from './modules/predict.js';
 import { startCalibration, selectCalCat, selectCalInt, applyCalibration, resetCalibration } from './modules/calibrate.js';
 import { launchOnboarding } from './modules/onboarding.js';
-import { syncToSupabase, loadFromSupabase, saveUserLocally, loadUserLocally } from './modules/supabase.js';
+import { syncToSupabase, loadFromSupabase, saveUserLocally, loadUserLocally, getAuthSession, loadFromSupabaseByAuth, sb } from './modules/supabase.js';
 import { saveToStorage, loadFromStorage, runMigrations } from './modules/storage.js';
 import {
   liveSearch, tmdbSelect, toggleCast, showMoreCast, toggleCompany,
@@ -84,20 +84,48 @@ window.startFromLanding = function() {
 async function init() {
   loadFromStorage();
   runMigrations();
-  loadUserLocally();
 
-  if (currentUser) {
+  // Check for active Supabase auth session first
+  const session = await getAuthSession();
+
+  if (session) {
     setCloudStatus('syncing');
-    updateMastheadProfile();
-    applyUserWeights();
-    loadFromSupabase(currentUser.id).catch(() => setCloudStatus('error'));
+    const loaded = await loadFromSupabaseByAuth(session.user.id, session.user.email);
+    if (!loaded) {
+      // Authenticated but no profile yet — new user after Google/magic link
+      const pendingName = localStorage.getItem('palatemap_pending_name')
+        || session.user.user_metadata?.full_name
+        || session.user.user_metadata?.name
+        || session.user.email?.split('@')[0]
+        || '';
+      localStorage.removeItem('palatemap_pending_name');
+      window._pendingAuthSession = session;
+      renderRankings();
+      updateStorageStatus();
+      launchOnboarding({ skipToQuiz: true, name: pendingName });
+      return;
+    }
   } else {
-    setCloudStatus('local');
-    setTimeout(() => showColdLanding(), 400);
+    // No auth session — fall back to legacy localStorage user
+    loadUserLocally();
+    if (currentUser) {
+      setCloudStatus('syncing');
+      updateMastheadProfile();
+      applyUserWeights();
+      loadFromSupabase(currentUser.id).catch(() => setCloudStatus('error'));
+    } else {
+      setCloudStatus('local');
+      setTimeout(() => showColdLanding(), 400);
+    }
   }
 
   renderRankings();
   updateStorageStatus();
+
+  // Handle sign-out events
+  sb.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_OUT') { localStorage.clear(); location.reload(); }
+  });
 
   // Restore last screen
   const rawLastScreen = localStorage.getItem('palatemap_last_screen');
