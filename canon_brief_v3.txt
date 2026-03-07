@@ -1,6 +1,6 @@
 Palate Map
-Product Brief · Living Document · v3.5
-Last updated: March 2026 · v3.6
+Product Brief · Living Document · v3.7
+Last updated: March 2026
 Confidential — do not distribute
 
 01  North Star
@@ -92,6 +92,7 @@ Hosting & Deploy
 • Repo: github.com/npc-0802/palatemap (private). Push to main = live deploy.
 • Build: npm run build → rm -rf docs → mv dist docs → git push. GitHub Pages serves /docs. CNAME auto-written by build script.
 • vite.config.js sets base: '/' (root domain).
+• Static assets (og-image.png, og-image.svg, privacy.html) live in public/ — Vite copies them to dist/ on every build automatically. Do NOT put them only in docs/ or they will be wiped on next deploy.
 • Cloudflare Worker: ledger-proxy.noahparikhcott.workers.dev — proxies Anthropic API and Resend email API. Secrets: ANTHROPIC_KEY, RESEND_API_KEY.
 
 Dev Workflow
@@ -251,6 +252,7 @@ Clicking display name navigates to Profile screen.
 • Cloudflare Worker URL still uses ledger-proxy.noahparikhcott.workers.dev — cosmetic only, no functional impact. Rename deferred indefinitely.
 • Refreshing while inside a friend's profile page lands on friends list (friend ID not persisted). Acceptable for now.
 • Entity stub "Add" button navigates to Add Film screen and pre-fills search — relies on DOM timing (setTimeout 100ms) which is fragile. Revisit if unreliable.
+• Auth quiz loop: mitigated with auto auth_id linking (legacy profiles now link on first sign-in) and "← Wrong account? Sign out" escape hatch on quiz intro when a pending auth session is detected. Root cause (no localStorage on first device) is expected — escape hatch is the UX solution.
 
 08  Full Product Roadmap
 Phase 0 — Foundation [COMPLETE]
@@ -279,7 +281,7 @@ Phase 2 — Polish [COMPLETE]
 • 2.10 Predict lock ✓ — screen locked with uncharted state until 10 films rated.
 
 Phase 3 — Growth Features [IN PROGRESS]
-• 3.1 Auth migration ✓ — Google OAuth + magic link sign-in; session persistence; legacy localStorage fallback; auto-linking of legacy profiles (no auth_id) on first authenticated sign-in; "Log in" flow for returning users replaces insecure username lookup.
+• 3.1 Auth migration ✓ — Google OAuth + magic link sign-in; session persistence; legacy localStorage fallback; auto-linking of legacy profiles (no auth_id) on first authenticated sign-in; "Log in" flow for returning users replaces insecure username lookup. Quiz loop escape hatch: "← Wrong account? Sign out" shown on quiz intro when a pending auth session is detected (no localStorage profile on new device).
 
 • 3.2 Friends layer ✓
   3.2.1 Invite system ✓ — single-use token; modal with copyable link + email send via Resend; email notification on friend request sent.
@@ -326,4 +328,4 @@ Resend key:            stored in Cloudflare env var RESEND_API_KEY only
 GitHub repo:           github.com/npc-0802/palatemap (private)
 GitHub Pages:          palatemap.com (custom domain)
 
-Palate Map · private product brief · v3.6 · do not distribute
+Palate Map · private product brief · v3.7 · do not distribute

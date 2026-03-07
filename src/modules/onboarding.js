@@ -138,7 +138,6 @@ function renderObStep() {
             <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);letter-spacing:0.5px">6 questions &nbsp;·&nbsp; ~2 min</div>
             <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);letter-spacing:0.5px">Result: your palate type</div>
           </div>
-          ${window._pendingAuthSession ? `<span onclick="obSignOut()" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);cursor:pointer;text-decoration:underline;letter-spacing:0.5px;opacity:0.7">← Wrong account? Sign out</span>` : ''}
         </div>
       </div>` : '';
     card.innerHTML = `
@@ -157,6 +156,10 @@ function renderObStep() {
           ${obStep === 5 ? 'See my archetype →' : 'Next →'}
         </button>
       </div>
+      ${window._pendingAuthSession ? `
+        <button onclick="obSignOut()" style="width:100%;margin-top:16px;padding:14px;background:var(--action);color:white;border:none;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer">
+          ← Wrong account? Sign out
+        </button>` : ''}
     `;
 
   } else if (obStep === 'reveal') {
