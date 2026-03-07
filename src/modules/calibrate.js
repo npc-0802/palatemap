@@ -271,7 +271,8 @@ export function applyCalibration() {
     });
     recalcAllTotals();
     saveToStorage();
-    localStorage.setItem('palatemap_calibrated', '1');
+    const threshold = Math.floor(MOVIES.length / 10) * 10;
+    localStorage.setItem('palatemap_calibrate_last_threshold', String(threshold));
     import('../main.js').then(m => m.updateStorageStatus());
     renderRankings();
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
