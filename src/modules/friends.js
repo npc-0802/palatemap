@@ -211,6 +211,26 @@ window.addFriendFromSearch = async function(userId) {
   if (ok) {
     window.showToast?.('Request sent!', { type: 'success' });
     if (btn) btn.outerHTML = `<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">Pending</span>`;
+    // Refresh outgoing list live
+    loadPendingOutgoing(currentUser.id).then(outgoing => {
+      const outgoingList = document.getElementById('friends-outgoing-list');
+      const outgoingTab = document.getElementById('friends-outgoing-tab');
+      if (outgoingList) outgoingList.innerHTML = outgoing.length === 0
+        ? `<div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);padding:32px 0;text-align:center">No outgoing requests.</div>`
+        : outgoing.map(u => {
+            const color = ARCHETYPES[u.archetype]?.palette || 'var(--blue)';
+            return `<div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--rule)">
+              <div style="width:8px;height:8px;border-radius:2px;background:${color};flex-shrink:0"></div>
+              <div style="flex:1">
+                <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink)">${u.display_name}</div>
+                <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:1px">${u.archetype || ''}</div>
+              </div>
+              <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-right:12px">Awaiting response</span>
+              <button onclick="cancelRequest('${u.id}','${u.display_name.replace(/'/g,"&#39;")}')" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;background:none;color:var(--dim);border:1px solid var(--rule-dark);padding:6px 10px;cursor:pointer">Cancel</button>
+            </div>`;
+          }).join('');
+      if (outgoingTab) outgoingTab.textContent = `Outgoing (${outgoing.length})`;
+    });
   } else {
     if (btn) { btn.disabled = false; btn.textContent = 'Add'; }
     window.showToast?.('Could not send request.', { type: 'error' });
