@@ -1,4 +1,4 @@
-import { MOVIES, currentUser, setCurrentUser, setMovies, applyUserWeights, recalcAllTotals } from '../state.js';
+import { MOVIES, currentUser, setCurrentUser, setMovies, applyUserWeights, recalcAllTotals, mergeSplitNames } from '../state.js';
 import { saveToStorage } from './storage.js';
 
 const SUPABASE_URL = 'https://gzuuhjjedrzeqbgxhfip.supabase.co';
@@ -48,7 +48,12 @@ export async function loadFromSupabase(userId) {
         weights: data.weights, harmony_sensitivity: data.harmony_sensitivity
       });
       if (data.movies && Array.isArray(data.movies) && data.movies.length >= MOVIES.length) {
-        setMovies(data.movies);
+        const fixed = data.movies.map(m => ({
+          ...m,
+          cast: mergeSplitNames((m.cast||'').split(',').map(s=>s.trim()).filter(Boolean)).join(', '),
+          productionCompanies: mergeSplitNames((m.productionCompanies||'').split(',').map(s=>s.trim()).filter(Boolean)).join(', ')
+        }));
+        setMovies(fixed);
       }
       saveUserLocally();
       applyUserWeights();
