@@ -640,23 +640,19 @@ function friendRankingsHTML(friend, color) {
   return `<div id="friend-rankings-rows">${rows}</div>${more}`;
 }
 
-function soloRadar(movies, color, size = 180) {
+function soloRadar(weights, color, size = 180) {
   const n = CATS.length;
   const cx = size / 2, cy = size / 2, r = size * 0.36;
   const angle = i => (i / n) * Math.PI * 2 - Math.PI / 2;
   const pt = (i, s) => ({ x: cx + r * s * Math.cos(angle(i)), y: cy + r * s * Math.sin(angle(i)) });
-  const avgs = {};
-  CATS.forEach(c => {
-    const vals = movies.map(m => m.scores?.[c]).filter(v => v != null);
-    avgs[c] = vals.length ? vals.reduce((s,v)=>s+v,0)/vals.length : 0;
-  });
+  const max = Math.max(...CATS.map(c => weights[c] || 1));
   const grid = [0.25,0.5,0.75,1].map(s =>
     `<polygon points="${CATS.map((_,i)=>`${pt(i,s).x},${pt(i,s).y}`).join(' ')}" fill="none" stroke="var(--rule)" stroke-width="0.75"/>`
   ).join('');
   const axes = CATS.map((_,i) => { const p = pt(i,1); return `<line x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" stroke="var(--rule)" stroke-width="0.75"/>`; }).join('');
-  const pts = CATS.map((c,i) => { const p = pt(i, avgs[c]/100); return `${p.x},${p.y}`; }).join(' ');
+  const pts = CATS.map((c,i) => { const p = pt(i, (weights[c]||1)/max); return `${p.x},${p.y}`; }).join(' ');
   const poly = `<polygon points="${pts}" fill="${color}" fill-opacity="0.2" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>`;
-  const dots = CATS.map((c,i) => { const p = pt(i, avgs[c]/100); return `<circle cx="${p.x}" cy="${p.y}" r="2.5" fill="${color}"/>`; }).join('');
+  const dots = CATS.map((c,i) => { const p = pt(i, (weights[c]||1)/max); return `<circle cx="${p.x}" cy="${p.y}" r="2.5" fill="${color}"/>`; }).join('');
   const lblOff = 22;
   const lbls = CATS.map((c,i) => {
     const lp = pt(i, 1 + lblOff/r);
@@ -790,9 +786,9 @@ function friendTasteHTML(friend, color) {
 
   return `
     <div style="margin-bottom:32px;padding-bottom:28px;border-bottom:1px solid var(--rule)">
-      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:20px">Taste fingerprint · category averages</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:20px">Taste fingerprint · category weights</div>
       <div style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap">
-        <div style="flex-shrink:0">${soloRadar(movies, color)}</div>
+        <div style="flex-shrink:0">${soloRadar(friend.weights || {}, color)}</div>
         <div style="flex:1;min-width:220px">
           ${catGroup('Craft', craftKeys)}
           ${catGroup('Experience', experienceKeys)}
