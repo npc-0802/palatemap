@@ -70,7 +70,8 @@ async function _applyUserData(data) {
     archetype: data.archetype, archetype_secondary: data.archetype_secondary,
     weights: data.weights, harmony_sensitivity: data.harmony_sensitivity,
     email: data.email, auth_id: data.auth_id,
-    watchlist: data.watchlist || []
+    watchlist: data.watchlist || [],
+    predictions: data.predictions || {}
   });
 
   if (data.movies && Array.isArray(data.movies) && data.movies.length >= MOVIES.length) {
@@ -105,7 +106,8 @@ export async function syncToSupabase() {
     weights: user.weights, harmony_sensitivity: user.harmony_sensitivity || 0.3,
     movies: MOVIES, updated_at: new Date().toISOString(),
     email: user.email || null, auth_id: user.auth_id || null,
-    ...(user.watchlist !== undefined ? { watchlist: user.watchlist } : {})
+    ...(user.watchlist !== undefined ? { watchlist: user.watchlist } : {}),
+    ...(user.predictions !== undefined ? { predictions: user.predictions } : {})
   };
   const MAX_RETRIES = 2;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {

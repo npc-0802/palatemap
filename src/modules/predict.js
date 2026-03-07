@@ -1,4 +1,5 @@
-import { MOVIES, CATEGORIES, currentUser, scoreClass, getLabel, calcTotal, mergeSplitNames } from '../state.js';
+import { MOVIES, CATEGORIES, currentUser, setCurrentUser, scoreClass, getLabel, calcTotal, mergeSplitNames } from '../state.js';
+import { syncToSupabase, saveUserLocally } from './supabase.js';
 
 const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 const TMDB = 'https://api.themoviedb.org/3';
@@ -70,6 +71,7 @@ export async function predictSearch() {
     if (!results.length) { resultsEl.innerHTML = `<div class="tmdb-error">No results found.</div>`; return; }
 
     const myTitles = new Set(MOVIES.map(m => m.title.toLowerCase()));
+    const myPredictions = currentUser?.predictions || {};
 
     resultsEl.innerHTML = results.map(m => {
       const year = m.release_date?.slice(0,4) || '';
@@ -77,11 +79,13 @@ export async function predictSearch() {
         ? `<img class="tmdb-result-poster" src="https://image.tmdb.org/t/p/w92${m.poster_path}">`
         : `<div class="tmdb-result-poster-placeholder">no img</div>`;
       const alreadyRated = myTitles.has(m.title.toLowerCase());
+      const alreadyPredicted = !!myPredictions[String(m.id)];
+      const meta = alreadyRated ? ' · already in your list' : alreadyPredicted ? ' · predicted ✓' : '';
       return `<div class="tmdb-result ${alreadyRated ? 'opacity-50' : ''}" onclick="${alreadyRated ? '' : `predictSelectFilm(${m.id}, '${m.title.replace(/'/g,"\\'")}', '${year}')`}" style="${alreadyRated ? 'opacity:0.4;cursor:default' : ''}">
         ${poster}
         <div class="tmdb-result-info">
           <div class="tmdb-result-title">${m.title}</div>
-          <div class="tmdb-result-meta">${year}${alreadyRated ? ' · already in your list' : ''}</div>
+          <div class="tmdb-result-meta">${year}${meta}</div>
           <div class="tmdb-result-overview">${(m.overview||'').slice(0,100)}${m.overview?.length > 100 ? '…':''}</div>
         </div>
       </div>`;
@@ -94,6 +98,17 @@ export async function predictSearch() {
 export async function predictSelectFilm(tmdbId, title, year) {
   document.getElementById('predict-search-results').innerHTML = '';
   document.getElementById('predict-search').value = title;
+
+  // Check cache first
+  const cached = currentUser?.predictions?.[String(tmdbId)];
+  if (cached) {
+    predictSelectedFilm = cached.film;
+    lastPrediction = cached.prediction;
+    const comps = findComparableFilms(cached.film);
+    renderPrediction(cached.film, cached.prediction, comps, cached.predictedAt);
+    return;
+  }
+
   document.getElementById('predict-result').innerHTML = `
     <div class="predict-loading">
       <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:22px;color:var(--dim)">Analysing your taste profile…</div>
@@ -225,14 +240,20 @@ Respond with this exact JSON structure:
     const prediction = JSON.parse(clean);
 
     lastPrediction = prediction;
-    renderPrediction(film, prediction, comps);
+    const predictedAt = new Date().toISOString();
+    // Store in prediction cache
+    const predictions = { ...(currentUser?.predictions || {}), [String(film.tmdbId)]: { film, prediction, predictedAt } };
+    setCurrentUser({ ...currentUser, predictions });
+    saveUserLocally();
+    syncToSupabase();
+    renderPrediction(film, prediction, comps, predictedAt);
   } catch(e) {
     document.getElementById('predict-result').innerHTML = `
       <div class="tmdb-error">Prediction failed: ${e.message}. Check that the proxy is running and your API key is valid.</div>`;
   }
 }
 
-function renderPrediction(film, prediction, comps) {
+function renderPrediction(film, prediction, comps, predictedAt = null) {
   let sum = 0, wsum = 0;
   CATEGORIES.forEach(cat => {
     const v = prediction.predicted_scores[cat.key];
@@ -247,8 +268,15 @@ function renderPrediction(film, prediction, comps) {
   const confClass = { high: 'conf-high', medium: 'conf-medium', low: 'conf-low' }[prediction.confidence] || 'conf-medium';
   const confLabel = { high: 'High confidence', medium: 'Medium confidence', low: 'Low confidence' }[prediction.confidence] || '';
 
+  const cachedLabel = predictedAt
+    ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:1px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+        <span>From your prediction history · ${new Date(predictedAt).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}</span>
+        <span onclick="predictFresh()" style="color:var(--blue);cursor:pointer;text-decoration:underline">Re-predict →</span>
+      </div>`
+    : `<div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--dim);margin-bottom:16px">Prediction</div>`;
+
   document.getElementById('predict-result').innerHTML = `
-    <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--dim);margin-bottom:16px">Prediction</div>
+    ${cachedLabel}
 
     <div class="predict-film-card">
       ${posterHtml}
@@ -300,6 +328,22 @@ function renderPrediction(film, prediction, comps) {
       <button class="btn btn-action" onclick="predictAddToList()">Rate now →</button>
     </div>
   `;
+}
+
+export function predictFresh() {
+  if (!predictSelectedFilm) return;
+  // Remove from cache so runPrediction stores a fresh result
+  if (currentUser?.predictions) {
+    const predictions = { ...currentUser.predictions };
+    delete predictions[String(predictSelectedFilm.tmdbId)];
+    setCurrentUser({ ...currentUser, predictions });
+  }
+  document.getElementById('predict-result').innerHTML = `
+    <div class="predict-loading">
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:22px;color:var(--dim)">Re-analysing…</div>
+      <div class="predict-loading-label">Reading ${MOVIES.length} films · building your fingerprint · predicting scores</div>
+    </div>`;
+  runPrediction(predictSelectedFilm);
 }
 
 export function predictAddToWatchlist() {

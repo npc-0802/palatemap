@@ -3,7 +3,7 @@ import { renderRankings, sortBy, setViewMode, updateTasteBanner } from './module
 import { openModal, closeModal } from './modules/modal.js';
 import { renderExploreIndex, exploreEntity } from './modules/explore.js';
 import { renderAnalysis } from './modules/analysis.js';
-import { initPredict, predictSearch, predictSearchDebounce, predictSelectFilm, predictAddToList } from './modules/predict.js';
+import { initPredict, predictSearch, predictSearchDebounce, predictSelectFilm, predictAddToList, predictFresh } from './modules/predict.js';
 import { startCalibration, selectCalCat, selectCalInt, applyCalibration, resetCalibration } from './modules/calibrate.js';
 import { launchOnboarding } from './modules/onboarding.js';
 import { syncToSupabase, loadFromSupabase, saveUserLocally, loadUserLocally, getAuthSession, loadFromSupabaseByAuth, sb } from './modules/supabase.js';
@@ -232,7 +232,7 @@ window.__ledger = {
   showSyncPanel, openArchetypeModal, closeArchetypeModal, previewWeight,
   resetArchetypeWeights, saveArchetypeWeights, exportData, resetStorage,
   updateStorageStatus, updateMastheadProfile, setCloudStatus, showToast,
-  renderFriends, updateTasteBanner, renderWatchlist, addToWatchlist, predictAddToWatchlist
+  renderFriends, updateTasteBanner, renderWatchlist, addToWatchlist, predictAddToWatchlist, predictFresh
 };
 
 // Bridge window globals for inline onclick= attributes in HTML
@@ -245,7 +245,7 @@ const bridge = [
   'renderProfile', 'setViewMode',
   'showSyncPanel','openArchetypeModal','closeArchetypeModal','previewWeight',
   'resetArchetypeWeights','saveArchetypeWeights','exportData','resetStorage',
-  'renderAnalysis','renderFriends','updateTasteBanner','renderWatchlist','addToWatchlist','predictAddToWatchlist'
+  'renderAnalysis','renderFriends','updateTasteBanner','renderWatchlist','addToWatchlist','predictAddToWatchlist','predictFresh'
 ];
 bridge.forEach(fn => { window[fn] = window.__ledger[fn]; });
 

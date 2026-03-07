@@ -268,7 +268,7 @@ Clicking display name navigates to Profile screen.
 07  Known Issues & Tech Debt
 • Cloud sync failures are silent — console.warn only. No user-facing error state. (Phase 2.3 partial)
 • No test coverage. Shipping by feel.
-• Cloudflare Worker URL still uses ledger-proxy.noahparikhcott.workers.dev — cosmetic only, no functional impact. Rename deferred indefinitely.
+• Cloudflare Worker renamed to palate-map-proxy — URL updated in all modules (predict.js, friends.js, insights.js).
 • Refreshing while inside a friend's profile page lands on friends list (friend ID not persisted). Acceptable for now.
 • Entity stub "Rate →" button navigates to Add Film screen and pre-fills search — relies on DOM timing (setTimeout 100ms) which is fragile. Revisit if unreliable.
 • Watch list director field is empty for items added from entity stubs (TMDB discovery results don't include director). Acceptable for now — the title pre-fill covers the core use case.
@@ -346,7 +346,7 @@ Never share this section. Never paste keys into Claude chat or Claude Code.
 TMDB API key:          f5a446a5f70a9f6a16a8ddd052c121f2
 Supabase URL:          https://gzuuhjjedrzeqbgxhfip.supabase.co
 Supabase key:          sb_publishable_OprjtxkrwknRf8jSZ7bYWg_GGqRiu4z
-Cloudflare Worker:     https://ledger-proxy.noahparikhcott.workers.dev
+Cloudflare Worker:     https://palate-map-proxy.noahparikhcott.workers.dev
 Anthropic key:         stored in Cloudflare env var ANTHROPIC_KEY only
 Resend key:            stored in Cloudflare env var RESEND_API_KEY only
 GitHub repo:           github.com/npc-0802/palatemap (private)
