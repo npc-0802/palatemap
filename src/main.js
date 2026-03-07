@@ -192,7 +192,7 @@ window.__ledger = {
   showSyncPanel, openArchetypeModal, closeArchetypeModal, previewWeight,
   resetArchetypeWeights, saveArchetypeWeights, exportData, resetStorage,
   updateStorageStatus, updateMastheadProfile, setCloudStatus, showToast,
-  renderFriends
+  renderFriends, updateTasteBanner
 };
 
 // Bridge window globals for inline onclick= attributes in HTML
@@ -205,7 +205,7 @@ const bridge = [
   'renderProfile', 'setViewMode',
   'showSyncPanel','openArchetypeModal','closeArchetypeModal','previewWeight',
   'resetArchetypeWeights','saveArchetypeWeights','exportData','resetStorage',
-  'renderAnalysis','renderFriends'
+  'renderAnalysis','renderFriends','updateTasteBanner'
 ];
 bridge.forEach(fn => { window[fn] = window.__ledger[fn]; });
 

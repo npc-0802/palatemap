@@ -271,6 +271,7 @@ export function applyCalibration() {
     });
     recalcAllTotals();
     saveToStorage();
+    localStorage.setItem('palatemap_calibrated', '1');
     import('../main.js').then(m => m.updateStorageStatus());
     renderRankings();
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
