@@ -1,6 +1,6 @@
 import { MOVIES, currentUser } from '../state.js';
 import { ARCHETYPES } from '../data/archetypes.js';
-import { sb, loadFriends, loadFriendFull, acceptFriendInvite, confirmFriendInvite, unfriendUser, searchUsers, addFriendDirect } from './supabase.js';
+import { sb, loadFriends, loadFriendFull, acceptFriendInvite, confirmFriendInvite, unfriendUser, searchUsers, sendFriendRequest, loadPendingIncoming, loadPendingOutgoing, acceptFriendRequest, declineFriendRequest, cancelFriendRequest } from './supabase.js';
 
 const CATS = ['plot','execution','acting','production','enjoyability','rewatchability','ending','uniqueness'];
 const CAT_SHORT = { plot:'Plot', execution:'Exec', acting:'Acting', production:'Prod', enjoyability:'Enjoy', rewatchability:'Rewatch', ending:'Ending', uniqueness:'Unique' };
@@ -29,10 +29,14 @@ export function renderFriends() {
       <div id="friends-list-area" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);padding:40px 0;text-align:center">Loading…</div>
     </div>`;
 
-  loadFriends(currentUser.id).then(friends => {
+  Promise.all([
+    loadFriends(currentUser.id),
+    loadPendingIncoming(currentUser.id),
+    loadPendingOutgoing(currentUser.id)
+  ]).then(([friends, incoming, outgoing]) => {
     friendsCache = friends;
     const area = document.getElementById('friends-list-area');
-    if (area) area.outerHTML = friendListHTML(friends);
+    if (area) area.outerHTML = friendListHTML(friends, incoming, outgoing);
   }).catch(() => {
     const area = document.getElementById('friends-list-area');
     if (area) area.textContent = 'Could not load friends.';
@@ -107,8 +111,6 @@ window.openInviteModal = async function() {
         </div>
         <div id="invite-email-status" style="font-family:'DM Mono',monospace;font-size:10px;margin-top:8px;min-height:16px"></div>
       </div>`;
-    const statusEl = document.getElementById('friends-invite-status');
-    if (statusEl) statusEl.innerHTML = inviteStatusHTML();
   } catch(e) {
     window.showToast?.('Could not generate invite link.', { type: 'error' });
     document.getElementById('invite-modal-overlay')?.remove();
@@ -205,15 +207,50 @@ window.friendSearch = async function() {
 window.addFriendFromSearch = async function(userId) {
   const btn = document.getElementById(`add-btn-${userId}`);
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
-  const ok = await addFriendDirect(userId);
+  const ok = await sendFriendRequest(userId);
   if (ok) {
-    friendsCache = null;
-    window.showToast?.('Friend added!', { type: 'success' });
-    if (btn) btn.outerHTML = `<span onclick="openFriendProfile('${userId}')" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);cursor:pointer;text-decoration:underline">View →</span>`;
+    window.showToast?.('Request sent!', { type: 'success' });
+    if (btn) btn.outerHTML = `<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">Pending</span>`;
   } else {
     if (btn) { btn.disabled = false; btn.textContent = 'Add'; }
-    window.showToast?.('Could not add friend.', { type: 'error' });
+    window.showToast?.('Could not send request.', { type: 'error' });
   }
+};
+
+window.acceptRequest = async function(requesterId, requesterName) {
+  const ok = await acceptFriendRequest(requesterId);
+  if (ok) {
+    friendsCache = null;
+    window.showToast?.(`You and ${requesterName} are now connected.`, { type: 'success' });
+    renderFriends();
+  } else {
+    window.showToast?.('Could not accept request.', { type: 'error' });
+  }
+};
+
+window.declineRequest = async function(requesterId) {
+  await declineFriendRequest(requesterId);
+  renderFriends();
+};
+
+window.cancelRequest = async function(addresseeId, addresseeName) {
+  await cancelFriendRequest(addresseeId);
+  window.showToast?.(`Request to ${addresseeName} cancelled.`, { duration: 3000 });
+  renderFriends();
+};
+
+window.showOutgoing = function() {
+  document.getElementById('friends-main-tab')?.classList.remove('active-tab');
+  document.getElementById('friends-outgoing-tab')?.classList.add('active-tab');
+  document.getElementById('friends-main-list')?.style && (document.getElementById('friends-main-list').style.display = 'none');
+  document.getElementById('friends-outgoing-list')?.style && (document.getElementById('friends-outgoing-list').style.display = 'block');
+};
+
+window.showMainFriends = function() {
+  document.getElementById('friends-outgoing-tab')?.classList.remove('active-tab');
+  document.getElementById('friends-main-tab')?.classList.add('active-tab');
+  document.getElementById('friends-outgoing-list')?.style && (document.getElementById('friends-outgoing-list').style.display = 'none');
+  document.getElementById('friends-main-list')?.style && (document.getElementById('friends-main-list').style.display = 'block');
 };
 
 export async function handleFriendInvite(token) {
@@ -274,14 +311,9 @@ window.confirmInviteAdd = async function(requesterId) {
 
 // ── FRIEND LIST ──
 
-function inviteStatusHTML() {
-  if (!inviteToken) return '';
-  return `<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">Link active · <span onclick="copyInviteLink()" style="color:var(--action);cursor:pointer;text-decoration:underline">Copy again →</span></span>`;
-}
-
 function headerHTML() {
   return `
-    <div style="margin-bottom:36px;padding-bottom:28px;border-bottom:2px solid var(--ink)">
+    <div style="margin-bottom:28px;padding-bottom:28px;border-bottom:2px solid var(--ink)">
       <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);margin-bottom:12px">your circle</div>
       <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(36px,5vw,52px);line-height:1;color:var(--ink)">Friends.</div>
       <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dim);line-height:1.7;max-width:560px;margin-top:10px">Compare archetypes, radar fingerprints, and the films you agree — and disagree — on most.</div>
@@ -289,25 +321,42 @@ function headerHTML() {
         <input id="friends-search-input" type="text" placeholder="Search by username…" oninput="friendSearchDebounce()" autocomplete="off" style="width:100%;font-family:'DM Mono',monospace;font-size:12px;background:var(--cream);border:1px solid var(--rule-dark);padding:10px 14px;color:var(--ink);outline:none;letter-spacing:0.5px" />
         <div id="friends-search-results"></div>
       </div>
-      <div id="friends-invite-status" style="margin-top:10px;min-height:16px">${inviteStatusHTML()}</div>
     </div>`;
 }
 
-function friendListHTML(friends) {
-  if (friends.length === 0) {
-    return `<div id="friends-list-area">
-      <div style="background:#FDF1EC;border:1px solid rgba(232,98,58,0.25);border-left:3px solid var(--action);padding:40px;text-align:center">
-        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;color:var(--ink);margin-bottom:10px">Terra incognita.</div>
-        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.5px;margin-bottom:24px">No friends added yet. Invite someone to compare taste.</div>
-        <button onclick="openInviteModal()" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:12px 24px;cursor:pointer;transition:opacity 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">+ Invite a friend</button>
-      </div>
+function friendListHTML(friends, incoming = [], outgoing = []) {
+  const tabBar = `
+    <div style="display:flex;gap:0;margin-bottom:24px;border-bottom:1px solid var(--rule)">
+      <button id="friends-main-tab" onclick="showMainFriends()" class="active-tab" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid var(--ink);padding:8px 16px 8px 0;cursor:pointer;color:var(--ink);margin-bottom:-1px">Friends ${friends.length > 0 ? `(${friends.length})` : ''}</button>
+      <button id="friends-outgoing-tab" onclick="showOutgoing()" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid transparent;padding:8px 16px 8px 16px;cursor:pointer;color:var(--dim);margin-bottom:-1px">Outgoing${outgoing.length > 0 ? ` (${outgoing.length})` : ''}</button>
     </div>`;
-  }
 
-  const cards = friends.map(f => {
-    const color = ARCHETYPES[f.archetype]?.palette || '#3D5A80';
-    return `
-      <div onclick="openFriendProfile('${f.id}')" style="display:flex;align-items:center;gap:16px;padding:16px 0;border-bottom:1px solid var(--rule);cursor:pointer;transition:background 0.12s;margin:0 -8px;padding-left:8px;padding-right:8px" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+  const incomingHTML = incoming.length > 0 ? `
+    <div style="margin-bottom:24px;padding:16px 20px;background:#FDF1EC;border-left:3px solid var(--action)">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--action);margin-bottom:12px">${incoming.length} pending request${incoming.length !== 1 ? 's' : ''}</div>
+      ${incoming.map(u => {
+        const color = ARCHETYPES[u.archetype]?.palette || 'var(--blue)';
+        return `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(232,98,58,0.15)">
+          <div style="width:8px;height:8px;border-radius:2px;background:${color};flex-shrink:0"></div>
+          <div style="flex:1">
+            <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink)">${u.display_name}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:1px">${u.archetype || ''}</div>
+          </div>
+          <button onclick="acceptRequest('${u.id}','${u.display_name.replace(/'/g,"&#39;")}')" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:6px 12px;cursor:pointer;margin-right:6px">Accept</button>
+          <button onclick="declineRequest('${u.id}')" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;background:none;color:var(--dim);border:1px solid var(--rule-dark);padding:6px 12px;cursor:pointer">Decline</button>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  const mainListHTML = friends.length === 0 && incoming.length === 0 ? `
+    <div style="background:#FDF1EC;border:1px solid rgba(232,98,58,0.25);border-left:3px solid var(--action);padding:40px;text-align:center">
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;color:var(--ink);margin-bottom:10px">Terra incognita.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.5px;margin-bottom:24px">No friends added yet. Invite someone to compare taste.</div>
+      <button onclick="openInviteModal()" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:12px 24px;cursor:pointer;transition:opacity 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">+ Invite a friend</button>
+    </div>` :
+    friends.map(f => {
+      const color = ARCHETYPES[f.archetype]?.palette || '#3D5A80';
+      return `<div onclick="openFriendProfile('${f.id}')" style="display:flex;align-items:center;gap:16px;padding:16px 0;border-bottom:1px solid var(--rule);cursor:pointer;transition:background 0.12s;margin:0 -8px;padding-left:8px;padding-right:8px" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
         <div style="width:10px;height:10px;border-radius:2px;background:${color};flex-shrink:0"></div>
         <div style="flex:1">
           <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:17px;color:var(--ink)">${f.display_name}</div>
@@ -315,9 +364,33 @@ function friendListHTML(friends) {
         </div>
         <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">View →</div>
       </div>`;
-  }).join('');
+    }).join('');
 
-  return `<div id="friends-list-area">${cards}</div>`;
+  const outgoingListHTML = outgoing.length === 0 ?
+    `<div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);padding:32px 0;text-align:center">No outgoing requests.</div>` :
+    outgoing.map(u => {
+      const color = ARCHETYPES[u.archetype]?.palette || 'var(--blue)';
+      return `<div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--rule)">
+        <div style="width:8px;height:8px;border-radius:2px;background:${color};flex-shrink:0"></div>
+        <div style="flex:1">
+          <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink)">${u.display_name}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:1px">${u.archetype || ''}</div>
+        </div>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-right:12px">Awaiting response</span>
+        <button onclick="cancelRequest('${u.id}','${u.display_name.replace(/'/g,"&#39;")}')" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;background:none;color:var(--dim);border:1px solid var(--rule-dark);padding:6px 10px;cursor:pointer">Cancel</button>
+      </div>`;
+    }).join('');
+
+  return `<div id="friends-list-area">
+    ${tabBar}
+    <div id="friends-main-list">
+      ${incomingHTML}
+      ${mainListHTML}
+    </div>
+    <div id="friends-outgoing-list" style="display:none">
+      ${outgoingListHTML}
+    </div>
+  </div>`;
 }
 
 // ── FRIEND PROFILE ──
@@ -342,42 +415,93 @@ function renderFriendProfile(el, friend) {
         <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim)">${friend.username || ''}${friend.archetype_secondary ? ' · ' + friend.archetype_secondary : ''}</div>
       </div>
 
-      <div style="padding-bottom:28px;margin-bottom:28px;border-bottom:1px solid var(--rule)">
-        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">Compatibility</div>
-        <div style="display:flex;align-items:center;gap:32px;flex-wrap:wrap">
-          <div>
-            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:64px;line-height:1;color:${color};letter-spacing:-2px">${compat.total}</div>
-            <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim)">/100</div>
+      <div style="display:flex;gap:0;border-bottom:1px solid var(--rule);margin-bottom:28px">
+        <button onclick="showFriendTab('overlap')" id="tab-overlap" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid var(--ink);padding:10px 20px 10px 0;cursor:pointer;color:var(--ink);margin-bottom:-1px">Overlap</button>
+        <button onclick="showFriendTab('rankings')" id="tab-rankings" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid transparent;padding:10px 20px;cursor:pointer;color:var(--dim);margin-bottom:-1px">Their Rankings (${(friend.movies||[]).length})</button>
+      </div>
+
+      <div id="friend-overlap-panel">
+        <div style="padding-bottom:28px;margin-bottom:28px;border-bottom:1px solid var(--rule)">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">Compatibility</div>
+          <div style="display:flex;align-items:center;gap:32px;flex-wrap:wrap">
+            <div>
+              <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:64px;line-height:1;color:${color};letter-spacing:-2px">${compat.total}</div>
+              <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim)">/100</div>
+            </div>
+            <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);line-height:2">
+              <div>Weight alignment &nbsp;<strong style="color:var(--ink)">${compat.weightPct}%</strong></div>
+              ${compat.coRated.length > 0 ? `<div>Score agreement &nbsp;<strong style="color:var(--ink)">${compat.agreementPct}%</strong></div>` : ''}
+              <div>${compat.coRated.length} film${compat.coRated.length !== 1 ? 's' : ''} in common</div>
+            </div>
           </div>
-          <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);line-height:2">
-            <div>Weight alignment &nbsp;<strong style="color:var(--ink)">${compat.weightPct}%</strong></div>
-            ${compat.coRated.length > 0 ? `<div>Score agreement &nbsp;<strong style="color:var(--ink)">${compat.agreementPct}%</strong></div>` : ''}
-            <div>${compat.coRated.length} film${compat.coRated.length !== 1 ? 's' : ''} in common</div>
+        </div>
+
+        <div style="padding-bottom:28px;margin-bottom:28px;border-bottom:1px solid var(--rule)">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:20px">Taste Fingerprint Overlap</div>
+          <div style="display:flex;flex-direction:column;align-items:center;overflow-x:auto;width:100%">
+            ${radarOverlay(currentUser.weights || {}, friend.weights || {}, 'var(--blue)', color)}
+            <div style="display:flex;gap:24px;margin-top:10px;font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">
+              <span style="display:flex;align-items:center;gap:6px"><svg width="12" height="12"><rect width="12" height="12" rx="2" fill="var(--blue)"/></svg>You</span>
+              <span style="display:flex;align-items:center;gap:6px"><svg width="12" height="12"><rect width="12" height="12" rx="2" fill="${color}"/></svg>${friend.display_name}</span>
+            </div>
           </div>
+        </div>
+
+        ${coRatedHTML(compat.coRated, color)}
+
+        <div style="padding-bottom:48px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:12px">Taste Analysis</div>
+          <div id="friend-insight" style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dim);font-style:italic;line-height:1.8">Analyzing…</div>
         </div>
       </div>
 
-      <div style="padding-bottom:28px;margin-bottom:28px;border-bottom:1px solid var(--rule)">
-        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:20px">Taste Fingerprint Overlap</div>
-        <div style="display:flex;flex-direction:column;align-items:center;overflow-x:auto;width:100%">
-          ${radarOverlay(currentUser.weights || {}, friend.weights || {}, 'var(--blue)', color)}
-          <div style="display:flex;gap:24px;margin-top:10px;font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">
-            <span style="display:flex;align-items:center;gap:6px"><svg width="12" height="12"><rect width="12" height="12" rx="2" fill="var(--blue)"/></svg>You</span>
-            <span style="display:flex;align-items:center;gap:6px"><svg width="12" height="12"><rect width="12" height="12" rx="2" fill="${color}"/></svg>${friend.display_name}</span>
-          </div>
-        </div>
-      </div>
-
-      ${coRatedHTML(compat.coRated, color)}
-
-      <div style="padding-bottom:48px">
-        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:12px">Taste Analysis</div>
-        <div id="friend-insight" style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dim);font-style:italic;line-height:1.8">Analyzing…</div>
+      <div id="friend-rankings-panel" style="display:none;padding-bottom:48px">
+        ${friendRankingsHTML(friend, color)}
       </div>
 
     </div>`;
 
   loadFriendInsight(friend, compat, color);
+}
+
+window.showFriendTab = function(tab) {
+  const overlap = document.getElementById('friend-overlap-panel');
+  const rankings = document.getElementById('friend-rankings-panel');
+  const tabO = document.getElementById('tab-overlap');
+  const tabR = document.getElementById('tab-rankings');
+  if (tab === 'overlap') {
+    if (overlap) overlap.style.display = 'block';
+    if (rankings) rankings.style.display = 'none';
+    if (tabO) { tabO.style.borderBottomColor = 'var(--ink)'; tabO.style.color = 'var(--ink)'; }
+    if (tabR) { tabR.style.borderBottomColor = 'transparent'; tabR.style.color = 'var(--dim)'; }
+  } else {
+    if (overlap) overlap.style.display = 'none';
+    if (rankings) rankings.style.display = 'block';
+    if (tabR) { tabR.style.borderBottomColor = 'var(--ink)'; tabR.style.color = 'var(--ink)'; }
+    if (tabO) { tabO.style.borderBottomColor = 'transparent'; tabO.style.color = 'var(--dim)'; }
+  }
+};
+
+function friendRankingsHTML(friend, color) {
+  const movies = [...(friend.movies || [])].sort((a, b) => b.total - a.total);
+  if (movies.length === 0) {
+    return `<div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);padding:32px 0;text-align:center">${friend.display_name} hasn't rated any films yet.</div>`;
+  }
+  return movies.map((m, i) => {
+    const total = m.total != null ? (Math.round(m.total * 10) / 10).toFixed(1) : '—';
+    const poster = m.poster
+      ? `<img src="https://image.tmdb.org/t/p/w92${m.poster}" style="width:32px;height:48px;object-fit:cover;flex-shrink:0" loading="lazy">`
+      : `<div style="width:32px;height:48px;background:var(--cream);flex-shrink:0"></div>`;
+    return `<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--rule)">
+      ${poster}
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);width:24px;text-align:center;flex-shrink:0">${i + 1}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.title}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px">${m.year || ''}${m.director ? ' · ' + m.director.split(',')[0] : ''}</div>
+      </div>
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:20px;color:${color};letter-spacing:-0.5px;flex-shrink:0">${total}</div>
+    </div>`;
+  }).join('');
 }
 
 function coRatedHTML(coRated, friendColor) {

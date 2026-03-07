@@ -223,16 +223,66 @@ export async function searchUsers(query) {
   } catch(e) { return []; }
 }
 
-export async function addFriendDirect(userId) {
+export async function sendFriendRequest(userId) {
   if (!currentUser) return false;
   try {
     const { error } = await sb.from('palatemap_friendships').upsert({
       requester_id: currentUser.id,
       addressee_id: userId,
-      status: 'accepted'
+      status: 'pending'
     }, { onConflict: 'requester_id,addressee_id', ignoreDuplicates: true });
     return !error;
   } catch(e) { return false; }
+}
+
+export async function loadPendingIncoming(userId) {
+  try {
+    const { data: rows } = await sb.from('palatemap_friendships')
+      .select('requester_id').eq('addressee_id', userId).eq('status', 'pending');
+    if (!rows?.length) return [];
+    const ids = rows.map(r => r.requester_id);
+    const { data } = await sb.from('palatemap_users')
+      .select('id, display_name, username, archetype, archetype_secondary').in('id', ids);
+    return data || [];
+  } catch(e) { return []; }
+}
+
+export async function loadPendingOutgoing(userId) {
+  try {
+    const { data: rows } = await sb.from('palatemap_friendships')
+      .select('addressee_id').eq('requester_id', userId).eq('status', 'pending');
+    if (!rows?.length) return [];
+    const ids = rows.map(r => r.addressee_id);
+    const { data } = await sb.from('palatemap_users')
+      .select('id, display_name, username, archetype, archetype_secondary').in('id', ids);
+    return data || [];
+  } catch(e) { return []; }
+}
+
+export async function acceptFriendRequest(requesterId) {
+  if (!currentUser) return false;
+  try {
+    const { error } = await sb.from('palatemap_friendships')
+      .update({ status: 'accepted' })
+      .eq('requester_id', requesterId).eq('addressee_id', currentUser.id);
+    return !error;
+  } catch(e) { return false; }
+}
+
+export async function declineFriendRequest(requesterId) {
+  if (!currentUser) return;
+  try {
+    await sb.from('palatemap_friendships')
+      .delete().eq('requester_id', requesterId).eq('addressee_id', currentUser.id);
+  } catch(e) {}
+}
+
+export async function cancelFriendRequest(addresseeId) {
+  if (!currentUser) return;
+  try {
+    await sb.from('palatemap_friendships')
+      .delete().eq('requester_id', currentUser.id).eq('addressee_id', addresseeId);
+  } catch(e) {}
 }
 
 export function saveUserLocally() {
