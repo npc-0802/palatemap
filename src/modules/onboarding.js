@@ -133,9 +133,12 @@ function renderObStep() {
         <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:14px">palate map · taste quiz</div>
         <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(26px,6vw,36px);line-height:1.1;color:var(--on-dark);letter-spacing:-0.5px;margin-bottom:14px">Six questions.<br>Your taste, revealed.</div>
         <div style="font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.75;color:var(--on-dark-dim)">The films you love follow a pattern — a consistent set of values, instincts, and hungers that show up again and again. These questions find it.</div>
-        <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(244,239,230,0.1);display:flex;align-items:center;gap:20px">
-          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);letter-spacing:0.5px">6 questions &nbsp;·&nbsp; ~2 min</div>
-          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);letter-spacing:0.5px">Result: your palate type</div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(244,239,230,0.1);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div style="display:flex;gap:20px">
+            <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);letter-spacing:0.5px">6 questions &nbsp;·&nbsp; ~2 min</div>
+            <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);letter-spacing:0.5px">Result: your palate type</div>
+          </div>
+          ${window._pendingAuthSession ? `<span onclick="obSignOut()" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);cursor:pointer;text-decoration:underline;letter-spacing:0.5px;opacity:0.7">← Wrong account? Sign out</span>` : ''}
         </div>
       </div>` : '';
     card.innerHTML = `
@@ -243,6 +246,11 @@ window.obResendMagicLink = async function() {
 };
 
 window.obShowReturning = function() { obStep = 'returning'; renderObStep(); };
+
+window.obSignOut = async function() {
+  const { signOutUser } = await import('./supabase.js');
+  await signOutUser();
+};
 
 window.obLoginMagicLink = async function() {
   const emailEl = document.getElementById('ob-returning-email');

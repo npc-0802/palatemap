@@ -1,6 +1,6 @@
 Palate Map
-Product Brief · Living Document · v3.4
-Last updated: March 2026 · v3.5
+Product Brief · Living Document · v3.5
+Last updated: March 2026 · v3.6
 Confidential — do not distribute
 
 01  North Star
@@ -58,7 +58,7 @@ Design Principles
 • Mobile: responsive bottom tab bar + layout pass complete (Phase 2). Fixed bottom nav with 5 tabs; modal slides up as sheet; rankings collapse gracefully.
 
 03  Current Architecture
-Status: Phase 1 complete, Phase 2 largely complete. Vite multi-file vanilla JS.
+Status: Phase 1 complete, Phase 2 complete, Phase 3.1–3.2 complete. Vite multi-file vanilla JS.
 
 File Structure
 palatemap/
@@ -80,18 +80,19 @@ palatemap/
       onboarding.js    quiz, archetype reveal, import, cold landing flow
       profile.js       taste profile — fingerprint, radar, signature films w/ posters, card
       archetypemodal.js  weight editor modal, sign out
-      supabase.js      all cloud sync logic
+      friends.js       friends list, friend profile, invite modal, overlap + taste views
+      supabase.js      all cloud sync + auth + friends DB logic
       storage.js       localStorage helpers
     styles/
       main.css         layout, nav, masthead, dark surface variables
       components.css   all reusable UI components, badge tiers, grid
 
 Hosting & Deploy
-• Host: GitHub Pages at palatemap.com (custom domain). Netlify migration deferred to Phase 2.6.
+• Host: GitHub Pages at palatemap.com (custom domain). Netlify migration deferred.
 • Repo: github.com/npc-0802/palatemap (private). Push to main = live deploy.
 • Build: npm run build → rm -rf docs → mv dist docs → git push. GitHub Pages serves /docs. CNAME auto-written by build script.
 • vite.config.js sets base: '/' (root domain).
-• Cloudflare Worker: ledger-proxy.noahparikhcott.workers.dev — proxies Anthropic API. ANTHROPIC_KEY stored as encrypted env var. Never in client code.
+• Cloudflare Worker: ledger-proxy.noahparikhcott.workers.dev — proxies Anthropic API and Resend email API. Secrets: ANTHROPIC_KEY, RESEND_API_KEY.
 
 Dev Workflow
 • npx vite — dev server at localhost:5173/
@@ -106,7 +107,9 @@ Why we'll want React later: Friends layer introduces real-time updates. At that 
 Decision: Build Phase 0–2 in vanilla JS. Reassess at Phase 3 kickoff.
 
 05  Data Model
-Supabase: ledger_users table
+Supabase tables: palatemap_users, palatemap_friendships
+
+palatemap_users
 id                  uuid primary key
 username            text unique  e.g. "alex-7742"
 display_name        text
@@ -116,7 +119,16 @@ weights             jsonb  { plot, execution, acting, production,
                             enjoyability, rewatchability, ending, uniqueness }
 harmony_sensitivity numeric 0.0–1.0
 movies              jsonb  [ array of film objects ]
+email               text   (populated on first auth; used for account linking)
+auth_id             text   (Supabase auth user id; populated on first Google/magic link sign-in)
+invite_token        text   (single-use UUID for friend invite links; cleared after use)
 created_at / updated_at  timestamp
+
+palatemap_friendships
+requester_id        uuid → palatemap_users.id
+addressee_id        uuid → palatemap_users.id
+status              text  'pending' | 'accepted'
+(unique constraint on requester_id, addressee_id)
 
 Film Object Schema
 title               string
@@ -141,15 +153,13 @@ Visceralist · Formalist · Narrativist · Humanist · Completionist · Sensuali
 Each has: weight distribution, description (2–3 sentences, 2nd person, observational), quote.
 Derived from 6-question onboarding quiz. Editable post-onboarding via weight editor (click username in masthead → Profile → "Edit weights →").
 
-Palate concept: Each archetype has a distinct visual/color identity ("the colors you paint with"). Not yet implemented in code — planned for reveal, profile header, Canon Card.
-
 06  Screens & Features (Current)
 Cold Landing
 Full-screen overlay for new/logged-out users. Headline: "Taste is everything." Supporting copy: "Everyone has a palate. The films you love are trying to tell you something about yourself. Palate Map listens — and shows you the pattern." Single persimmon CTA: "Discover your taste →". Footer: "Starting with film. Expanding to everything."
 
 Onboarding (3 entry points)
 New user: cold landing → auth step (Google OAuth primary, or name + email → magic link) → 6-question quiz (dark surface intro block: "Six questions. Your taste, revealed.") → archetype reveal (dark surface: name + description + quote + secondary + username) → "Enter Palate Map →".
-Returning user: Supabase session auto-loads profile on return visit. Legacy: username lookup fallback.
+Returning user: "Log in →" link on auth step. Shows Google OAuth or email-only magic link (no name field). On click: redirects to Google or sends magic link. Supabase session auto-loads profile on return. Legacy profiles with no auth_id are auto-linked on first sign-in (auth session linked to localStorage user, auth_id + email written to Supabase row).
 Letterboxd import: drag-and-drop ratings.csv → parses star ratings (×20 = score) → loads films → proceeds to quiz. CTA on name step ("On Letterboxd? Import your ratings →").
 
 Rankings (Main Screen)
@@ -176,19 +186,45 @@ Editorial header. Category averages split into Craft (Plot/Execution/Acting/Prod
 
 Calibrate
 Elo-based head-to-head. Choose category + intensity (15/30/50 matchups). Review proposed changes. Apply writes scores + recalcs + syncs.
-Nav: moved out of bottom nav in Phase 3.2 — accessible via Profile screen "Calibrate your scores →" button.
+Accessible via Profile screen "Calibrate your scores →" button (not in bottom nav).
 
 Add Film
 4-step: TMDB search → cast/crew/company curation → 8-category scoring → result card.
 
 Nav Strip
-Top bar above nav tabs. Contains: "Add a film" (primary) + "Invite a friend →" (secondary, added in Phase 3.2).
+Top bar above nav tabs. Contains: "Add a film" (primary) + "Invite a friend →" (secondary). "Invite a friend →" opens invite modal (not nav to Friends screen).
 
-Friends (Phase 3.2)
-Own nav tab (replaces Calibrate in bottom nav).
-Friend list: each entry shows archetype color swatch, display name, archetype, film count. Click → friend profile page.
-Friend profile page: dark header with friend's archetype in their palate color. Radar chart overlaying both weight vectors. Compatibility score (cosine similarity + co-rated film agreement). Co-rated films list sorted by score disagreement. AI compatibility blurb.
-Invite flow: "Invite a friend →" in nav strip generates palatemap.com/?invite=TOKEN. Recipient: if signed in, auto-accepts; if not, auth first then accepts.
+Friends (Phase 3.2 — Complete)
+Own nav tab in both desktop strip and mobile bottom nav.
+Notification dot: persimmon dot on Friends nav item (desktop + mobile) when there are pending incoming friend requests. Clears when user opens Friends page.
+
+Friend list
+Two tabs: Friends | Outgoing (with count).
+Incoming requests: persimmon-tinted block above friend list with Accept / Decline per request.
+Friends tab: each entry shows archetype color swatch, display name, archetype. Click → friend profile page. "Terra incognita" empty state with "+ Invite a friend" CTA.
+Outgoing tab: pending sent requests with "Awaiting response" label + Cancel button. Live-updates when a new request is sent from username search.
+Username search: debounced search by username. Results show Add / View button depending on friend status. Add sends pending request and fires email notification to recipient.
+
+Invite modal
+Opens from "Invite a friend →" nav CTA. Generates single-use UUID token stored on user row (invite_token). Shows copyable link + email field. Email send via Resend API through Cloudflare Worker (branded HTML email). Token cleared after recipient confirms the connection.
+
+Friend request flow
+Pending state: requester can see outgoing request; addressee gets email notification + notification dot on Friends nav. Addressee can Accept or Decline. On accept: friendship row written with status='accepted'. Token-based invite links bypass pending — show confirmation overlay ("Add [Name] →" / "Dismiss") then write friendship directly.
+
+Friend profile page
+Dark header: friend's archetype in their palette color, display name, username.
+Three tabs: Rankings | Taste | Overlap.
+
+Rankings tab (default): paginated list of friend's films sorted by score (10 at a time, Load more). Each row: poster thumbnail, rank, title, year/director, score in friend's color. Click any row → read-only score modal with color bars per category.
+
+Taste tab: solo radar (friend's archetype weights normalized by their max weight — same shape as their polygon in the overlap view) + category averages bar chart (Craft / Experience groups) + top-5 entities per type (directors/actors/writers/companies, min 2 films, sorted by avg score). Entities show TMDB portraits/logos loaded async. Each entity is expandable (▾/▴) to show inline film list. Film rows are clickable → score modal.
+
+Overlap tab: compatibility score (cosine similarity on weights + co-rated film agreement), dual radar overlay (both weight vectors in respective palette colors), co-rated films list sorted by biggest disagreement, AI-generated compatibility blurb via Claude proxy.
+
+Email notifications (via Resend + Cloudflare Worker)
+• Invite email: branded HTML, sent when user enters friend's email in invite modal.
+• Friend request notification: sent to recipient's registered email when a friend request is sent via username search.
+  Both sent from invite@palatemap.com. Worker actions: 'send_invite', 'friend_request_notification'.
 
 Profile Screen
 Nav screen (bottom tab).
@@ -199,7 +235,7 @@ Sections:
 • Stats row — 3-column editorial grid: films rated / avg total / strongest category (large Playfair numbers).
 • Signature Films — top 5 by total. Each row: poster thumbnail, rank, italic title, score badge (tier-colored).
 • Share cards — two side-by-side 320×440px fixed cards: (1) Palate Map Card: dark header with archetype + top 3 films + stats; (2) Taste Note Card: cream, first-person archetype quote as hero text.
-• Calibrate — "Calibrate your scores →" button launches calibration screen (Phase 3.2+).
+• Calibrate — "Calibrate your scores →" button launches calibration screen.
 • Letterboxd import — drag-and-drop ratings.csv; dedupes against existing films (Palate Map wins on conflict); adds net-new films.
 • Sign out at bottom.
 
@@ -210,10 +246,11 @@ Masthead
 Clicking display name navigates to Profile screen.
 
 07  Known Issues & Tech Debt
-• Cloud sync failures are silent — console.warn only. No user-facing error state. (Phase 2.3)
+• Cloud sync failures are silent — console.warn only. No user-facing error state. (Phase 2.3 partial)
 • No test coverage. Shipping by feel.
 • Cloudflare Worker URL still uses ledger-proxy.noahparikhcott.workers.dev — cosmetic only, no functional impact. Rename deferred indefinitely.
-• No test coverage. Shipping by feel.
+• Refreshing while inside a friend's profile page lands on friends list (friend ID not persisted). Acceptable for now.
+• Entity stub "Add" button navigates to Add Film screen and pre-fills search — relies on DOM timing (setTimeout 100ms) which is fragile. Revisit if unreliable.
 
 08  Full Product Roadmap
 Phase 0 — Foundation [COMPLETE]
@@ -235,31 +272,32 @@ Phase 2 — Polish [COMPLETE]
 • 2.3 Error surfaces + sync reliability ✓ — generic showToast system (success/error/info, stacking, action button); syncToSupabase retries 2x with exponential backoff; error toast with Retry action on final failure; archetype shift uses generic toast.
 • 2.4 Palate color system ✓ — per-archetype palette on profile, entity details, share cards; cartographic grid texture on dark surfaces; topographic score bars.
 • 2.5 Rename ledger_ → palatemap_ ✓ — Supabase table renamed; all localStorage keys migrated; inline migration in loadFromStorage/loadUserLocally so existing users aren't logged out.
-• 2.6 Migrate hosting to Netlify for auto-deploy.
+• 2.6 Migrate hosting to Netlify for auto-deploy. [deferred]
 • 2.7 Explore polish ✓ — TMDB portraits in rankings list (persons + company logos), Craft/Experience axis on entity pages, uncharted empty state.
 • 2.8 Letterboxd import ✓ — replaces JSON import in onboarding; also accessible from profile for existing users; dedup logic (Palate Map wins).
 • 2.9 Archetype auto-detection ✓ — cosine similarity on weight vectors; toast on shift; weight cap at 5.
 • 2.10 Predict lock ✓ — screen locked with uncharted state until 10 films rated.
 
 Phase 3 — Growth Features [IN PROGRESS]
-• 3.1 Auth migration ✓ — Google OAuth + magic link sign-in; session persistence (30-day token); legacy localStorage fallback; hybrid auth/non-auth user support. Privacy policy at palatemap.com/privacy.
+• 3.1 Auth migration ✓ — Google OAuth + magic link sign-in; session persistence; legacy localStorage fallback; auto-linking of legacy profiles (no auth_id) on first authenticated sign-in; "Log in" flow for returning users replaces insecure username lookup.
 
-• 3.2 Friends layer [NEXT]
-  Nav: Friends gets its own tab (replacing Calibrate in nav). Calibrate moves to Profile page as a section.
-  Nav strip: secondary "Invite a friend →" CTA added next to "Add a film".
-  Data model: palatemap_friendships table (id, requester_id, addressee_id, status, invite_token, created_at).
-  3.2.1 Invite system — "Invite a friend →" generates palatemap.com/?invite=TOKEN. Recipient clicks: if signed in, auto-accepts; if not, auth first then accepts (token held in sessionStorage).
-  3.2.2 Friend list in Friends tab — each friend: archetype color swatch, display name, archetype, film count. Click → friend profile page.
-  3.2.3 Friend profile page — dark header with friend's archetype in their palate color. Radar chart with both weight vectors overlaid. Compatibility score (cosine similarity + co-rated film agreement). Co-rated films list sorted by biggest disagreements. AI-generated compatibility blurb via Claude proxy.
-  3.2.4 Group radar (stretch) — select 2–4 friends, all radars on one chart in their palette colors.
+• 3.2 Friends layer ✓
+  3.2.1 Invite system ✓ — single-use token; modal with copyable link + email send via Resend; email notification on friend request sent.
+  3.2.2 Friend list ✓ — Friends | Outgoing tabs; incoming requests block; username search; notification dot on nav.
+  3.2.3 Friend profile ✓ — Rankings | Taste | Overlap tabs; paginated rankings with clickable score modal; solo radar (weight-based); category averages; top-5 entities with TMDB portraits + inline film expansion; overlap radar; compatibility score; co-rated films; AI blurb.
+  3.2.4 Group radar — select 2–4 friends, all radars on one chart. [stretch, not started]
 
-• 3.3 Prediction engine polish — discovery mode, prediction history, confidence calibration.
-• 3.4 Tagging system — context tags (alone / with someone / rewatch / bad week).
+• 3.3 Entity stub modal ✓ — clicking portrait or "Explore →" on any entity in a friend's Taste tab opens a modal with: TMDB portrait/logo, bio snippet, user's own ranked films for that entity (if any) with scores, and top TMDB films with "Add" CTA for unrated ones. Row-click expansion preserved; portrait + "Explore →" are separate interaction targets.
+
+• 3.4 Prediction engine polish — discovery mode, prediction history, confidence calibration.
+• 3.5 Tagging system — context tags (alone / with someone / rewatch / bad week).
 
 Phase 4 — Platform
-• 4.1 Cross-genre v1: Restaurants — same framework, new categories.
-• 4.2 Public launch prep — landing page, pricing.
-• 4.3 Mobile — native app or PWA wrapper.
+• 4.1 Universal entity search — global search bar surfacing any director/actor/writer/company regardless of whether the user has rated their films. Entity page shows: TMDB data, user's own rankings (if any), community avg score (requires 4.2). Requires schema change: separate palatemap_ratings table (see below).
+• 4.2 Community ratings layer — requires migrating films from per-user JSON blob to a normalized palatemap_ratings table (user_id, film_tmdb_id, scores jsonb, total). Enables: community avg score on any film or entity, "popular with users like you" discovery. Major schema change — plan carefully.
+• 4.3 Cross-genre v1: Restaurants — same framework, new categories.
+• 4.4 Public launch prep — landing page, pricing.
+• 4.5 Mobile — native app or PWA wrapper.
 
 09  Session Workflow
 Starting a session (Claude Code)
@@ -284,7 +322,8 @@ Supabase URL:          https://gzuuhjjedrzeqbgxhfip.supabase.co
 Supabase key:          sb_publishable_OprjtxkrwknRf8jSZ7bYWg_GGqRiu4z
 Cloudflare Worker:     https://ledger-proxy.noahparikhcott.workers.dev
 Anthropic key:         stored in Cloudflare env var ANTHROPIC_KEY only
+Resend key:            stored in Cloudflare env var RESEND_API_KEY only
 GitHub repo:           github.com/npc-0802/palatemap (private)
 GitHub Pages:          palatemap.com (custom domain)
 
-Palate Map · private product brief · v3.5 · do not distribute
+Palate Map · private product brief · v3.6 · do not distribute
