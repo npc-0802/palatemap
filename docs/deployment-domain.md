@@ -5,7 +5,7 @@
 - Build script: `vite build && echo palatemap.com > dist/CNAME`
 - Existing `docs/CNAME`: `palatemap.com`
 - Vite base: `/` in `vite.config.js`
-- Git remote currently points to: `https://github.com/npc-0802/ledger.git`
+- Git remote currently points to: `https://github.com/npc-0802/palatemap.git`
 
 ## Canonical Decisions
 1. Canonical repo: `npc-0802/palatemap`

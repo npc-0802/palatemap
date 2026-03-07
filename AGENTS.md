@@ -67,4 +67,4 @@ Both agents must:
 ## Canonical Repo + Host
 - Canonical repo is `npc-0802/palatemap`.
 - Canonical host is GitHub Pages with custom domain `palatemap.com`.
-- Local remote may still point at `npc-0802/ledger`; update git remote before next deploy-affecting change.
+- Local remote is now set to `npc-0802/palatemap`.
