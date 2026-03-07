@@ -1,6 +1,6 @@
 import { MOVIES, CATEGORIES, currentUser } from '../state.js';
 
-const PROXY_URL = 'https://ledger-proxy.noahparikhcott.workers.dev';
+const PROXY_URL = 'https://palate-map-proxy.noahparikhcott.workers.dev';
 const CACHE_KEY = 'palate_insights_v1';
 
 function loadCache() {

@@ -5,7 +5,7 @@ import { sb, loadFriends, loadFriendFull, acceptFriendInvite, confirmFriendInvit
 const CATS = ['plot','execution','acting','production','enjoyability','rewatchability','ending','uniqueness'];
 const CAT_SHORT = { plot:'Plot', execution:'Exec', acting:'Acting', production:'Prod', enjoyability:'Enjoy', rewatchability:'Rewatch', ending:'Ending', uniqueness:'Unique' };
 const CAT_LABEL = { plot:'Plot', execution:'Execution', acting:'Acting', production:'Production', enjoyability:'Enjoyability', rewatchability:'Rewatchability', ending:'Ending', uniqueness:'Uniqueness' };
-const PROXY_URL = 'https://ledger-proxy.noahparikhcott.workers.dev';
+const PROXY_URL = 'https://palate-map-proxy.noahparikhcott.workers.dev';
 const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 
 let friendsCache = null;

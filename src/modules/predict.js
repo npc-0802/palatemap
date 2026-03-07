@@ -2,7 +2,7 @@ import { MOVIES, CATEGORIES, currentUser, scoreClass, getLabel, calcTotal, merge
 
 const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 const TMDB = 'https://api.themoviedb.org/3';
-const PROXY_URL = 'https://ledger-proxy.noahparikhcott.workers.dev';
+const PROXY_URL = 'https://palate-map-proxy.noahparikhcott.workers.dev';
 
 let predictDebounceTimer = null;
 let predictSelectedFilm = null;
