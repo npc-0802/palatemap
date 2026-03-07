@@ -1,6 +1,6 @@
 import { MOVIES, currentUser } from '../state.js';
 import { ARCHETYPES } from '../data/archetypes.js';
-import { sb, loadFriends, loadFriendFull, acceptFriendInvite, confirmFriendInvite, unfriendUser, searchUsers, sendFriendRequest, loadPendingIncoming, loadPendingOutgoing, acceptFriendRequest, declineFriendRequest, cancelFriendRequest } from './supabase.js';
+import { sb, loadFriends, loadFriendFull, acceptFriendInvite, confirmFriendInvite, unfriendUser, searchUsers, sendFriendRequest, loadPendingIncoming, loadPendingOutgoing, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, getUserEmail } from './supabase.js';
 
 const CATS = ['plot','execution','acting','production','enjoyability','rewatchability','ending','uniqueness'];
 const CAT_SHORT = { plot:'Plot', execution:'Exec', acting:'Acting', production:'Prod', enjoyability:'Enjoy', rewatchability:'Rewatch', ending:'Ending', uniqueness:'Unique' };
@@ -232,6 +232,20 @@ window.addFriendFromSearch = async function(userId) {
   const ok = await sendFriendRequest(userId);
   if (ok) {
     window.showToast?.('Request sent!', { type: 'success' });
+    // Fire-and-forget email notification to the recipient
+    getUserEmail(userId).then(email => {
+      if (!email) return;
+      fetch(PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'friend_request_notification',
+          to: email,
+          from_name: currentUser.display_name,
+          from_archetype: currentUser.archetype || ''
+        })
+      }).catch(() => {});
+    });
     if (btn) btn.outerHTML = `<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">Pending</span>`;
     // Refresh outgoing list live
     loadPendingOutgoing(currentUser.id).then(outgoing => {

@@ -48,7 +48,7 @@ function renderObStep() {
       <button class="ob-btn" id="ob-ml-btn" onclick="obSendMagicLink()" disabled>Send magic link →</button>
       <div style="text-align:center;margin-top:20px">
         <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:1px">Been here before? &nbsp;</span>
-        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);letter-spacing:1px;cursor:pointer;text-decoration:underline" onclick="obShowReturning()">Restore your profile →</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);letter-spacing:1px;cursor:pointer;text-decoration:underline" onclick="obShowReturning()">Log in →</span>
       </div>
       <div style="text-align:center;margin-top:10px">
         <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:1px">On Letterboxd? &nbsp;</span>
@@ -71,16 +71,26 @@ function renderObStep() {
   } else if (obStep === 'returning') {
     card.innerHTML = `
       <div class="ob-eyebrow">palate map · welcome back</div>
-      <div class="ob-title">Welcome back.</div>
-      <div class="ob-sub">Enter your username to restore your profile and film list from the cloud.</div>
-      <input class="ob-name-input" id="ob-returning-field" type="text" placeholder="e.g. alexsmith" maxlength="64" onkeydown="if(event.key==='Enter') obLookupUser()">
-      <div id="ob-returning-error" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--red);margin-bottom:12px;display:none">Username not found. Check spelling and try again.</div>
-      <button class="ob-btn" id="ob-returning-btn" onclick="obLookupUser()">Restore profile →</button>
+      <div class="ob-title">Log in.</div>
+      <div class="ob-sub">Enter the email you signed up with. We'll send you a magic link to get back in.</div>
+      <button class="ob-google-btn" onclick="obSignInWithGoogle()" style="margin-bottom:16px">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+          <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/>
+          <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853"/>
+          <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05"/>
+          <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58Z" fill="#EA4335"/>
+        </svg>
+        Continue with Google
+      </button>
+      <div class="ob-divider"><span>or</span></div>
+      <input class="ob-name-input" id="ob-returning-email" type="email" placeholder="Email address" onkeydown="if(event.key==='Enter') obLoginMagicLink()">
+      <div id="ob-returning-error" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--red);margin-bottom:12px;display:none"></div>
+      <button class="ob-btn" id="ob-returning-btn" onclick="obLoginMagicLink()">Send magic link →</button>
       <div style="text-align:center;margin-top:20px">
-        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);letter-spacing:1px;cursor:pointer;text-decoration:underline" onclick="obBack()">← New user instead</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);letter-spacing:1px;cursor:pointer;text-decoration:underline" onclick="obBack()">← New user</span>
       </div>
     `;
-    setTimeout(() => document.getElementById('ob-returning-field')?.focus(), 50);
+    setTimeout(() => document.getElementById('ob-returning-email')?.focus(), 50);
 
   } else if (obStep === 'import') {
     card.innerHTML = `
@@ -233,6 +243,30 @@ window.obResendMagicLink = async function() {
 };
 
 window.obShowReturning = function() { obStep = 'returning'; renderObStep(); };
+
+window.obLoginMagicLink = async function() {
+  const emailEl = document.getElementById('ob-returning-email');
+  const btn = document.getElementById('ob-returning-btn');
+  const errEl = document.getElementById('ob-returning-error');
+  const email = emailEl?.value?.trim();
+  if (!email || !email.includes('@')) {
+    if (errEl) { errEl.textContent = 'Enter a valid email address.'; errEl.style.display = 'block'; }
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  if (errEl) errEl.style.display = 'none';
+  try {
+    await sendMagicLink(email);
+    obMagicLinkEmail = email;
+    obStep = 'magic-link-sent';
+    renderObStep();
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Send magic link →';
+    if (errEl) { errEl.textContent = 'Something went wrong. Try again.'; errEl.style.display = 'block'; }
+  }
+};
 window.obShowImport = function() { obStep = 'import'; obImportedMovies = null; renderObStep(); };
 
 window.obSwitchImportTab = function(tab) {
@@ -355,39 +389,6 @@ window.obConfirmImport = function() {
   renderObStep();
 };
 
-window.obLookupUser = async function() {
-  const btn = document.getElementById('ob-returning-btn');
-  const errEl = document.getElementById('ob-returning-error');
-  const val = document.getElementById('ob-returning-field')?.value?.trim().toLowerCase();
-  if (!val) return;
-  btn.disabled = true;
-  btn.textContent = 'Looking up…';
-  errEl.style.display = 'none';
-  try {
-    const { data, error } = await sb.from('palatemap_users').select('*').eq('username', val).single();
-    if (error || !data) throw new Error('not found');
-    setCurrentUser({
-      id: data.id, username: data.username, display_name: data.display_name,
-      archetype: data.archetype, archetype_secondary: data.archetype_secondary,
-      weights: data.weights, harmony_sensitivity: data.harmony_sensitivity
-    });
-    if (data.movies && Array.isArray(data.movies) && data.movies.length > 0) setMovies(data.movies);
-    saveUserLocally();
-    saveToStorage();
-    applyUserWeights();
-    recalcAllTotals();
-    document.getElementById('onboarding-overlay').style.display = 'none';
-    const main = await import('../main.js');
-    main.updateMastheadProfile();
-    main.setCloudStatus('synced');
-    main.updateStorageStatus();
-    renderRankings();
-  } catch(e) {
-    btn.disabled = false;
-    btn.textContent = 'Restore profile →';
-    errEl.style.display = 'block';
-  }
-};
 
 window.obSelectAnswer = function(qIdx, key, el) {
   obAnswers[qIdx] = key;

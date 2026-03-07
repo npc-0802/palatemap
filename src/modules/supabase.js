@@ -211,6 +211,13 @@ export async function unfriendUser(friendId) {
   } catch(e) {}
 }
 
+export async function getUserEmail(userId) {
+  try {
+    const { data } = await sb.from('palatemap_users').select('email').eq('id', userId).single();
+    return data?.email || null;
+  } catch(e) { return null; }
+}
+
 export async function searchUsers(query) {
   if (!currentUser || !query || query.length < 2) return [];
   try {
