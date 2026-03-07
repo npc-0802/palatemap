@@ -57,9 +57,9 @@ export function updateTasteBanner() {
     const lastThreshold = parseInt(localStorage.getItem('palatemap_calibrate_last_threshold') || '0');
     if (threshold > lastThreshold) {
       banner.innerHTML = `
-        <div style="background:var(--paper);border-bottom:1px solid var(--rule);border-left:3px solid var(--blue);padding:10px 56px;display:flex;align-items:center;gap:16px">
+        <div style="background:#FDF1EC;border-bottom:1px solid rgba(232,98,58,0.25);border-left:3px solid var(--action);padding:10px 56px;display:flex;align-items:center;gap:16px">
           <span style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);flex:1">You've rated <strong>${threshold} films</strong>. Run a calibration to keep your scores consistent.</span>
-          <span onclick="showScreen('calibration')" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue);cursor:pointer;white-space:nowrap;text-decoration:underline">Calibrate →</span>
+          <span onclick="showScreen('calibration')" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--action);cursor:pointer;white-space:nowrap;text-decoration:underline">Calibrate →</span>
           <span onclick="localStorage.setItem('palatemap_calibrate_last_threshold','${threshold}');updateTasteBanner()" style="font-family:'DM Mono',monospace;font-size:14px;color:var(--dim);cursor:pointer;padding:0 4px;line-height:1" title="Dismiss">×</span>
         </div>`;
     } else {
