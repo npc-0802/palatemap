@@ -317,6 +317,121 @@ window.openFriendFilmDetail = function(index) {
   document.body.appendChild(overlay);
 };
 
+window.openEntityStub = async function(name, isPerson) {
+  document.getElementById('entity-stub-modal')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'entity-stub-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(12,11,9,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px';
+  overlay.innerHTML = `
+    <div style="background:var(--paper);max-width:480px;width:100%;border-top:3px solid var(--ink);max-height:85vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:24px 28px 0">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim)">${isPerson ? 'Person' : 'Production Company'}</div>
+        <span onclick="document.getElementById('entity-stub-modal').remove()" style="font-family:'DM Mono',monospace;font-size:18px;color:var(--dim);cursor:pointer;line-height:1">×</span>
+      </div>
+      <div id="entity-stub-content" style="padding:20px 28px 28px;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);text-align:center">Loading…</div>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+
+  try {
+    const searchUrl = isPerson
+      ? `https://api.themoviedb.org/3/search/person?api_key=${TMDB_KEY}&query=${encodeURIComponent(name)}`
+      : `https://api.themoviedb.org/3/search/company?api_key=${TMDB_KEY}&query=${encodeURIComponent(name)}`;
+    const searchData = await fetch(searchUrl).then(r => r.json());
+    const result = searchData.results?.[0];
+
+    let tmdbFilms = [], bio = '', portraitUrl = '';
+
+    if (result) {
+      if (isPerson) {
+        portraitUrl = result.profile_path ? `https://image.tmdb.org/t/p/w185${result.profile_path}` : '';
+        const [personData, creditsData] = await Promise.all([
+          fetch(`https://api.themoviedb.org/3/person/${result.id}?api_key=${TMDB_KEY}`).then(r => r.json()),
+          fetch(`https://api.themoviedb.org/3/person/${result.id}/movie_credits?api_key=${TMDB_KEY}`).then(r => r.json())
+        ]);
+        bio = personData.biography || '';
+        const seen = new Set();
+        tmdbFilms = [...(creditsData.cast || []), ...(creditsData.crew || [])]
+          .filter(f => { if (seen.has(f.id) || !f.poster_path) return false; seen.add(f.id); return true; })
+          .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+          .slice(0, 10);
+      } else {
+        portraitUrl = result.logo_path ? `https://image.tmdb.org/t/p/w185${result.logo_path}` : '';
+        const discoverData = await fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_KEY}&with_companies=${result.id}&sort_by=popularity.desc`).then(r => r.json());
+        tmdbFilms = (discoverData.results || []).filter(f => f.poster_path).slice(0, 10);
+      }
+    }
+
+    // Check user's own ranked films for overlap
+    const userFilms = (MOVIES || []).filter(m => {
+      if (isPerson) return [m.director, m.cast, m.writer].some(s => s?.split(',').map(x=>x.trim()).includes(name));
+      return m.productionCompanies?.split(',').map(x=>x.trim()).includes(name);
+    }).sort((a, b) => b.total - a.total);
+
+    const content = document.getElementById('entity-stub-content');
+    if (!content) return;
+    content.style.textAlign = 'left';
+
+    const portraitHTML = portraitUrl
+      ? (isPerson
+          ? `<img src="${portraitUrl}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;flex-shrink:0">`
+          : `<div style="width:60px;height:60px;background:white;border:1px solid var(--rule);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><img src="${portraitUrl}" style="max-width:52px;max-height:52px;object-fit:contain"></div>`)
+      : '';
+
+    const bioSnippet = bio ? bio.slice(0, 180) + (bio.length > 180 ? '…' : '') : '';
+
+    const yourRankingsHTML = userFilms.length > 0 ? `
+      <div style="margin-bottom:20px;padding:12px 14px;background:var(--cream);border-left:2px solid var(--blue)">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:8px">Your rankings · ${userFilms.length} film${userFilms.length !== 1 ? 's' : ''}</div>
+        ${userFilms.slice(0, 5).map(f => {
+          const t = f.total != null ? (Math.round(f.total * 10) / 10).toFixed(1) : '—';
+          const p = f.poster ? `<img src="https://image.tmdb.org/t/p/w92${f.poster}" style="width:20px;height:30px;object-fit:cover;flex-shrink:0">` : '';
+          return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0">
+            ${p}
+            <div style="flex:1;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink)">${f.title} <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">${f.year || ''}</span></div>
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:14px;color:var(--blue)">${t}</div>
+          </div>`;
+        }).join('')}
+      </div>` : '';
+
+    const ratedTitles = new Set((MOVIES || []).map(m => m.title?.toLowerCase()));
+    const tmdbFilmsHTML = tmdbFilms.length > 0 ? `
+      <div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:10px">${userFilms.length > 0 ? 'More films' : 'Known for'}</div>
+        ${tmdbFilms.map(f => {
+          const title = f.title || f.name || '';
+          const year = (f.release_date || '').split('-')[0];
+          const alreadyRated = ratedTitles.has(title.toLowerCase());
+          return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--rule)">
+            <img src="https://image.tmdb.org/t/p/w92${f.poster_path}" style="width:24px;height:36px;object-fit:cover;flex-shrink:0">
+            <div style="flex:1;min-width:0">
+              <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
+              <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">${year}</div>
+            </div>
+            ${alreadyRated
+              ? `<span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);flex-shrink:0">Rated ✓</span>`
+              : `<button onclick="document.getElementById('entity-stub-modal').remove();window.showScreen('add');setTimeout(()=>window.liveSearch&&(document.getElementById('tmdb-search-input')&&(document.getElementById('tmdb-search-input').value='${title.replace(/'/g,"&#39;")}'),window.liveSearch()),100)" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:5px 10px;cursor:pointer;flex-shrink:0">+ Add</button>`
+            }
+          </div>`;
+        }).join('')}
+      </div>` : `<div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim)">No film data found.</div>`;
+
+    content.innerHTML = `
+      <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:20px">
+        ${portraitHTML}
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:22px;color:var(--ink);line-height:1.1;margin-bottom:6px">${name}</div>
+          ${bioSnippet ? `<div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--dim);line-height:1.6">${bioSnippet}</div>` : ''}
+        </div>
+      </div>
+      ${yourRankingsHTML}
+      ${tmdbFilmsHTML}`;
+  } catch(e) {
+    const content = document.getElementById('entity-stub-content');
+    if (content) content.textContent = 'Could not load data.';
+  }
+};
+
 window.toggleFriendEntity = function(entityId) {
   const films = document.getElementById(`${entityId}-films`);
   const arrow = document.getElementById(`${entityId}-arrow`);
@@ -731,9 +846,9 @@ function friendTasteHTML(friend, color) {
     if (!entities.length) return;
     allEntitiesForImages[type] = { entities, isPerson };
 
-    const portrait = (i) => isPerson
-      ? `<div style="position:relative;width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--rule)"><img id="fe-img-${type}-${i}" src="" alt="" style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;display:none"></div>`
-      : `<div style="position:relative;width:36px;height:36px;border-radius:4px;flex-shrink:0;background:white;border:1px solid var(--rule);display:flex;align-items:center;justify-content:center;overflow:hidden"><img id="fe-img-${type}-${i}" src="" alt="" style="width:28px;height:28px;object-fit:contain;display:none"></div>`;
+    const portrait = (i, name) => isPerson
+      ? `<div onclick="event.stopPropagation();openEntityStub('${name.replace(/'/g,"&#39;")}',true)" title="Explore ${name}" style="position:relative;width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--rule);cursor:pointer"><img id="fe-img-${type}-${i}" src="" alt="" style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;display:none"></div>`
+      : `<div onclick="event.stopPropagation();openEntityStub('${name.replace(/'/g,"&#39;")}',false)" title="Explore ${name}" style="position:relative;width:36px;height:36px;border-radius:4px;flex-shrink:0;background:white;border:1px solid var(--rule);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer"><img id="fe-img-${type}-${i}" src="" alt="" style="width:28px;height:28px;object-fit:contain;display:none"></div>`;
 
     entitySections += `<div style="margin-bottom:28px">
       <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);opacity:0.6;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--rule)">${label}</div>
@@ -751,10 +866,13 @@ function friendTasteHTML(friend, color) {
         return `<div style="border-bottom:1px solid var(--rule)">
           <div onclick="toggleFriendEntity('${entityId}')" style="display:flex;align-items:center;gap:12px;padding:10px 0;cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
             <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);width:20px;text-align:center;flex-shrink:0">${i+1}</div>
-            ${portrait(i)}
+            ${portrait(i, e.name)}
             <div style="flex:1;min-width:0">
               <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:16px;color:var(--ink);line-height:1.2">${e.name}</div>
-              <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px">${e.count} film${e.count!==1?'s':''}</div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:2px">
+                <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">${e.count} film${e.count!==1?'s':''}</div>
+                <span onclick="event.stopPropagation();openEntityStub('${e.name.replace(/'/g,"&#39;")}',${isPerson})" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--blue);cursor:pointer;letter-spacing:0.5px">Explore →</span>
+              </div>
             </div>
             <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:18px;color:${color};letter-spacing:-0.5px">${e.avg}</div>
             <div id="${entityId}-arrow" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);width:16px;text-align:center">▾</div>
