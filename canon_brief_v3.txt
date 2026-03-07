@@ -1,6 +1,6 @@
 Palate Map
 Product Brief · Living Document · v3.4
-Last updated: March 2026
+Last updated: March 2026 · v3.5
 Confidential — do not distribute
 
 01  North Star
@@ -148,9 +148,9 @@ Cold Landing
 Full-screen overlay for new/logged-out users. Headline: "Taste is everything." Supporting copy: "Everyone has a palate. The films you love are trying to tell you something about yourself. Palate Map listens — and shows you the pattern." Single persimmon CTA: "Discover your taste →". Footer: "Starting with film. Expanding to everything."
 
 Onboarding (3 entry points)
-New user: cold landing → name → poetic intro + 6-question quiz → archetype reveal (dark surface: name + description + quote + secondary + username) → "Enter Palate Map →".
-Returning user: username lookup → fetches profile + films from Supabase → loads directly.
-Letterboxd import: drag-and-drop ratings.csv from Letterboxd export → parses star ratings (×20 = score) → loads films with empty category scores → proceeds to quiz. CTA on name step ("On Letterboxd? Import your ratings →").
+New user: cold landing → auth step (Google OAuth primary, or name + email → magic link) → 6-question quiz (dark surface intro block: "Six questions. Your taste, revealed.") → archetype reveal (dark surface: name + description + quote + secondary + username) → "Enter Palate Map →".
+Returning user: Supabase session auto-loads profile on return visit. Legacy: username lookup fallback.
+Letterboxd import: drag-and-drop ratings.csv → parses star ratings (×20 = score) → loads films → proceeds to quiz. CTA on name step ("On Letterboxd? Import your ratings →").
 
 Rankings (Main Screen)
 Default: poster grid (5 columns). Sort pills above grid control sort order + which score badge shows on each card. Toggle to table view (8 category columns + total).
@@ -176,12 +176,22 @@ Editorial header. Category averages split into Craft (Plot/Execution/Acting/Prod
 
 Calibrate
 Elo-based head-to-head. Choose category + intensity (15/30/50 matchups). Review proposed changes. Apply writes scores + recalcs + syncs.
+Nav: moved out of bottom nav in Phase 3.2 — accessible via Profile screen "Calibrate your scores →" button.
 
 Add Film
 4-step: TMDB search → cast/crew/company curation → 8-category scoring → result card.
 
+Nav Strip
+Top bar above nav tabs. Contains: "Add a film" (primary) + "Invite a friend →" (secondary, added in Phase 3.2).
+
+Friends (Phase 3.2)
+Own nav tab (replaces Calibrate in bottom nav).
+Friend list: each entry shows archetype color swatch, display name, archetype, film count. Click → friend profile page.
+Friend profile page: dark header with friend's archetype in their palate color. Radar chart overlaying both weight vectors. Compatibility score (cosine similarity + co-rated film agreement). Co-rated films list sorted by score disagreement. AI compatibility blurb.
+Invite flow: "Invite a friend →" in nav strip generates palatemap.com/?invite=TOKEN. Recipient: if signed in, auto-accepts; if not, auth first then accepts.
+
 Profile Screen
-Nav screen (click display name in masthead).
+Nav screen (bottom tab).
 Sections:
 • Palate block — dark surface card (with grid texture) with primary + secondary archetype name in on-dark cream.
 • Description + quote from archetype data.
@@ -189,7 +199,8 @@ Sections:
 • Stats row — 3-column editorial grid: films rated / avg total / strongest category (large Playfair numbers).
 • Signature Films — top 5 by total. Each row: poster thumbnail, rank, italic title, score badge (tier-colored).
 • Share cards — two side-by-side 320×440px fixed cards: (1) Palate Map Card: dark header with archetype + top 3 films + stats; (2) Taste Note Card: cream, first-person archetype quote as hero text.
-• Letterboxd import — drag-and-drop ratings.csv; dedupes against existing films (Palate Map wins on conflict); adds net-new films and navigates to Calibrate.
+• Calibrate — "Calibrate your scores →" button launches calibration screen (Phase 3.2+).
+• Letterboxd import — drag-and-drop ratings.csv; dedupes against existing films (Palate Map wins on conflict); adds net-new films.
 • Sign out at bottom.
 
 Archetype / Weight Editor Modal
@@ -230,10 +241,20 @@ Phase 2 — Polish [COMPLETE]
 • 2.9 Archetype auto-detection ✓ — cosine similarity on weight vectors; toast on shift; weight cap at 5.
 • 2.10 Predict lock ✓ — screen locked with uncharted state until 10 films rated.
 
-Phase 3 — Growth Features [PRIORITY after Phase 2]
-• 3.1 Friends layer — real accounts with passwords, invite links, Supabase friendships table, friend profiles, taste overlap visualization. First paid feature candidate. Reassess React migration here.
-• 3.2 Prediction engine polish — discovery mode, prediction history, confidence calibration.
-• 3.3 Tagging system — context tags (alone / with someone / rewatch / bad week).
+Phase 3 — Growth Features [IN PROGRESS]
+• 3.1 Auth migration ✓ — Google OAuth + magic link sign-in; session persistence (30-day token); legacy localStorage fallback; hybrid auth/non-auth user support. Privacy policy at palatemap.com/privacy.
+
+• 3.2 Friends layer [NEXT]
+  Nav: Friends gets its own tab (replacing Calibrate in nav). Calibrate moves to Profile page as a section.
+  Nav strip: secondary "Invite a friend →" CTA added next to "Add a film".
+  Data model: palatemap_friendships table (id, requester_id, addressee_id, status, invite_token, created_at).
+  3.2.1 Invite system — "Invite a friend →" generates palatemap.com/?invite=TOKEN. Recipient clicks: if signed in, auto-accepts; if not, auth first then accepts (token held in sessionStorage).
+  3.2.2 Friend list in Friends tab — each friend: archetype color swatch, display name, archetype, film count. Click → friend profile page.
+  3.2.3 Friend profile page — dark header with friend's archetype in their palate color. Radar chart with both weight vectors overlaid. Compatibility score (cosine similarity + co-rated film agreement). Co-rated films list sorted by biggest disagreements. AI-generated compatibility blurb via Claude proxy.
+  3.2.4 Group radar (stretch) — select 2–4 friends, all radars on one chart in their palette colors.
+
+• 3.3 Prediction engine polish — discovery mode, prediction history, confidence calibration.
+• 3.4 Tagging system — context tags (alone / with someone / rewatch / bad week).
 
 Phase 4 — Platform
 • 4.1 Cross-genre v1: Restaurants — same framework, new categories.
@@ -266,4 +287,4 @@ Anthropic key:         stored in Cloudflare env var ANTHROPIC_KEY only
 GitHub repo:           github.com/npc-0802/palatemap (private)
 GitHub Pages:          palatemap.com (custom domain)
 
-Palate Map · private product brief · v3.4 · do not distribute
+Palate Map · private product brief · v3.5 · do not distribute

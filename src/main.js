@@ -14,6 +14,7 @@ import {
 } from './modules/addfilm.js';
 import { showSyncPanel, openArchetypeModal, closeArchetypeModal, previewWeight, resetArchetypeWeights, saveArchetypeWeights } from './modules/archetypemodal.js';
 import { renderProfile } from './modules/profile.js';
+import { renderFriends } from './modules/friends.js';
 
 // ── SCREEN NAVIGATION ──
 export function showScreen(id) {
@@ -26,6 +27,7 @@ export function showScreen(id) {
   if (id === 'calibration') resetCalibration();
   if (id === 'predict') initPredict();
   if (id === 'profile') renderProfile();
+  if (id === 'friends') renderFriends();
   localStorage.setItem('palatemap_last_screen', id);
 }
 
@@ -189,7 +191,8 @@ window.__ledger = {
   renderProfile, setViewMode,
   showSyncPanel, openArchetypeModal, closeArchetypeModal, previewWeight,
   resetArchetypeWeights, saveArchetypeWeights, exportData, resetStorage,
-  updateStorageStatus, updateMastheadProfile, setCloudStatus, showToast
+  updateStorageStatus, updateMastheadProfile, setCloudStatus, showToast,
+  renderFriends
 };
 
 // Bridge window globals for inline onclick= attributes in HTML
@@ -202,7 +205,7 @@ const bridge = [
   'renderProfile', 'setViewMode',
   'showSyncPanel','openArchetypeModal','closeArchetypeModal','previewWeight',
   'resetArchetypeWeights','saveArchetypeWeights','exportData','resetStorage',
-  'renderAnalysis'
+  'renderAnalysis','renderFriends'
 ];
 bridge.forEach(fn => { window[fn] = window.__ledger[fn]; });
 

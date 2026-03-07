@@ -361,6 +361,13 @@ export function renderProfile() {
         <div id="profile-import-status" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);margin-top:8px;min-height:16px"></div>
       </div>
 
+      <!-- CALIBRATE -->
+      <div style="margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--rule)">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:12px">Calibrate</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);margin-bottom:18px;line-height:1.7;max-width:480px">Run Elo head-to-head matchups to sharpen your scores. Two films, one question — your instincts do the work.</div>
+        <button onclick="showScreen('calibration')" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;background:transparent;color:var(--ink);border:1.5px solid var(--ink);padding:12px 24px;cursor:pointer;transition:opacity 0.15s" onmouseover="this.style.opacity='0.6'" onmouseout="this.style.opacity='1'">Calibrate your scores →</button>
+      </div>
+
       <!-- SIGN OUT -->
       <div style="padding-top:20px;padding-bottom:40px;border-top:1px solid var(--rule);text-align:center">
         <span onclick="logOutUser()" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--dim);cursor:pointer;text-decoration:underline">Sign out</span>
