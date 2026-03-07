@@ -23,7 +23,6 @@ export function showScreen(id) {
   event.target.classList.add('active');
   if (id === 'analysis') renderAnalysis();
   if (id === 'calibration') resetCalibration();
-  if (id === 'explore') renderExploreIndex();
   if (id === 'predict') initPredict();
   if (id === 'profile') renderProfile();
   localStorage.setItem('ledger_last_screen', id);
@@ -100,7 +99,8 @@ async function init() {
   updateStorageStatus();
 
   // Restore last screen
-  const lastScreen = localStorage.getItem('ledger_last_screen');
+  const rawLastScreen = localStorage.getItem('ledger_last_screen');
+  const lastScreen = rawLastScreen === 'explore' ? 'analysis' : rawLastScreen;
   if (lastScreen && lastScreen !== 'rankings' && document.getElementById(lastScreen)) {
     const navBtns = document.querySelectorAll('.nav-btn');
     navBtns.forEach(b => b.classList.remove('active'));
@@ -108,7 +108,6 @@ async function init() {
     document.getElementById(lastScreen).classList.add('active');
     navBtns.forEach(b => { if (b.getAttribute('onclick')?.includes(lastScreen)) b.classList.add('active'); });
     if (lastScreen === 'analysis') renderAnalysis();
-    if (lastScreen === 'explore') renderExploreIndex();
     if (lastScreen === 'profile') renderProfile();
   }
 }
@@ -126,7 +125,7 @@ export function setCloudStatus(state) {
 // Expose all functions to window for inline HTML onclick handlers
 window.__ledger = {
   showScreen, sortBy, openModal, closeModal, exploreEntity,
-  renderExploreIndex, initPredict, predictSearch, predictSearchDebounce,
+  renderExploreIndex, renderAnalysis, initPredict, predictSearch, predictSearchDebounce,
   predictSelectFilm, predictAddToList, startCalibration, selectCalCat,
   selectCalInt, applyCalibration, resetCalibration, launchOnboarding,
   liveSearch, tmdbSelect, toggleCast, showMoreCast, toggleCompany,
@@ -146,7 +145,8 @@ const bridge = [
   'resetToSearch','confirmTmdbData','goToStep3','goToStep4','saveFilm','goToStep',
   'renderProfile', 'setViewMode',
   'showSyncPanel','openArchetypeModal','closeArchetypeModal','previewWeight',
-  'resetArchetypeWeights','saveArchetypeWeights','exportData','resetStorage'
+  'resetArchetypeWeights','saveArchetypeWeights','exportData','resetStorage',
+  'renderAnalysis'
 ];
 bridge.forEach(fn => { window[fn] = window.__ledger[fn]; });
 

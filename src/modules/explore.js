@@ -54,49 +54,43 @@ export function renderExploreIndex(tab) {
 
   const entities = getEntities(exploreActiveTab);
 
-  document.getElementById('exploreContent').innerHTML = `
-    <div style="max-width:800px">
-      <div style="margin-bottom:28px">
-        <h2 style="font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(28px,4vw,42px);font-weight:900;letter-spacing:-1px;margin-bottom:4px">Explore</h2>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px">Ranked by your average score</div>
-      </div>
+  const container = document.getElementById('explore-section');
+  if (!container) return;
 
-      <div class="explore-tabs">
-        ${tabs.map(t => `<button class="explore-tab ${t===exploreActiveTab?'active':''}" onclick="renderExploreIndex('${t}')">${tabLabels[t]}</button>`).join('')}
-      </div>
-
-      <div style="height:28px"></div>
-      ${entities.length === 0
-        ? `<div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dim);font-style:italic;padding:48px 0">Not enough data yet — add more films to see patterns.</div>`
-        : entities.map((e, i) => {
-            const safeName = e.name.replace(/'/g, "\\'");
-            const singularType = exploreActiveTab === 'companies' ? 'company' : exploreActiveTab === 'years' ? 'year' : exploreActiveTab.slice(0, -1);
-            return `<div style="display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid var(--rule);cursor:pointer" onclick="exploreEntity('${singularType}','${safeName}')" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-              <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);min-width:28px;text-align:right">${i+1}</div>
-              <div style="flex:1;min-width:0">
-                <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:18px;font-weight:700;color:var(--ink);line-height:1.2">${e.name}</div>
-                <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px">${e.films.length} film${e.films.length!==1?'s':''}</div>
-              </div>
-              <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:17px;color:white;padding:4px 11px 3px;background:${badgeColor(e.avg)};border-radius:4px;flex-shrink:0">${e.avg.toFixed(1)}</div>
-            </div>`;
-          }).join('')
-      }
+  container.innerHTML = `
+    <div class="explore-tabs" style="margin-bottom:24px">
+      ${tabs.map(t => `<button class="explore-tab ${t===exploreActiveTab?'active':''}" onclick="renderExploreIndex('${t}')">${tabLabels[t]}</button>`).join('')}
     </div>
+    ${entities.length === 0
+      ? `<div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dim);font-style:italic;padding:48px 0">Not enough data yet — add more films to see patterns.</div>`
+      : entities.map((e, i) => {
+          const safeName = e.name.replace(/'/g, "\\'");
+          const singularType = exploreActiveTab === 'companies' ? 'company' : exploreActiveTab === 'years' ? 'year' : exploreActiveTab.slice(0, -1);
+          return `<div style="display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid var(--rule);cursor:pointer" onclick="exploreEntity('${singularType}','${safeName}')" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+            <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);min-width:28px;text-align:right">${i+1}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:18px;font-weight:700;color:var(--ink);line-height:1.2">${e.name}</div>
+              <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px">${e.films.length} film${e.films.length!==1?'s':''}</div>
+            </div>
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:17px;color:white;padding:4px 11px 3px;background:${badgeColor(e.avg)};border-radius:4px;flex-shrink:0">${e.avg.toFixed(1)}</div>
+          </div>`;
+        }).join('')
+    }
   `;
 }
 
 export function exploreEntity(type, name) {
   document.getElementById('filmModal').classList.remove('open');
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('explore').classList.add('active');
+  document.getElementById('analysis').classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.nav-btn')[1].classList.add('active');
+  const analysisBtn = document.querySelector('.nav-btn[onclick*="analysis"]');
+  if (analysisBtn) analysisBtn.classList.add('active');
 
-  // scroll to top for wayfinding
   window.scrollTo(0, 0);
-  document.getElementById('exploreContent').scrollTop = 0;
 
   const pluralType = type === 'director' ? 'directors' : type === 'writer' ? 'writers' : type === 'actor' ? 'actors' : type === 'year' ? 'years' : 'companies';
+  exploreActiveTab = pluralType;
   const typeLabel = type === 'director' ? 'Director' : type === 'writer' ? 'Writer' : type === 'actor' ? 'Actor' : type === 'year' ? 'Year' : 'Production Co.';
 
   const films = MOVIES.filter(m => {
@@ -138,12 +132,12 @@ export function exploreEntity(type, name) {
   const strength = scored[0];
   const weakness = scored[scored.length-1];
 
-  document.getElementById('exploreContent').innerHTML = `
+  document.getElementById('analysisContent').innerHTML = `
     <div style="max-width:800px">
 
       <div style="background:var(--surface-dark);margin:-40px -56px 32px;padding:40px 56px 32px">
         <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:14px">
-          ${typeLabel} &nbsp;·&nbsp; <span onclick="renderExploreIndex('${pluralType}')" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px">← all ${pluralType}</span>
+          ${typeLabel} &nbsp;·&nbsp; <span onclick="renderAnalysis()" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px">← all ${pluralType}</span>
         </div>
         <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(26px,4vw,44px);color:var(--on-dark);letter-spacing:-1.5px;line-height:1.1;margin-bottom:20px">${name}</div>
         <div style="display:flex;align-items:baseline;gap:20px;flex-wrap:wrap">
