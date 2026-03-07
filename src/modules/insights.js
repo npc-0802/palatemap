@@ -12,9 +12,11 @@ function saveCache(cache) {
 
 function isStale(entry, filmCount, scoreKey) {
   if (!entry) return true;
-  if (Date.now() - entry.ts > 30 * 24 * 60 * 60 * 1000) return true; // 30 days
-  if (Math.abs((entry.filmCount || 0) - filmCount) >= 2) return true; // meaningful new data
-  if (entry.scoreKey !== scoreKey) return true; // scores shifted
+  // Only data changes trigger regeneration — never time alone.
+  // Film count shifting ≥2 means meaningful new entries were added.
+  if (Math.abs((entry.filmCount || 0) - filmCount) >= 2) return true;
+  // scoreKey captures every score value — any edit invalidates.
+  if (entry.scoreKey !== scoreKey) return true;
   return false;
 }
 
