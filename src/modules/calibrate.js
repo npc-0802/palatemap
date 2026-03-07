@@ -106,7 +106,17 @@ function renderCalMatchup() {
       </div>`;
   }
 
-  const promptQuestion = catKey === 'uniqueness' ? 'More unique?' : `Better ${catLabel.toLowerCase()}?`;
+  const PROMPTS = {
+    uniqueness:    'Which is more unique?',
+    enjoyability:  'Which is more enjoyable?',
+    execution:     'Which is better executed?',
+    acting:        'Which has better acting?',
+    plot:          'Which has a better plot?',
+    production:    'Which has better production?',
+    ending:        'Which has the better ending?',
+    rewatchability:'Which is more rewatchable?',
+  };
+  const promptQuestion = PROMPTS[catKey] || `Better ${catLabel.toLowerCase()}?`;
 
   document.getElementById('cal-matchup-card').innerHTML = `
     <div style="text-align:center;margin-bottom:24px">
