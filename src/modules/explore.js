@@ -151,7 +151,12 @@ export function exploreEntity(type, name) {
       </div>
 
       <div id="explore-insight" style="margin-bottom:28px">
-        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);font-style:italic;padding:4px 0">analysing your taste patterns…</div>
+        <div class="insight-loading">
+          <div class="insight-loading-label">Analysing your taste patterns <div class="insight-loading-dots"><span></span><span></span><span></span></div></div>
+          <div class="insight-skeleton"></div>
+          <div class="insight-skeleton s2"></div>
+          <div class="insight-skeleton s3"></div>
+        </div>
       </div>
 
       ${scored.length > 0 ? `

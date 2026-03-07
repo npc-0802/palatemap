@@ -107,7 +107,12 @@ function renderModal() {
       <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--dim)" id="modal-total-label">${getLabel(previewTotal)}</span>
     </div>
     ${!editMode ? `<div id="modal-insight" style="margin-bottom:20px">
-      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);font-style:italic">analysing your score…</div>
+      <div class="insight-loading">
+        <div class="insight-loading-label">Analysing your score <div class="insight-loading-dots"><span></span><span></span><span></span></div></div>
+        <div class="insight-skeleton"></div>
+        <div class="insight-skeleton s2"></div>
+        <div class="insight-skeleton s3"></div>
+      </div>
     </div>` : ''}
     <div style="margin-bottom:20px">
       ${editMode
