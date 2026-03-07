@@ -6,13 +6,13 @@ let viewMode = 'grid';
 const SORT_CATS = [
   { key: 'total',         label: 'Total' },
   { key: 'plot',          label: 'Plot' },
-  { key: 'execution',     label: 'Exec' },
+  { key: 'execution',     label: 'Execution' },
   { key: 'acting',        label: 'Acting' },
-  { key: 'production',    label: 'Prod' },
-  { key: 'enjoyability',  label: 'Enjoy' },
-  { key: 'rewatchability',label: 'Rewatch' },
+  { key: 'production',    label: 'Production' },
+  { key: 'enjoyability',  label: 'Enjoyability' },
+  { key: 'rewatchability',label: 'Rewatchability' },
   { key: 'ending',        label: 'Ending' },
-  { key: 'uniqueness',    label: 'Unique' },
+  { key: 'uniqueness',    label: 'Uniqueness' },
 ];
 
 function badgeClass(score) {
