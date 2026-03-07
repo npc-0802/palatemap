@@ -65,6 +65,42 @@ export function resetStorage() {
   location.reload();
 }
 
+// ── PRODUCTION COMPANY BACKFILL ──
+const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
+const TMDB_BASE = 'https://api.themoviedb.org/3';
+
+window.backfillProductionCompanies = async function() {
+  const missing = MOVIES.filter(m => !m.productionCompanies);
+  if (missing.length === 0) { console.log('All films already have production company data.'); return; }
+  console.log(`Backfilling ${missing.length} films…`);
+
+  let done = 0, failed = 0;
+  for (const film of missing) {
+    try {
+      const q = encodeURIComponent(film.title);
+      const year = film.year ? `&year=${film.year}` : '';
+      const searchRes = await fetch(`${TMDB_BASE}/search/movie?api_key=${TMDB_KEY}&query=${q}${year}&include_adult=false`);
+      const searchData = await searchRes.json();
+      const match = searchData.results?.[0];
+      if (!match) { console.warn(`No TMDB match: ${film.title}`); failed++; continue; }
+
+      const detailRes = await fetch(`${TMDB_BASE}/movie/${match.id}?api_key=${TMDB_KEY}`);
+      const detail = await detailRes.json();
+      const companies = (detail.production_companies || []).map(c => c.name).join(', ');
+      film.productionCompanies = companies;
+      done++;
+      console.log(`[${done}/${missing.length}] ${film.title} → ${companies || '(none)'}`);
+    } catch(e) {
+      console.warn(`Error for ${film.title}:`, e.message);
+      failed++;
+    }
+    await new Promise(r => setTimeout(r, 275)); // stay under TMDB 40 req/10s limit
+  }
+
+  saveToStorage();
+  console.log(`Done. ${done} updated, ${failed} failed.`);
+};
+
 // ── INIT ──
 export function showColdLanding() {
   const el = document.getElementById('cold-landing');
