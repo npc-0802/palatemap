@@ -180,6 +180,7 @@ export function toggleCompany(companyId) {
 }
 
 export function resetToSearch() {
+  prefillScores = null;
   document.getElementById('tmdb-search-phase').style.display = 'block';
   document.getElementById('tmdb-curation-phase').style.display = 'none';
   document.getElementById('tmdb-results').innerHTML = '';
@@ -201,38 +202,47 @@ export function confirmTmdbData() {
   updateStepUI(2);
 }
 
+let prefillScores = null;
+
+export function prefillWithPrediction(scores) {
+  prefillScores = scores;
+}
+
 function getAnchors(catKey) {
   const sorted = [...MOVIES].filter(m => m.scores[catKey] != null)
     .sort((a,b) => b.scores[catKey] - a.scores[catKey]);
   const n = sorted.length;
-  return [
+  const candidates = [
     sorted[Math.floor(n * 0.05)],
     sorted[Math.floor(n * 0.25)],
     sorted[Math.floor(n * 0.5)],
     sorted[Math.floor(n * 0.75)],
     sorted[Math.floor(n * 0.95)],
   ].filter(Boolean);
+  const seen = new Set();
+  return candidates.filter(m => { if (seen.has(m.title)) return false; seen.add(m.title); return true; });
 }
 
 function renderCalibration() {
   const container = document.getElementById('calibrationCategories');
   container.innerHTML = CATEGORIES.map(cat => {
     const anchors = getAnchors(cat.key);
-    const initVal = newFilm.scores[cat.key] || 75;
+    const initVal = prefillScores?.[cat.key] ?? newFilm.scores[cat.key] ?? 50;
     return `<div class="category-section" id="catSection_${cat.key}">
       <div class="cat-header">
         <div class="cat-name">${cat.label}</div>
         <div class="cat-weight">Weight ×${cat.weight} of 17</div>
       </div>
       <div class="cat-question">${cat.question}</div>
-      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Closest anchor film:</div>
+      ${anchors.length > 0 ? `
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Reference films — click to anchor your score:</div>
       <div class="anchor-row">
         ${anchors.map(a => `
           <div class="anchor-film" onclick="selectAnchor('${cat.key}', ${a.scores[cat.key]}, this)">
             <div class="anchor-film-title">${a.title}</div>
             <div class="anchor-film-score">${cat.label}: ${a.scores[cat.key]}</div>
           </div>`).join('')}
-      </div>
+      </div>` : ''}
       <div class="slider-section">
         <div class="slider-label-row">
           <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px">Your score</div>
@@ -241,22 +251,31 @@ function renderCalibration() {
             <span class="slider-desc" id="sliderDesc_${cat.key}" style="margin-left:8px">${getLabel(initVal)}</span>
           </div>
         </div>
-        <input type="range" min="1" max="100" value="${initVal}" id="slider_${cat.key}"
-          oninput="updateSlider('${cat.key}', this.value)">
-        <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">
+        <div style="position:relative">
+          <input type="range" min="1" max="100" value="${initVal}" id="slider_${cat.key}"
+            oninput="updateSlider('${cat.key}', this.value)">
+          <div style="display:flex;height:3px;border-radius:2px;overflow:hidden;margin-top:3px">
+            <div style="width:15%;background:rgba(180,50,40,0.45);border-radius:2px 0 0 2px"></div>
+            <div style="flex:1"></div>
+            <div style="width:15%;background:rgba(40,130,60,0.45);border-radius:0 2px 2px 0"></div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-top:2px">
           <span>1 — Insulting</span><span>50 — Solid</span><span>100 — Perfect</span>
         </div>
       </div>
     </div>`;
   }).join('');
-  CATEGORIES.forEach(cat => { if (!newFilm.scores[cat.key]) newFilm.scores[cat.key] = 75; });
+  CATEGORIES.forEach(cat => {
+    newFilm.scores[cat.key] = prefillScores?.[cat.key] ?? newFilm.scores[cat.key] ?? 50;
+  });
 }
 
 // Expose inline handlers
 window.selectAnchor = function(catKey, anchorScore, el) {
   el.closest('.anchor-row').querySelectorAll('.anchor-film').forEach(a => a.classList.remove('selected'));
   el.classList.add('selected');
-  const current = newFilm.scores[catKey] || 75;
+  const current = newFilm.scores[catKey] ?? 50;
   const nudged = Math.round((current + anchorScore) / 2);
   document.getElementById('slider_' + catKey).value = nudged;
   updateSlider(catKey, nudged);
@@ -391,7 +410,7 @@ export function saveFilm() {
   import('../main.js').then(m => m.updateStorageStatus());
 
   newFilm = { title:'', year:null, director:'', writer:'', cast:'', productionCompanies:'', scores:{} };
-  castChecked = {}; companyChecked = {}; tmdbFullCast = [];
+  castChecked = {}; companyChecked = {}; tmdbFullCast = []; prefillScores = null;
 
   document.getElementById('f-search').value = '';
   document.getElementById('tmdb-results').innerHTML = '';

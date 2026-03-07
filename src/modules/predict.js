@@ -6,6 +6,7 @@ const PROXY_URL = 'https://ledger-proxy.noahparikhcott.workers.dev';
 
 let predictDebounceTimer = null;
 let predictSelectedFilm = null;
+let lastPrediction = null;
 
 export function initPredict() {
   document.getElementById('predict-search').value = '';
@@ -186,6 +187,7 @@ Respond with this exact JSON structure:
     const clean = text.replace(/```json|```/g, '').trim();
     const prediction = JSON.parse(clean);
 
+    lastPrediction = prediction;
     renderPrediction(film, prediction, comps);
   } catch(e) {
     document.getElementById('predict-result').innerHTML = `
@@ -226,6 +228,11 @@ function renderPrediction(film, prediction, comps) {
       </div>
     </div>
 
+    <div style="padding:18px 20px;background:var(--surface-dark);border-radius:8px;margin-bottom:24px">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--on-dark-dim);margin-bottom:10px">Why this score</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.7;color:var(--on-dark)">${prediction.reasoning}</div>
+    </div>
+
     <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:12px">Predicted category scores</div>
     <div class="predict-score-grid">
       ${CATEGORIES.map(cat => {
@@ -236,9 +243,6 @@ function renderPrediction(film, prediction, comps) {
         </div>`;
       }).join('')}
     </div>
-
-    <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:10px">Reasoning</div>
-    <div class="predict-reasoning">${prediction.reasoning}</div>
 
     ${comps.length > 0 ? `
       <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin:24px 0 10px">Comparisons from your list</div>
@@ -270,7 +274,12 @@ export function predictAddToList() {
     const searchInput = document.getElementById('f-search');
     if (searchInput) {
       searchInput.value = predictSelectedFilm.title;
-      import('./addfilm.js').then(m => m.liveSearch(predictSelectedFilm.title));
+      import('./addfilm.js').then(m => {
+        if (lastPrediction?.predicted_scores) {
+          m.prefillWithPrediction(lastPrediction.predicted_scores);
+        }
+        m.liveSearch(predictSelectedFilm.title);
+      });
     }
   }, 100);
 }

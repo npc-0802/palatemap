@@ -48,7 +48,7 @@ export const OB_QUESTIONS = [
     ]
   },
   {
-    q: "Sometimes a performance makes you forget you're watching a film. You're not thinking about the script or the direction — you're just completely inside another person. How much does that experience shape how you feel about a film overall?",
+    q: "Sometimes a performance makes you forget you're watching a film. You're not thinking about the script or the direction — you're just fully transported into a character's inner world. How much does that experience shape how you feel about a film overall?",
     options: [
       { key: 'A', text: "It's everything. A performance like that can carry a film for me." },
       { key: 'B', text: "It elevates it, but I need the rest of the film to hold up too." },

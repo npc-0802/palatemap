@@ -8,6 +8,7 @@ let calMatchups = [];
 let calMatchupIdx = 0;
 let calScoreDeltas = {};
 let calTempScores = {};
+let calHistory = [];
 const CAL_INTENSITY = { focused: 15, thorough: 30, deep: 50 };
 const ELO_K = 8;
 
@@ -60,6 +61,7 @@ export function startCalibration() {
   calMatchupIdx = 0;
   calScoreDeltas = {};
   calTempScores = {};
+  calHistory = [];
   MOVIES.forEach(m => { calTempScores[m.title] = { ...m.scores }; });
 
   document.getElementById('cal-setup').style.display = 'none';
@@ -90,7 +92,7 @@ function renderCalMatchup() {
   const aScore = calTempScores[a.title]?.[catKey] ?? a.scores[catKey];
   const bScore = calTempScores[b.title]?.[catKey] ?? b.scores[catKey];
 
-  function filmCard(m, score, choice) {
+  function filmCard(m, choice) {
     const poster = m.poster
       ? `<img style="width:100%;height:100%;object-fit:cover;display:block" src="https://image.tmdb.org/t/p/w342${m.poster}" alt="" loading="lazy">`
       : `<div style="width:100%;height:100%;background:var(--deep-cream)"></div>`;
@@ -98,30 +100,49 @@ function renderCalMatchup() {
       <div class="cal-film-card" id="cal-card-${choice}" onclick="calChoose('${choice}')">
         <div style="aspect-ratio:2/3;overflow:hidden;background:var(--cream);position:relative;margin-bottom:12px">
           ${poster}
-          <div style="position:absolute;bottom:8px;right:8px;font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:17px;color:white;padding:3px 9px 2px;background:${calBadgeColor(score)};border-radius:4px">${score}</div>
         </div>
         <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:15px;font-weight:700;line-height:1.3;color:var(--ink);margin-bottom:4px">${m.title}</div>
         <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">${m.year || ''}</div>
       </div>`;
   }
 
+  const promptQuestion = catKey === 'uniqueness' ? 'More unique?' : `Better ${catLabel.toLowerCase()}?`;
+
   document.getElementById('cal-matchup-card').innerHTML = `
-    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);text-align:center;margin-bottom:24px">
-      Better <span style="color:var(--ink)">${catLabel}</span>?
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:8px">${catLabel}</div>
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(28px,5vw,44px);color:var(--ink);letter-spacing:-1px;line-height:1.1">${promptQuestion}</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 40px 1fr;gap:0;align-items:start">
-      ${filmCard(a, aScore, 'a')}
+      ${filmCard(a, 'a')}
       <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:16px;color:var(--dim);text-align:center;padding-top:35%">vs</div>
-      ${filmCard(b, bScore, 'b')}
+      ${filmCard(b, 'b')}
     </div>
-    <div style="text-align:center;margin-top:24px">
+    <div style="text-align:center;margin-top:24px;display:flex;justify-content:center;align-items:center;gap:24px">
+      ${calMatchupIdx > 0 ? `<span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="undoCalChoice()">← Undo</span>` : ''}
       <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);cursor:pointer;text-decoration:underline;text-underline-offset:2px;letter-spacing:0.5px" onclick="calChoose('skip')">Too close to call</span>
     </div>
   `;
 }
 
+window.undoCalChoice = function() {
+  if (calHistory.length === 0) return;
+  const prev = calHistory.pop();
+  calMatchupIdx = prev.idx;
+  calTempScores = prev.tempScores;
+  calScoreDeltas = prev.deltas;
+  renderCalMatchup();
+};
+
 // Expose calChoose to window since it's called from inline HTML
 window.calChoose = function(choice) {
+  // Save state before modifying
+  calHistory.push({
+    idx: calMatchupIdx,
+    tempScores: JSON.parse(JSON.stringify(calTempScores)),
+    deltas: JSON.parse(JSON.stringify(calScoreDeltas))
+  });
+
   if (choice !== 'skip') {
     const { a, b, catKey } = calMatchups[calMatchupIdx];
     const aScore = calTempScores[a.title]?.[catKey] ?? a.scores[catKey];
@@ -186,27 +207,40 @@ function showCalReview() {
     <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dim)">Uncheck anything you want to keep. Nothing changes until you apply.</div>`;
 
   document.getElementById('cal-apply-btn').style.display = '';
-  const catLabels = Object.fromEntries(CATEGORIES.map(c => [c.key, c.label]));
 
-  document.getElementById('cal-diff-list').innerHTML = entries.map((e, i) => {
-    const dir = e.new > e.old ? 'up' : 'down';
-    const arrow = dir === 'up' ? '↑' : '↓';
-    const col = dir === 'up' ? 'var(--green)' : 'var(--red)';
-    const film = MOVIES.find(m => m.title === e.title);
-    return `<div style="display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid var(--rule)">
-      <input type="checkbox" id="caldiff_${i}" checked style="width:16px;height:16px;accent-color:var(--blue);flex-shrink:0"
-        data-movie-idx="${MOVIES.findIndex(m => m.title === e.title)}" data-cat="${e.catKey}" data-old="${e.old}" data-new="${e.new}">
-      <div style="flex:1;min-width:0">
-        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:16px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.title}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px">${catLabels[e.catKey]}${film?.year ? ' · ' + film.year : ''}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-        <span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--dim);text-decoration:line-through">${e.old}</span>
-        <span style="font-family:'DM Mono',monospace;font-size:16px;color:${col}">${arrow}</span>
-        <span style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:22px;color:var(--ink);letter-spacing:-0.5px">${e.new}</span>
-      </div>
+  // Index entries globally so checkboxes have unique IDs for applyCalibration()
+  const catGroups = {};
+  CATEGORIES.forEach(cat => { catGroups[cat.key] = []; });
+  entries.forEach((e, i) => { if (catGroups[e.catKey]) catGroups[e.catKey].push({ ...e, idx: i }); });
+
+  document.getElementById('cal-diff-list').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      ${CATEGORIES.map(cat => {
+        const catEntries = catGroups[cat.key];
+        const shown = catEntries.slice(0, 3);
+        const more = catEntries.length - 3;
+        const hasChanges = catEntries.length > 0;
+        return `<div style="padding:14px;background:var(--cream);border-radius:6px;${hasChanges ? '' : 'opacity:0.45'}">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:${hasChanges ? '10px' : '0'}">${cat.label}</div>
+          ${!hasChanges ? `<div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--dim)">No changes</div>` : ''}
+          ${shown.map((e, i) => {
+            const col = e.new > e.old ? 'var(--green)' : 'var(--red)';
+            return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;${i < shown.length - 1 ? 'border-bottom:1px solid var(--rule)' : ''}">
+              <input type="checkbox" id="caldiff_${e.idx}" checked style="flex-shrink:0;accent-color:var(--blue);width:14px;height:14px"
+                data-movie-idx="${MOVIES.findIndex(m => m.title === e.title)}" data-cat="${e.catKey}" data-old="${e.old}" data-new="${e.new}">
+              <div style="flex:1;overflow:hidden">
+                <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:13px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.title}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+                <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);text-decoration:line-through">${e.old}</span>
+                <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:${col}">${e.new}</span>
+              </div>
+            </div>`;
+          }).join('')}
+          ${more > 0 ? `<div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:8px">+${more} more</div>` : ''}
+        </div>`;
+      }).join('')}
     </div>`;
-  }).join('');
 }
 
 export function applyCalibration() {
@@ -240,7 +274,7 @@ export function applyCalibration() {
 }
 
 export function resetCalibration() {
-  calMatchups = []; calMatchupIdx = 0; calScoreDeltas = {}; calTempScores = {};
+  calMatchups = []; calMatchupIdx = 0; calScoreDeltas = {}; calTempScores = {}; calHistory = [];
   document.getElementById('cal-setup').style.display = 'block';
   document.getElementById('cal-matchups').style.display = 'none';
   document.getElementById('cal-review').style.display = 'none';
