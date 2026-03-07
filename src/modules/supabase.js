@@ -141,6 +141,48 @@ export async function loadFromSupabase(userId) {
   }
 }
 
+// ── FRIENDS ──
+
+export async function loadFriends(userId) {
+  try {
+    const { data: friendships } = await sb.from('palatemap_friendships')
+      .select('requester_id, addressee_id')
+      .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
+      .eq('status', 'accepted');
+    if (!friendships?.length) return [];
+    const friendIds = friendships.map(f => f.requester_id === userId ? f.addressee_id : f.requester_id);
+    const { data: friends } = await sb.from('palatemap_users')
+      .select('id, display_name, username, archetype, archetype_secondary, weights')
+      .in('id', friendIds);
+    return friends || [];
+  } catch(e) { return []; }
+}
+
+export async function loadFriendFull(friendId) {
+  try {
+    const { data } = await sb.from('palatemap_users')
+      .select('id, display_name, username, archetype, archetype_secondary, weights, movies')
+      .eq('id', friendId).single();
+    return data || null;
+  } catch(e) { return null; }
+}
+
+export async function acceptFriendInvite(token) {
+  if (!currentUser) return null;
+  try {
+    const { data: requester } = await sb.from('palatemap_users')
+      .select('id, display_name, archetype, username')
+      .eq('invite_token', token).single();
+    if (!requester || requester.id === currentUser.id) return null;
+    await sb.from('palatemap_friendships').upsert({
+      requester_id: requester.id,
+      addressee_id: currentUser.id,
+      status: 'accepted'
+    }, { onConflict: 'requester_id,addressee_id', ignoreDuplicates: true });
+    return requester;
+  } catch(e) { return null; }
+}
+
 export function saveUserLocally() {
   try { localStorage.setItem('palatemap_user', JSON.stringify(currentUser)); } catch(e) {}
 }

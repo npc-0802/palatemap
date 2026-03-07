@@ -14,7 +14,7 @@ import {
 } from './modules/addfilm.js';
 import { showSyncPanel, openArchetypeModal, closeArchetypeModal, previewWeight, resetArchetypeWeights, saveArchetypeWeights } from './modules/archetypemodal.js';
 import { renderProfile } from './modules/profile.js';
-import { renderFriends } from './modules/friends.js';
+import { renderFriends, handleFriendInvite } from './modules/friends.js';
 
 // ── SCREEN NAVIGATION ──
 export function showScreen(id) {
@@ -123,6 +123,19 @@ async function init() {
 
   renderRankings();
   updateStorageStatus();
+
+  // Handle pending friend invite
+  const urlInvite = new URLSearchParams(window.location.search).get('invite');
+  const pendingInvite = urlInvite || localStorage.getItem('palatemap_pending_invite');
+  if (pendingInvite) {
+    if (currentUser) {
+      localStorage.removeItem('palatemap_pending_invite');
+      if (urlInvite) history.replaceState({}, '', window.location.pathname);
+      handleFriendInvite(pendingInvite);
+    } else {
+      if (urlInvite) localStorage.setItem('palatemap_pending_invite', urlInvite);
+    }
+  }
 
   // Handle sign-out events
   sb.auth.onAuthStateChange((event) => {

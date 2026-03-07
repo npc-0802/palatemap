@@ -157,7 +157,7 @@ body {
 }
 .nav-btn.action-tab:hover { background: var(--action-dark); color: white; border-bottom-color: transparent; }
 .nav-btn.action-tab.active { background: var(--action-dark); color: white; border-bottom-color: transparent; }
-.nav-btn.invite-tab { color: var(--dim); border-bottom-color: transparent; font-style: italic; }
+.nav-btn.invite-tab { color: var(--dim); border-bottom-color: transparent; font-style: italic; margin-left: auto; }
 .nav-btn.invite-tab:hover { color: var(--ink); border-bottom-color: transparent; }
 #rankings.empty .rankings-header { display: none; }
 #rankings.grid-mode .rankings-header { display: none; }

@@ -57,10 +57,9 @@ export function updateTasteBanner() {
     const lastThreshold = parseInt(localStorage.getItem('palatemap_calibrate_last_threshold') || '0');
     if (threshold > lastThreshold) {
       banner.innerHTML = `
-        <div style="background:#FDF1EC;border-bottom:1px solid rgba(232,98,58,0.25);border-left:3px solid var(--action);padding:10px 56px;display:flex;align-items:center;gap:16px">
-          <span style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);flex:1">Your collection has grown since your last calibration. <strong>A quick head-to-head session keeps your scores consistent.</strong></span>
-          <span onclick="showScreen('calibration')" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--action);cursor:pointer;white-space:nowrap;text-decoration:underline">Calibrate →</span>
-          <span onclick="localStorage.setItem('palatemap_calibrate_last_threshold','${threshold}');updateTasteBanner()" style="font-family:'DM Mono',monospace;font-size:14px;color:var(--dim);cursor:pointer;padding:0 4px;line-height:1" title="Dismiss">×</span>
+        <div style="background:#FDF1EC;border-bottom:1px solid rgba(232,98,58,0.25);border-left:3px solid var(--action);padding:10px 56px;display:flex;align-items:center;gap:12px">
+          <span style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);flex:1">Your collection has grown since your last calibration. <strong>A quick head-to-head keeps your scores consistent.</strong> <span onclick="showScreen('calibration')" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--action);cursor:pointer;text-decoration:underline;white-space:nowrap">Calibrate →</span></span>
+          <span onclick="localStorage.setItem('palatemap_calibrate_last_threshold','${threshold}');updateTasteBanner()" style="font-family:'DM Mono',monospace;font-size:14px;color:var(--dim);cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0" title="Dismiss">×</span>
         </div>`;
     } else {
       banner.innerHTML = '';
