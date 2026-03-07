@@ -1,15 +1,15 @@
-canon
-Product Brief · Living Document · v3.2
+Palate Map
+Product Brief · Living Document · v3.3
 Last updated: March 2026
 Confidential — do not distribute
 
 01  North Star
-canon is a taste intelligence platform. It starts with film and expands across all creative domains — restaurants, music, books, travel. The core promise is not "what to watch" but "who you are as a viewer, and what that means for every aesthetic choice you make."
-"Letterboxd tells you what you watched. Canon tells you who you are."
+Palate Map is a taste intelligence platform. It starts with film and expands across all creative domains — restaurants, music, books, travel. The core promise is not "what to watch" but "who you are as a viewer, and what that means for every aesthetic choice you make."
+"Letterboxd tells you what you watched. Palate Map tells you who you are."
 The product is opinionated, precise, and personal. Every score is user-authored. The system reveals patterns in what you've already decided, rather than deciding for you. It should feel like something you'd want to send to friends — a taste identity, not a database.
 
-Brand name rationale:
-"Make it canon" — already in the cultural zeitgeist. Canon owns the idea that your taste is definitive, not provisional. Works across every domain. "Develop your palate" is the supplementary voice inside the product — warm, equalizing, personal.
+Tagline: "Taste is everything."
+Brand voice: "Everyone has a palate." Taste is not gatekept — it's cultivated. The product name grounds everything: mapping your palate across film (and eventually all creative domains).
 
 Brand Voice
 • Tone: like a formative teacher. Socratic, never prescriptive. Observational, not judgmental.
@@ -55,13 +55,13 @@ Design Principles
 • Dark surfaces for identity moments (archetype reveal in onboarding, palate block in profile).
 • No dark mode yet. Clean paper aesthetic is intentional and differentiating.
 • Animations: subtle fadeIn only. No bounces, no flashy transitions.
-• Mobile: currently desktop-first. Responsive pass is Phase 4.
+• Mobile: responsive bottom tab bar + layout pass complete (Phase 2). Fixed bottom nav with 5 tabs; modal slides up as sheet; rankings collapse gracefully.
 
 03  Current Architecture
-Status: Phase 1 complete, Phase 2 (polish) underway. Vite multi-file vanilla JS.
+Status: Phase 1 complete, Phase 2 largely complete. Vite multi-file vanilla JS.
 
 File Structure
-canon/  (formerly ledger/)
+palatemap/
   index.html          shell only — loads main.js
   src/
     main.js            entry point, init, state bootstrap, cold landing
@@ -87,15 +87,15 @@ canon/  (formerly ledger/)
       components.css   all reusable UI components, badge tiers, grid
 
 Hosting & Deploy
-• Host: GitHub Pages (npc-0802.github.io/ledger/). Will migrate to Netlify at Phase 2.
-• Repo: github.com/npc-0802/ledger (private). Push to main = live deploy.
-• Build: npm run build → rm -rf docs → mv dist docs → git push. GitHub Pages serves /docs.
-• vite.config.js sets base: '/ledger/' for correct asset paths.
+• Host: GitHub Pages at palatemap.com (custom domain). Netlify migration deferred to Phase 2.6.
+• Repo: github.com/npc-0802/palatemap (private). Push to main = live deploy.
+• Build: npm run build → rm -rf docs → mv dist docs → git push. GitHub Pages serves /docs. CNAME auto-written by build script.
+• vite.config.js sets base: '/' (root domain).
 • Cloudflare Worker: ledger-proxy.noahparikhcott.workers.dev — proxies Anthropic API. ANTHROPIC_KEY stored as encrypted env var. Never in client code.
 
 Dev Workflow
-• npx vite — dev server at localhost:5173/ledger/
-• Claude Code (claude CLI) for all code editing — run from ~/ledger
+• npx vite — dev server at localhost:5173/
+• Claude Code (claude CLI) for all code editing — run from ~/palatemap
 • Push to GitHub at end of each session or after stable feature checkpoint
 • Brief (this file) lives in project root. Read at start of each Claude Code session.
 
@@ -145,10 +145,10 @@ Palate concept: Each archetype has a distinct visual/color identity ("the colors
 
 06  Screens & Features (Current)
 Cold Landing
-Full-screen overlay for new/logged-out users. Headline: "Make it canon." Supporting copy: "Everyone has a palate. The films you love are trying to tell you something about yourself. Canon listens — and shows you the pattern." Single persimmon CTA: "Discover your taste →". Footer: "Starting with film. Expanding to everything."
+Full-screen overlay for new/logged-out users. Headline: "Taste is everything." Supporting copy: "Everyone has a palate. The films you love are trying to tell you something about yourself. Palate Map listens — and shows you the pattern." Single persimmon CTA: "Discover your taste →". Footer: "Starting with film. Expanding to everything."
 
 Onboarding (3 entry points)
-New user: cold landing → name → poetic intro + 6-question quiz → archetype reveal (dark surface: name + description + quote + secondary + username) → "Enter canon →".
+New user: cold landing → name → poetic intro + 6-question quiz → archetype reveal (dark surface: name + description + quote + secondary + username) → "Enter Palate Map →".
 Returning user: username lookup → fetches profile + films from Supabase → loads directly.
 Import: drag-and-drop film_rankings.json → validates → loads MOVIES → proceeds to quiz.
 
@@ -170,7 +170,7 @@ Predict
 Search unrated films. Builds taste fingerprint. Finds comparables by shared director/cast. Calls Claude via Cloudflare proxy. Returns predicted score per category, confidence, 2nd-person reasoning anchored to user's specific films. "Add to list" pre-fills Add Film search.
 
 Analysis
-Editorial header. Category averages shown as horizontal score bars (color-coded by tier) in 2-column layout. Three entity leaderboards (Directors / Actors / Years) as flush editorial columns — rank, italic Playfair name, film count, score badge.
+Editorial header. Category averages split into Craft (Plot/Execution/Acting/Production) and Experience (Enjoyability/Rewatchability/Ending/Uniqueness) axis groups, shown as horizontal score bars. Below: Explore tabs — Directors / Writers / Actors / Production Co. / Years — ranked entity lists with click-through to entity detail pages.
 
 Calibrate
 Elo-based head-to-head. Choose category + intensity (15/30/50 matchups). Review proposed changes. Apply writes scores + recalcs + syncs.
@@ -181,12 +181,12 @@ Add Film
 Profile Screen
 Nav screen (click display name in masthead).
 Sections:
-• Palate block — dark surface card with primary + secondary archetype name in on-dark cream.
+• Palate block — dark surface card (with grid texture) with primary + secondary archetype name in on-dark cream.
 • Description + quote from archetype data.
 • Taste Fingerprint — radar chart (user weights vs archetype baseline, dashed) + avg score bars per category.
 • Stats row — 3-column editorial grid: films rated / avg total / strongest category (large Playfair numbers).
 • Signature Films — top 5 by total. Each row: poster thumbnail, rank, italic title, score badge (tier-colored).
-• Canon Card — shareable screenshot card: archetype, top 3 films, avg, film count.
+• Share cards — two side-by-side 320×440px fixed cards: (1) Palate Map Card: dark header with archetype + top 3 films + stats; (2) Taste Note Card: cream, first-person archetype quote as hero text.
 • Sign out at bottom.
 
 Archetype / Weight Editor Modal
@@ -196,12 +196,11 @@ Masthead
 Clicking display name navigates to Profile screen.
 
 07  Known Issues & Tech Debt
-• Production companies missing from 94 baseline films — needs TMDB backfill pass.
-• Cloud sync failures are silent — console.warn only. No user-facing error state. (Phase 2.4)
+• Cloud sync failures are silent — console.warn only. No user-facing error state. (Phase 2.3)
 • No test coverage. Shipping by feel.
-• Supabase table still named ledger_users — rename to canon_users at Phase 2.5.
+• Supabase table still named ledger_users — rename at Phase 2.5.
 • localStorage keys still use ledger_ prefix — update at Phase 2.5.
-• Palate color system (per-archetype palette) designed conceptually, not yet implemented.
+• Cloudflare Worker URL still uses ledger-proxy — rename at Phase 2.5.
 
 08  Full Product Roadmap
 Phase 0 — Foundation [COMPLETE]
@@ -217,12 +216,12 @@ Phase 1 — Identity & Value Prop [COMPLETE]
 • 1.5 Rankings redesign — poster grid, sort pills, score badge tiers, table toggle. ✓
 • 1.6 Profile + Analysis design pass — dark archetype block, editorial category bars, entity leaderboards. ✓
 
-Phase 2 — Polish [IN PROGRESS]
-• 2.1 Modal polish — poster-forward layout, cleaner information hierarchy.
-• 2.2 Calibration UX rewrite — feels like a game, not a lab tool.
-• 2.3 Error surfaces + sync reliability — toast notifications, retry logic, offline indicator. Required before public launch.
-• 2.4 Palate color system — implement per-archetype palette on reveal, profile header, Canon Card.
-• 2.5 Rename Supabase tables + localStorage keys from ledger_ to canon_.
+Phase 2 — Polish [LARGELY COMPLETE]
+• 2.1 Modal polish ✓ — dark grid-texture header, Craft/Experience breakdown grouping, leaderboard nearby section.
+• 2.2 Calibration UX rewrite ✓ — Elo head-to-head, natural language prompts, full category names.
+• 2.3 Error surfaces + sync reliability — toast notifications, retry logic. Required before public launch.
+• 2.4 Palate color system ✓ — per-archetype palette on profile, entity details, share cards; cartographic grid texture on dark surfaces; topographic score bars.
+• 2.5 Rename Supabase tables + localStorage keys from ledger_ to palatemap_.
 • 2.6 Migrate hosting to Netlify for auto-deploy.
 
 Phase 3 — Growth Features [PRIORITY after Phase 2]
@@ -232,12 +231,12 @@ Phase 3 — Growth Features [PRIORITY after Phase 2]
 
 Phase 4 — Platform
 • 4.1 Cross-genre v1: Restaurants — same framework, new categories.
-• 4.2 Public launch prep — custom domain, landing page, pricing.
-• 4.3 Mobile — responsive pass or dedicated mobile view.
+• 4.2 Public launch prep — landing page, pricing.
+• 4.3 Mobile — native app or PWA wrapper.
 
 09  Session Workflow
 Starting a session (Claude Code)
-• cd ~/ledger && claude
+• cd ~/palatemap && claude
 • Say: "Read the brief at ./canon_brief_v3.txt and the file structure, then let's work on [phase/task]."
 • Claude Code will read files directly — no need to upload anything.
 
@@ -258,7 +257,7 @@ Supabase URL:          https://gzuuhjjedrzeqbgxhfip.supabase.co
 Supabase key:          sb_publishable_OprjtxkrwknRf8jSZ7bYWg_GGqRiu4z
 Cloudflare Worker:     https://ledger-proxy.noahparikhcott.workers.dev
 Anthropic key:         stored in Cloudflare env var ANTHROPIC_KEY only
-GitHub repo:           github.com/npc-0802/ledger (private)
-GitHub Pages:          npc-0802.github.io/ledger/
+GitHub repo:           github.com/npc-0802/palatemap (private)
+GitHub Pages:          palatemap.com (custom domain)
 
-canon · private product brief · v3.2 · do not distribute
+Palate Map · private product brief · v3.3 · do not distribute

@@ -3,9 +3,10 @@
 This file is the operating contract for AI collaborators (Codex + Claude) in this repo.
 
 ## Project Snapshot
-- Product: `canon` (public domain: `palatemap.com`)
+- Product: `Palate Map` (domain: `palatemap.com`, repo: `npc-0802/palatemap`)
+- Tagline: "Taste is everything."
 - Stack: Vite + vanilla JS modules, Supabase, Claude API via Cloudflare Worker proxy
-- Current phase: Phase 1 (identity + value prop), with polish and reliability work next
+- Current phase: Phase 2 largely complete; Phase 2.3 (error surfaces) and 2.5/2.6 (rename + Netlify) pending
 
 ## Source of Truth
 - Product brief: `canon_brief_v3.docx` / `canon_brief_v3.txt`
@@ -65,6 +66,6 @@ Both agents must:
 5. Summarize changes and next steps.
 
 ## Canonical Repo + Host
-- Canonical repo is `npc-0802/palatemap`.
-- Canonical host is GitHub Pages with custom domain `palatemap.com`.
-- Local remote is now set to `npc-0802/palatemap`.
+- Repo: `npc-0802/palatemap` (private). Push to `main` = live.
+- Host: GitHub Pages, custom domain `palatemap.com`. Netlify migration pending (Phase 2.6).
+- Build output goes to `/docs`. CNAME auto-written by build script.
