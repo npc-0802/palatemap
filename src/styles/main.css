@@ -325,6 +325,16 @@ body {
   align-items: stretch;
   transform: translateZ(0);
 }
+.nav-mobile::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: var(--paper);
+  pointer-events: none;
+}
 .nav-mobile-btn {
   flex: 1;
   display: flex;
