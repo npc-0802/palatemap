@@ -28,6 +28,23 @@ export function renderWatchlist() {
       </div>
       ${list.length === 0 ? emptyState() : listHTML(list)}
     </div>`;
+
+  // Schedule background predictions for items that don't have one yet
+  if (MOVIES.length >= 10) {
+    const unpredicted = list.filter(item => item.tmdbId && !currentUser?.predictions?.[String(item.tmdbId)]);
+    unpredicted.forEach((item, i) => {
+      setTimeout(async () => {
+        const { runAutoPredict } = await import('./predict.js');
+        await runAutoPredict(item);
+        const screen = document.getElementById('watchlist');
+        if (screen?.classList.contains('active')) {
+          const wlList = document.getElementById('wl-list');
+          const wlItems = currentUser?.watchlist || [];
+          if (wlList) wlList.innerHTML = wlItems.map((w, idx) => watchlistRow(w, idx)).join('');
+        }
+      }, (i + 1) * 1500);
+    });
+  }
 }
 
 
@@ -56,7 +73,7 @@ function watchlistRow(item, i) {
     ? `<div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:18px;color:var(--blue);letter-spacing:-0.5px;flex-shrink:0">${(Math.round(predTotal*10)/10).toFixed(1)}</div>`
     : `<div style="width:36px;flex-shrink:0"></div>`;
   return `
-    <div onclick="openWatchlistDetail(${i})" style="display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--rule);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+    <div onclick="openWatchlistDetail(${i})" style="display:flex;align-items:center;gap:14px;padding:12px;border-bottom:1px solid var(--rule);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
       ${poster}
       <div style="flex:1;min-width:0">
         <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:16px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.title}</div>
@@ -257,24 +274,32 @@ async function _loadWlTmdbDetails(item) {
     ]);
     const detail = await detailRes.json();
     const credits = await creditsRes.json();
-    const directors = (credits.crew||[]).filter(c=>c.job==='Director').map(c=>c.name);
-    const writers = (credits.crew||[]).filter(c=>['Screenplay','Writer','Story'].includes(c.job)).map(c=>c.name).filter((v,i,a)=>a.indexOf(v)===i).slice(0,3);
-    const castList = (credits.cast||[]).slice(0,8).map(c=>c.name);
-    const companies = (detail.production_companies||[]).map(c=>c.name);
+    const directorsFull = (credits.crew||[]).filter(c=>c.job==='Director');
+    const writersFull = (credits.crew||[]).filter(c=>['Screenplay','Writer','Story'].includes(c.job)).filter((v,i,a)=>a.findIndex(x=>x.name===v.name)===i).slice(0,3);
+    const castFull = (credits.cast||[]).slice(0,8);
+    const companiesFull = (detail.production_companies||[]);
     const overview = detail.overview || item.overview || '';
     const metaEl = document.getElementById('wl-detail-meta');
     if (!metaEl) return;
-    const chip = (name, type) => `<span class="modal-meta-chip" onclick="closeModal();exploreEntity('${type}','${name.replace(/'/g,"\\'")}')">${name}</span>`;
-    const row = (label, names, type) => names.length ? `<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
+    const chip = (name, type, imgPath = null) => {
+      const isCompany = type === 'company';
+      const imgHtml = imgPath
+        ? (!isCompany
+            ? `<img src="https://image.tmdb.org/t/p/w45${imgPath}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;flex-shrink:0">`
+            : `<span style="display:inline-flex;width:18px;height:18px;background:white;border-radius:3px;flex-shrink:0;align-items:center;justify-content:center;overflow:hidden"><img src="https://image.tmdb.org/t/p/w45${imgPath}" style="width:14px;height:14px;object-fit:contain"></span>`)
+        : '';
+      return `<span class="modal-meta-chip"${imgPath ? ' style="display:inline-flex;align-items:center;gap:5px"' : ''} onclick="closeModal();exploreEntity('${type}','${name.replace(/'/g,"\\'")}')">${imgHtml}${name}</span>`;
+    };
+    const row = (label, people, type) => people.length ? `<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
       <span style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);min-width:44px;flex-shrink:0;padding-top:5px">${label}</span>
-      <div style="display:flex;flex-wrap:wrap;gap:4px">${names.map(n=>chip(n,type)).join('')}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">${people.map(p=>chip(p.name||p, type, p.profile_path||p.logo_path||null)).join('')}</div>
     </div>` : '';
     metaEl.innerHTML = `
       ${overview ? `<div class="modal-overview">${overview}</div>` : ''}
-      ${row('Dir.', directors, 'director')}
-      ${row('Wri.', writers, 'writer')}
-      ${row('Cast', castList, 'actor')}
-      ${row('Prod.', companies, 'company')}
+      ${row('Dir.', directorsFull, 'director')}
+      ${row('Wri.', writersFull, 'writer')}
+      ${row('Cast', castFull, 'actor')}
+      ${row('Prod.', companiesFull, 'company')}
     `;
     const { loadStreamingProviders } = await import('./modal.js');
     loadStreamingProviders(item.tmdbId, item.title, item.year, 'modal-streaming');
