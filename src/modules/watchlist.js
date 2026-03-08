@@ -151,7 +151,7 @@ export function openGlobalSearch() {
   overlay.innerHTML = `
     <div style="width:100%;max-width:560px">
       <div style="position:relative;margin-bottom:2px">
-        <input id="gs-input" type="text" placeholder="Search any film…" oninput="gsDebounce()"
+        <input id="gs-input" type="text" placeholder="Search films, directors, actors…" oninput="gsDebounce()"
           style="width:100%;box-sizing:border-box;padding:16px 52px 16px 18px;border:none;background:white;font-family:'DM Sans',sans-serif;font-size:16px;outline:none;color:var(--ink)">
         <button onclick="closeGlobalSearch()" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:24px;color:var(--dim);cursor:pointer;line-height:1;padding:0">×</button>
       </div>
@@ -171,6 +171,10 @@ window.gsDebounce = function() {
   gsDebounceTimer = setTimeout(gsSearch, 350);
 };
 
+function gsSecHeader(label) {
+  return `<div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);padding:10px 16px 6px;border-bottom:1px solid var(--rule)">${label}</div>`;
+}
+
 async function gsSearch() {
   const q = document.getElementById('gs-input')?.value.trim();
   const resultsEl = document.getElementById('gs-results');
@@ -178,24 +182,52 @@ async function gsSearch() {
   if (!q || q.length < 2) { resultsEl.innerHTML = ''; return; }
 
   const ql = q.toLowerCase();
-  const ownMatches = MOVIES.filter(m => m.title.toLowerCase().includes(ql)).slice(0, 4);
-  const ownTitleSet = new Set(ownMatches.map(m => m.title.toLowerCase()));
+
+  // ── Own films ──
+  const ownFilms = MOVIES.filter(m => m.title.toLowerCase().includes(ql)).slice(0, 3);
+  const ownFilmTitles = new Set(ownFilms.map(m => m.title.toLowerCase()));
+
+  // ── Own entities (directors/writers/actors/companies) ──
+  const entityPriority = { director: 0, writer: 1, actor: 2, company: 3 };
+  const entityMap = {};
+  MOVIES.forEach(m => {
+    [
+      ...(m.director || '').split(',').map(n => ({ name: n.trim(), type: 'director' })),
+      ...(m.writer || '').split(',').map(n => ({ name: n.trim(), type: 'writer' })),
+      ...(m.cast || '').split(',').map(n => ({ name: n.trim(), type: 'actor' })),
+      ...(m.productionCompanies || '').split(',').map(n => ({ name: n.trim(), type: 'company' })),
+    ].filter(e => e.name && e.name.toLowerCase().includes(ql)).forEach(e => {
+      if (!entityMap[e.name]) entityMap[e.name] = { name: e.name, type: e.type, films: [] };
+      entityMap[e.name].films.push(m);
+      if (entityPriority[e.type] < entityPriority[entityMap[e.name].type]) entityMap[e.name].type = e.type;
+    });
+  });
+  const ownEntities = Object.values(entityMap).sort((a, b) => b.films.length - a.films.length).slice(0, 4);
+  const ownEntityNames = new Set(ownEntities.map(e => e.name.toLowerCase()));
+
   const watchlistSet = new Set((currentUser?.watchlist || []).map(w => w.title.toLowerCase()));
 
-  let tmdbResults = [];
+  // ── TMDB searches in parallel ──
+  let tmdbFilms = [], tmdbPeople = [], tmdbCompanies = [];
   try {
-    const res = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}&language=en-US&page=1`);
-    const data = await res.json();
-    tmdbResults = (data.results || []).filter(m => !ownTitleSet.has((m.title || '').toLowerCase())).slice(0, 7);
+    const [filmData, personData, companyData] = await Promise.all([
+      fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}&language=en-US&page=1`).then(r => r.json()),
+      fetch(`https://api.themoviedb.org/3/search/person?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}&language=en-US&page=1`).then(r => r.json()),
+      fetch(`https://api.themoviedb.org/3/search/company?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}`).then(r => r.json()),
+    ]);
+    tmdbFilms = (filmData.results || []).filter(m => !ownFilmTitles.has((m.title || '').toLowerCase())).slice(0, 5);
+    tmdbPeople = (personData.results || []).filter(p => p.name && !ownEntityNames.has(p.name.toLowerCase())).slice(0, 3);
+    tmdbCompanies = (companyData.results || []).filter(c => c.name && !ownEntityNames.has(c.name.toLowerCase())).slice(0, 2);
   } catch(e) {}
 
   if (!resultsEl || document.getElementById('gs-input')?.value.trim() !== q) return;
 
   let html = '';
 
-  if (ownMatches.length) {
-    html += `<div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);padding:10px 16px 6px;border-bottom:1px solid var(--rule)">Your rankings</div>`;
-    html += ownMatches.map(m => {
+  // Your ranked films
+  if (ownFilms.length) {
+    html += gsSecHeader('Your rankings');
+    html += ownFilms.map(m => {
       const poster = m.poster
         ? `<img src="https://image.tmdb.org/t/p/w92${m.poster}" style="width:28px;height:42px;object-fit:cover;flex-shrink:0">`
         : `<div style="width:28px;height:42px;background:var(--rule);flex-shrink:0"></div>`;
@@ -212,9 +244,60 @@ async function gsSearch() {
     }).join('');
   }
 
-  if (tmdbResults.length) {
-    html += `<div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);padding:10px 16px 6px;border-bottom:1px solid var(--rule)">Add or rate</div>`;
-    html += tmdbResults.map(m => {
+  // Own entities
+  if (ownEntities.length) {
+    html += gsSecHeader('In your rankings');
+    html += ownEntities.map(e => {
+      const avg = (Math.round((e.films.reduce((s, f) => s + f.total, 0) / e.films.length) * 10) / 10).toFixed(1);
+      const typeLabel = e.type === 'company' ? 'Company' : e.type.charAt(0).toUpperCase() + e.type.slice(1);
+      const safeName = e.name.replace(/'/g, "\\'");
+      const isCompany = e.type === 'company';
+      const thumb = isCompany
+        ? `<div style="width:32px;height:32px;background:white;border:1px solid var(--rule);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="3" width="10" height="8" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M4 3V2a2 2 0 0 1 4 0v1" stroke="currentColor" stroke-width="1.2"/></svg></div>`
+        : `<div style="width:32px;height:32px;border-radius:50%;background:var(--rule);flex-shrink:0;display:flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="4" r="2.5" fill="currentColor"/><path d="M1 11c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" stroke-width="1.2" fill="none"/></svg></div>`;
+      return `<div onclick="closeGlobalSearch();exploreEntity('${e.type}','${safeName}')" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--rule);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+        ${thumb}
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">${typeLabel} · ${e.films.length} film${e.films.length !== 1 ? 's' : ''} · avg ${avg}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // TMDB people + companies not in user's data
+  if (tmdbPeople.length || tmdbCompanies.length) {
+    html += gsSecHeader('People & companies');
+    html += tmdbPeople.map(p => {
+      const dept = p.known_for_department || 'Person';
+      const safeName = p.name.replace(/'/g, "\\'");
+      const photo = p.profile_path
+        ? `<img src="https://image.tmdb.org/t/p/w92${p.profile_path}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0">`
+        : `<div style="width:32px;height:32px;border-radius:50%;background:var(--rule);flex-shrink:0"></div>`;
+      return `<div onclick="closeGlobalSearch();openEntityStub('${safeName}',true)" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--rule);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+        ${photo}
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink)">${p.name}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">${dept}</div>
+        </div>
+      </div>`;
+    }).join('');
+    html += tmdbCompanies.map(c => {
+      const safeName = c.name.replace(/'/g, "\\'");
+      return `<div onclick="closeGlobalSearch();openEntityStub('${safeName}',false)" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--rule);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+        <div style="width:32px;height:32px;background:white;border:1px solid var(--rule);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="3" width="10" height="8" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M4 3V2a2 2 0 0 1 4 0v1" stroke="currentColor" stroke-width="1.2"/></svg></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink)">${c.name}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">Company</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // TMDB films
+  if (tmdbFilms.length) {
+    html += gsSecHeader('Films');
+    html += tmdbFilms.map(m => {
       const title = m.title || '';
       const year = m.release_date?.slice(0, 4) || '';
       const poster = m.poster_path
