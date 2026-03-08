@@ -496,4 +496,49 @@ async function obFinish(primary, secondary, weights, harmonySensitivity) {
   saveUserLocally();
 
   syncToSupabase().catch(e => console.warn('Initial sync failed:', e));
+
+  // Show welcome modal once, after a brief settle
+  if (!localStorage.getItem('palatemap_welcome_shown')) {
+    setTimeout(() => showWelcomeModal(obDisplayName, primary), 600);
+  }
+}
+
+function showWelcomeModal(name, archetype) {
+  localStorage.setItem('palatemap_welcome_shown', '1');
+  const overlay = document.createElement('div');
+  overlay.id = 'welcome-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(12,11,9,0.7);z-index:5000;display:flex;align-items:center;justify-content:center;padding:24px';
+  overlay.innerHTML = `
+    <div style="background:var(--paper);max-width:520px;width:100%;padding:48px 44px;position:relative;animation:fadeIn 0.3s ease">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">welcome to palate map</div>
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(24px,4vw,32px);color:var(--ink);line-height:1.1;letter-spacing:-0.5px;margin-bottom:8px">Welcome, ${name}.</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:15px;color:var(--dim);line-height:1.6;margin-bottom:32px">Your palate type is <strong style="color:var(--ink)">${archetype}</strong>. Here's how to get the most out of it.</div>
+
+      <div style="border-top:1px solid var(--rule);padding-top:28px;margin-bottom:32px">
+        <div style="display:flex;gap:16px;margin-bottom:22px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--rule-dark);padding-top:2px;flex-shrink:0">01</div>
+          <div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:3px">Rate films you know well.</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);line-height:1.65">The more you rate, the sharper your fingerprint — and the more accurate your predictions become. Aim for at least 10 to unlock Predict.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;margin-bottom:22px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--rule-dark);padding-top:2px;flex-shrink:0">02</div>
+          <div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:3px">Try Predict on something you're considering.</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);line-height:1.65">Once you have 10+ films rated, the AI reads your taste fingerprint and tells you how you'd score any film — with reasoning drawn from your actual ratings.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:16px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--rule-dark);padding-top:2px;flex-shrink:0">03</div>
+          <div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:3px">Invite a friend and compare palates.</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);line-height:1.65">The Overlap tab compares your taste profiles side-by-side and runs joint predictions for films you're both considering.</div>
+          </div>
+        </div>
+      </div>
+
+      <button onclick="document.getElementById('welcome-modal-overlay').remove()" style="width:100%;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:14px 24px;cursor:pointer;transition:opacity 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Let's go →</button>
+    </div>`;
+  document.body.appendChild(overlay);
 }

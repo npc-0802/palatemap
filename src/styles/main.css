@@ -297,6 +297,21 @@ body {
 
 @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.3 } }
 
+/* ── COLD LANDING ── */
+.cold-landing-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 64px;
+  align-items: start;
+}
+@media (max-width: 760px) {
+  .cold-landing-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  .cold-landing-sticky { position: static !important; }
+}
+
 /* ── MOBILE NAV ── */
 .mobile-bottom {
   display: none;

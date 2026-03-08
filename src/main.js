@@ -86,6 +86,19 @@ window.startFromLanding = function() {
   launchOnboarding();
 };
 
+window.landingGoogle = async function() {
+  const { signInWithGoogle } = await import('./modules/supabase.js');
+  signInWithGoogle();
+};
+
+window.startFromLandingReturning = function() {
+  const el = document.getElementById('cold-landing');
+  if (el) el.style.display = 'none';
+  launchOnboarding();
+  // Switch to returning step after overlay opens
+  setTimeout(() => { window.obShowReturning?.(); }, 50);
+};
+
 async function init() {
   loadFromStorage();
   runMigrations();

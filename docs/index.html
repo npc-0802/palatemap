@@ -25,29 +25,98 @@
 <meta name="description" content="Everyone has a palate. Rate the films you love, discover your taste archetype, and compare with friends.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230c0b09'/%3E%3Crect x='0' y='28' width='32' height='4' fill='%23D4A84B'/%3E%3Ctext x='16' y='21' text-anchor='middle' font-family='Georgia,serif' font-style='italic' font-weight='900' font-size='14' fill='white'%3EPM%3C/text%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-r0qJogum.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-vYqfn-Qs.css">
+  <script type="module" crossorigin src="/assets/index-C56TjoBc.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-AAN6L0Dl.css">
 </head>
 <body>
 
 <!-- ══════════════ COLD LANDING ══════════════ -->
-<div id="cold-landing" style="display:none;position:fixed;inset:0;background:var(--paper);z-index:200;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px">
-  <div style="max-width:560px;width:100%;text-align:center">
-    <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:32px">palate map</div>
-    <h1 style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(36px,6vw,64px);line-height:1.1;letter-spacing:-1px;color:var(--ink);margin:0 0 24px">
-      Taste is everything.
-    </h1>
-    <p style="font-family:'DM Sans',sans-serif;font-size:18px;line-height:1.7;color:var(--dim);margin:0 0 12px;font-weight:300">
-      Everyone has a palate.
-    </p>
-    <p style="font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.7;color:var(--dim);margin:0 0 48px;font-weight:300">
-      The films you love are trying to tell you something about yourself. Palate Map listens — and shows you the pattern.
-    </p>
-    <button onclick="startFromLanding()" style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;background:#E8623A;color:white;border:none;padding:16px 40px;cursor:pointer;transition:opacity 0.2s" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
-      Discover your taste →
-    </button>
-    <div style="margin-top:24px;font-family:'DM Mono',monospace;font-size:10px;color:var(--rule-dark);letter-spacing:1px">
-      Starting with film. Expanding to everything.
+<div id="cold-landing" style="display:none;position:fixed;inset:0;background:var(--paper);z-index:200;overflow-y:auto">
+  <div style="min-height:100%;display:flex;flex-direction:column;justify-content:center;padding:60px 56px;max-width:1040px;margin:0 auto;box-sizing:border-box">
+
+    <!-- Wordmark -->
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:40px">palate map</div>
+
+    <!-- Hero -->
+    <h1 style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(44px,7vw,80px);line-height:1.05;letter-spacing:-2px;color:var(--ink);margin:0 0 16px">Taste is everything.</h1>
+    <p style="font-family:'DM Sans',sans-serif;font-size:clamp(16px,2vw,20px);line-height:1.6;color:var(--dim);font-weight:300;margin:0 0 48px;max-width:480px">Everyone has a palate. Palate Map maps yours — and shows you the pattern in what you already love.</p>
+
+    <!-- Rule -->
+    <div style="border-top:1px solid var(--rule);margin-bottom:48px"></div>
+
+    <!-- Two-column body -->
+    <div class="cold-landing-grid">
+
+      <!-- Value props -->
+      <div>
+        <div style="display:flex;gap:24px;margin-bottom:36px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--rule-dark);padding-top:4px;flex-shrink:0;user-select:none">01</div>
+          <div>
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:19px;color:var(--ink);margin-bottom:7px">Know your palate.</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.75;color:var(--dim)">Rate films across 8 dimensions — Plot, Execution, Acting, Production, Enjoyability, Rewatchability, Ending, Uniqueness. Your scores surface a taste fingerprint: your palate type, your strongest categories, your patterns over time.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:24px;margin-bottom:36px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--rule-dark);padding-top:4px;flex-shrink:0;user-select:none">02</div>
+          <div>
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:19px;color:var(--ink);margin-bottom:7px">Predict before you watch.</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.75;color:var(--dim)">The AI prediction engine reads your taste fingerprint and tells you — with specific reasoning anchored to your actual ratings — exactly how you'd score any film you haven't seen yet. Your Watch List gets auto-predicted as you add to it.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:24px;margin-bottom:36px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--rule-dark);padding-top:4px;flex-shrink:0;user-select:none">03</div>
+          <div>
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:19px;color:var(--ink);margin-bottom:7px">Map your overlap with friends.</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.75;color:var(--dim)">Compare taste profiles with friends, see exactly where you agree and diverge, and run shared predictions for films you're both considering — with reasoning that distinguishes each of your palates by name.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:24px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--rule-dark);padding-top:4px;flex-shrink:0;user-select:none">04</div>
+          <div>
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:19px;color:var(--ink);margin-bottom:7px">Calibrate over time.</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.75;color:var(--dim)">Head-to-head Elo matchups keep your scores honest. The more you rate, the sharper your fingerprint — and the more accurate your predictions become.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Auth card -->
+      <div class="cold-landing-sticky" style="position:sticky;top:60px">
+        <div style="background:var(--surface-dark);padding:32px 28px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:14px">get started</div>
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:20px;color:var(--on-dark);line-height:1.2;margin-bottom:8px">Six questions. Your taste, revealed.</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.6;color:var(--on-dark-dim);margin-bottom:24px">Take the palate quiz, discover your taste type, then start ranking films.</div>
+
+          <!-- Google -->
+          <button onclick="landingGoogle()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:1px;background:white;color:var(--ink);border:none;padding:13px 20px;cursor:pointer;margin-bottom:14px;transition:opacity 0.2s" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+            <svg width="16" height="16" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+              <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/>
+              <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853"/>
+              <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05"/>
+              <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58Z" fill="#EA4335"/>
+            </svg>
+            Continue with Google
+          </button>
+
+          <!-- Divider -->
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+            <div style="flex:1;height:1px;background:rgba(255,255,255,0.1)"></div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);letter-spacing:1px">or</div>
+            <div style="flex:1;height:1px;background:rgba(255,255,255,0.1)"></div>
+          </div>
+
+          <!-- Email CTA -->
+          <button onclick="startFromLanding()" style="width:100%;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:13px 20px;cursor:pointer;transition:opacity 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Continue with email →</button>
+
+          <!-- Footer links -->
+          <div style="margin-top:20px;display:flex;flex-direction:column;gap:8px;text-align:center">
+            <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);letter-spacing:0.5px">Been here before? <span style="color:var(--blue);cursor:pointer;text-decoration:underline" onclick="startFromLandingReturning()">Log in →</span></span>
+            <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);letter-spacing:0.5px">On Letterboxd? <span style="color:var(--blue);cursor:pointer;text-decoration:underline" onclick="startFromLanding()">Import your ratings →</span></span>
+          </div>
+        </div>
+
+        <div style="margin-top:20px;font-family:'DM Mono',monospace;font-size:10px;color:var(--rule-dark);letter-spacing:1px;text-align:center">Starting with film. Expanding to everything.</div>
+      </div>
+
     </div>
   </div>
 </div>
