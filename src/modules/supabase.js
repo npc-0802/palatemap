@@ -222,6 +222,16 @@ export async function unfriendUser(friendId) {
   } catch(e) {}
 }
 
+export async function loadAllFriendsFilmData(friendIds) {
+  if (!friendIds?.length) return [];
+  try {
+    const { data } = await sb.from('palatemap_users')
+      .select('id, display_name, movies, watchlist')
+      .in('id', friendIds);
+    return data || [];
+  } catch(e) { return []; }
+}
+
 export async function getUserEmail(userId) {
   try {
     const { data } = await sb.from('palatemap_users').select('email').eq('id', userId).single();

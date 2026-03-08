@@ -15,7 +15,7 @@ import {
 import { showSyncPanel, openArchetypeModal, closeArchetypeModal, previewWeight, resetArchetypeWeights, saveArchetypeWeights } from './modules/archetypemodal.js';
 import { renderProfile } from './modules/profile.js';
 import { renderFriends, handleFriendInvite, updateFriendsNotificationDot } from './modules/friends.js';
-import { renderWatchlist, addToWatchlist } from './modules/watchlist.js';
+import { renderWatchlist, addToWatchlist, openGlobalSearch } from './modules/watchlist.js';
 import { predictAddToWatchlist } from './modules/predict.js';
 
 // ── SCREEN NAVIGATION ──
@@ -142,10 +142,17 @@ async function init() {
   updateStorageStatus();
 
   // Check for pending friend requests and show notification dot
+  // Also background-load all friends' film data for modal context
   if (currentUser) {
-    const { loadPendingIncoming } = await import('./modules/supabase.js');
+    const { loadPendingIncoming, loadFriends } = await import('./modules/supabase.js');
     loadPendingIncoming(currentUser.id).then(incoming => {
       if (incoming.length > 0) updateFriendsNotificationDot(incoming.length);
+    });
+    loadFriends(currentUser.id).then(async friends => {
+      if (friends.length) {
+        const { refreshFriendsDataCache } = await import('./modules/friends.js');
+        refreshFriendsDataCache(friends.map(f => f.id));
+      }
     });
   }
 
@@ -232,7 +239,8 @@ window.__ledger = {
   showSyncPanel, openArchetypeModal, closeArchetypeModal, previewWeight,
   resetArchetypeWeights, saveArchetypeWeights, exportData, resetStorage,
   updateStorageStatus, updateMastheadProfile, setCloudStatus, showToast,
-  renderFriends, updateTasteBanner, renderWatchlist, addToWatchlist, predictAddToWatchlist, predictFresh
+  renderFriends, updateTasteBanner, renderWatchlist, addToWatchlist, predictAddToWatchlist, predictFresh,
+  openGlobalSearch
 };
 
 // Bridge window globals for inline onclick= attributes in HTML
@@ -245,7 +253,8 @@ const bridge = [
   'renderProfile', 'setViewMode',
   'showSyncPanel','openArchetypeModal','closeArchetypeModal','previewWeight',
   'resetArchetypeWeights','saveArchetypeWeights','exportData','resetStorage',
-  'renderAnalysis','renderFriends','updateTasteBanner','renderWatchlist','addToWatchlist','predictAddToWatchlist','predictFresh'
+  'renderAnalysis','renderFriends','updateTasteBanner','renderWatchlist','addToWatchlist','predictAddToWatchlist','predictFresh',
+  'openGlobalSearch'
 ];
 bridge.forEach(fn => { window[fn] = window.__ledger[fn]; });
 

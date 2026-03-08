@@ -142,6 +142,7 @@ function renderModal() {
       }
     </div>
     <div>${breakdownRows}</div>
+    ${!editMode ? `<div id="modal-friend-context"></div>` : ''}
     ${!editMode ? (() => {
       const rows = [];
       for (let o = -2; o <= 2; o++) {
@@ -177,7 +178,7 @@ function renderModal() {
   document.getElementById('filmModal').classList.add('open');
   localStorage.setItem('palatemap_last_modal', idx);
 
-  if (!editMode) { loadModalInsight(m); loadChipImages(m); }
+  if (!editMode) { loadModalInsight(m); loadChipImages(m); loadFriendContext(m); }
 }
 
 async function loadChipImages(m) {
@@ -277,6 +278,49 @@ async function loadModalInsight(film) {
     const el2 = document.getElementById('modal-insight');
     if (el2) el2.style.display = 'none';
   }
+}
+
+function loadFriendContext(film) {
+  const el = document.getElementById('modal-friend-context');
+  if (!el) return;
+  const cache = window._friendsDataCache;
+  if (!cache?.length) return;
+
+  const ranked = [];
+  const watchlisted = [];
+
+  cache.forEach(friend => {
+    const movies = friend.movies || [];
+    const wl = friend.watchlist || [];
+    const match = movies.find(m => m.title === film.title && String(m.year) === String(film.year));
+    if (match) {
+      const sorted = [...movies].sort((a, b) => b.total - a.total);
+      const rank = sorted.findIndex(m => m.title === film.title && String(m.year) === String(film.year)) + 1;
+      ranked.push({ name: friend.display_name, total: (Math.round((match.total||0) * 10) / 10).toFixed(1), rank });
+    } else if (wl.some(w => w.title === film.title || (film.tmdbId && String(w.tmdbId) === String(film.tmdbId)))) {
+      watchlisted.push({ name: friend.display_name });
+    }
+  });
+
+  if (!ranked.length && !watchlisted.length) return;
+
+  const rows = [
+    ...ranked.map(f => `<div style="display:flex;align-items:center;gap:8px;padding:5px 0">
+      <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);flex:1">${f.name}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">ranked #${f.rank}</div>
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:16px;color:var(--blue);letter-spacing:-0.5px;min-width:36px;text-align:right">${f.total}</div>
+    </div>`),
+    ...watchlisted.map(f => `<div style="display:flex;align-items:center;gap:8px;padding:5px 0">
+      <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);flex:1">${f.name}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">on watch list</div>
+    </div>`)
+  ].join('');
+
+  el.innerHTML = `
+    <div style="margin:20px 0 4px;padding-top:16px;border-top:1px solid var(--rule)">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:8px">Friends</div>
+      ${rows}
+    </div>`;
 }
 
 export function closeModal(e) {

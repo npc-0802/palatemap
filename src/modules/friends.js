@@ -1,6 +1,6 @@
 import { MOVIES, currentUser } from '../state.js';
 import { ARCHETYPES } from '../data/archetypes.js';
-import { sb, loadFriends, loadFriendFull, acceptFriendInvite, confirmFriendInvite, unfriendUser, searchUsers, sendFriendRequest, loadPendingIncoming, loadPendingOutgoing, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, getUserEmail } from './supabase.js';
+import { sb, loadFriends, loadFriendFull, acceptFriendInvite, confirmFriendInvite, unfriendUser, searchUsers, sendFriendRequest, loadPendingIncoming, loadPendingOutgoing, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, getUserEmail, loadAllFriendsFilmData } from './supabase.js';
 
 const CATS = ['plot','execution','acting','production','enjoyability','rewatchability','ending','uniqueness'];
 const CAT_SHORT = { plot:'Plot', execution:'Exec', acting:'Acting', production:'Prod', enjoyability:'Enjoy', rewatchability:'Rewatch', ending:'Ending', uniqueness:'Unique' };
@@ -16,6 +16,11 @@ let friendColorCache = null;
 let friendEntityMapsCache = {};
 let currentFriendCache = null;
 let overlapPredictDebounceTimer = null;
+
+export async function refreshFriendsDataCache(friendIds) {
+  const data = await loadAllFriendsFilmData(friendIds);
+  window._friendsDataCache = data;
+}
 
 // ── PUBLIC ──
 
@@ -61,6 +66,8 @@ export function renderFriends() {
     updateFriendsNotificationDot(0);
     const area = document.getElementById('friends-list-area');
     if (area) area.outerHTML = friendListHTML(friends, incoming, outgoing);
+    // Background: cache all friends' film data for modal context
+    if (friends.length) refreshFriendsDataCache(friends.map(f => f.id));
   }).catch(() => {
     const area = document.getElementById('friends-list-area');
     if (area) area.textContent = 'Could not load friends.';

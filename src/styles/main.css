@@ -114,6 +114,20 @@ body {
 }
 .masthead-util:hover { color: var(--ink); }
 .masthead-util.highlight { color: var(--blue); }
+.masthead-search-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--dim);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s;
+}
+.masthead-search-btn:hover { color: var(--ink); }
 
 /* ── NAV ── */
 #sticky-header {
