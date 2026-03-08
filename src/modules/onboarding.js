@@ -487,10 +487,10 @@ async function obFinish(primary, secondary, weights, harmonySensitivity) {
   recalcAllTotals();
 
   document.getElementById('onboarding-overlay').style.display = 'none';
-  const main = await import('../main.js');
-  main.updateMastheadProfile();
-  main.updateStorageStatus();
-  main.setCloudStatus('syncing');
+  const { updateMastheadProfile, updateStorageStatus, setCloudStatus } = await import('../ui-callbacks.js');
+  updateMastheadProfile();
+  updateStorageStatus();
+  setCloudStatus('syncing');
   renderRankings();
   saveUserLocally();
 

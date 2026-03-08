@@ -1,4 +1,4 @@
-import { MOVIES, CATEGORIES, scoreClass, getLabel, calcTotal, recalcAllTotals, mergeSplitNames } from '../state.js';
+import { MOVIES, CATEGORIES, currentUser, scoreClass, getLabel, calcTotal, recalcAllTotals, mergeSplitNames } from '../state.js';
 
 const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 import { saveToStorage } from './storage.js';
@@ -89,7 +89,7 @@ function renderModal() {
       const cr = catRanks[cat.key];
       if (editMode) {
         return `<div class="breakdown-row" style="align-items:center;gap:12px">
-          <div class="breakdown-cat">${cat.label} <span class="breakdown-wt">×${cat.weight}</span></div>
+          <div class="breakdown-cat">${cat.label} <span class="breakdown-wt">×${(currentUser?.weights?.[cat.key] ?? cat.weight)}</span></div>
           <div class="breakdown-bar-wrap" style="flex:1">
             <input type="range" min="1" max="100" value="${v||50}"
               style="width:100%;accent-color:var(--blue);cursor:pointer"
@@ -102,7 +102,7 @@ function renderModal() {
         </div>`;
       }
       return `<div class="breakdown-row">
-        <div class="breakdown-cat">${cat.label} <span class="breakdown-wt">×${cat.weight}</span></div>
+        <div class="breakdown-cat">${cat.label} <span class="breakdown-wt">×${(currentUser?.weights?.[cat.key] ?? cat.weight)}</span></div>
         <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${v||0}%"></div><div class="bar-tick" style="left:25%"></div><div class="bar-tick bar-tick-mid" style="left:50%"></div><div class="bar-tick" style="left:75%"></div></div>
         <div class="breakdown-val ${v ? scoreClass(v) : ''}">${v ?? '—'}</div>
         <div class="modal-cat-rank">#${cr}</div>
@@ -127,6 +127,21 @@ function renderModal() {
       <span style="font-family:'Playfair Display',serif;font-size:52px;font-weight:900;color:var(--blue);letter-spacing:-2px" id="modal-total-display">${previewTotal}</span>
       <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--dim)" id="modal-total-label">${getLabel(previewTotal)}</span>
     </div>
+    ${(() => {
+      const tmdbId = m.tmdbId;
+      if (!tmdbId || editMode) return '';
+      const entry = currentUser?.predictions?.[String(tmdbId)];
+      if (!entry?.actualTotal || entry.delta == null) return '';
+      const delta = entry.delta;
+      const absDelta = Math.abs(delta);
+      const sign = delta > 0 ? '+' : '';
+      const color = absDelta <= 3 ? 'var(--green)' : absDelta <= 8 ? 'var(--blue)' : 'var(--dim)';
+      const label = absDelta <= 3 ? 'Nailed it.' : absDelta <= 8 ? 'Close.' : 'Off the mark.';
+      return `<div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-bottom:16px;display:flex;align-items:center;gap:8px">
+        <span>Predicted ${entry.predictedTotal}</span>
+        <span style="color:${color};font-weight:600">${sign}${delta} · ${label}</span>
+      </div>`;
+    })()}
     ${!editMode ? `<div id="modal-insight" style="margin-bottom:20px">
       <div class="insight-loading">
         <div class="insight-loading-label">Analysing your score <div class="insight-loading-dots"><span></span><span></span><span></span></div></div>
@@ -139,7 +154,8 @@ function renderModal() {
       ${editMode
         ? `<button onclick="modalSaveScores()" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;background:var(--blue);color:white;border:none;padding:8px 18px;cursor:pointer;margin-right:8px">Save scores</button>
            <button onclick="modalCancelEdit()" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;background:none;color:var(--dim);border:1px solid var(--rule);padding:8px 18px;cursor:pointer">Cancel</button>`
-        : `<button onclick="modalEnterEdit()" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;background:none;color:var(--dim);border:1px solid var(--rule);padding:6px 14px;cursor:pointer">Edit scores</button>`
+        : `<button onclick="modalEnterEdit()" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;background:none;color:var(--dim);border:1px solid var(--rule);padding:6px 14px;cursor:pointer">Edit scores</button>
+   <button onclick="modalRemoveFilm()" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;background:none;color:var(--dim);border:none;padding:6px 14px;cursor:pointer;opacity:0.5" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">Remove from list</button>`
       }
     </div>
     <div>${breakdownRows}</div>
@@ -261,6 +277,17 @@ window.modalSaveScores = function() {
   renderRankings();
   syncToSupabase().catch(e => console.warn('sync failed', e));
   renderModal();
+};
+
+window.modalRemoveFilm = function() {
+  const m = MOVIES[currentModalIdx];
+  if (!confirm(`Remove "${m.title}" from your rankings? This cannot be undone.`)) return;
+  MOVIES.splice(currentModalIdx, 1);
+  currentModalIdx = null;
+  document.getElementById('filmModal').classList.remove('open');
+  saveToStorage();
+  renderRankings();
+  syncToSupabase().catch(e => console.warn('sync failed', e));
 };
 
 async function loadModalInsight(film) {

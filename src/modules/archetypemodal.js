@@ -1,7 +1,8 @@
-import { CATEGORIES, currentUser, recalcAllTotals, applyUserWeights } from '../state.js';
+import { CATEGORIES, currentUser, applyUserWeights } from '../state.js';
 import { ARCHETYPES } from '../data/archetypes.js';
 import { saveToStorage } from './storage.js';
 import { renderRankings } from './rankings.js';
+import { renderProfile } from './profile.js';
 
 export function showSyncPanel() {
   if (!currentUser) {
@@ -107,6 +108,7 @@ export function saveArchetypeWeights() {
   });
   applyUserWeights();
   renderRankings();
+  renderProfile();
   saveToStorage();
   closeArchetypeModal();
 

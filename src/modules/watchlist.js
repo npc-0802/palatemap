@@ -101,14 +101,14 @@ export function addToWatchlist(item) {
   if (!currentUser) return;
   const list = currentUser.watchlist || [];
   if (list.some(w => String(w.tmdbId) === String(item.tmdbId))) {
-    import('../main.js').then(({ showToast }) => showToast('Already on your watch list.'));
+    import('../ui-callbacks.js').then(({ showToast }) => showToast('Already on your watch list.'));
     return;
   }
   const updated = [{ ...item, addedAt: new Date().toISOString() }, ...list];
   setCurrentUser({ ...currentUser, watchlist: updated });
   saveUserLocally();
   syncToSupabase();
-  import('../main.js').then(({ showToast }) => showToast(`${item.title} added to watch list.`));
+  import('../ui-callbacks.js').then(({ showToast }) => showToast(`${item.title} added to watch list.`));
 
   // Auto-predict after 30s if still on list
   if (item.tmdbId && MOVIES.length >= 10) {
@@ -131,7 +131,7 @@ export function removeFromWatchlist(tmdbId) {
   setCurrentUser({ ...currentUser, watchlist: updated });
   saveUserLocally();
   syncToSupabase();
-  import('../main.js').then(({ showToast }) => showToast('Removed from watch list.'));
+  import('../ui-callbacks.js').then(({ showToast }) => showToast('Removed from watch list.'));
 }
 window.removeFromWatchlist = removeFromWatchlist;
 
@@ -192,18 +192,25 @@ window.watchlistRemove = function(index) {
 window.watchlistRate = function(index) {
   const item = currentUser?.watchlist?.[index];
   if (!item) return;
+  const predictedScores = item.tmdbId
+    ? currentUser?.predictions?.[String(item.tmdbId)]?.prediction?.predicted_scores
+    : null;
   window.closeModal?.();
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('add').classList.add('active');
   document.querySelectorAll('.nav-btn, .nav-mobile-btn').forEach(b => b.classList.remove('active'));
-  if (item.tmdbId) {
-    setTimeout(() => window.tmdbSelect?.(item.tmdbId, item.title), 100);
-  } else {
-    setTimeout(() => {
+  setTimeout(async () => {
+    if (predictedScores) {
+      const addfilm = await import('./addfilm.js');
+      addfilm.prefillWithPrediction(predictedScores);
+    }
+    if (item.tmdbId) {
+      window.tmdbSelect?.(item.tmdbId, item.title);
+    } else {
       const inp = document.getElementById('f-search');
       if (inp) { inp.value = item.title; import('./addfilm.js').then(m => m.liveSearch(item.title)); }
-    }, 100);
-  }
+    }
+  }, 100);
 };
 
 window.openWatchlistDetail = function(index) {

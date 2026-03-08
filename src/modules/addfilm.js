@@ -1,6 +1,8 @@
-import { MOVIES, CATEGORIES, calcTotal, scoreClass, getLabel } from '../state.js';
+import { MOVIES, CATEGORIES, currentUser, setCurrentUser, calcTotal, scoreClass, getLabel } from '../state.js';
 import { saveToStorage } from './storage.js';
 import { renderRankings } from './rankings.js';
+import { saveUserLocally } from './supabase.js';
+import { removeFromWatchlist } from './watchlist.js';
 
 const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 const TMDB = 'https://api.themoviedb.org/3';
@@ -433,8 +435,41 @@ export function saveFilm() {
     tmdbId: newFilm._tmdbId || null,
     scores: { ...newFilm.scores }
   });
+  // Prediction reconciliation — if this film was predicted, record actual vs predicted
+  const savedTmdbId = newFilm._tmdbId;
+  if (savedTmdbId && currentUser?.predictions?.[String(savedTmdbId)]) {
+    const entry = currentUser.predictions[String(savedTmdbId)];
+    const actualTotal = newFilm.total;
+    const predictedTotal = (() => {
+      let sum = 0, wsum = 0;
+      CATEGORIES.forEach(cat => {
+        const v = entry.prediction?.predicted_scores?.[cat.key];
+        const w = currentUser?.weights?.[cat.key] ?? cat.weight;
+        if (v != null) { sum += v * w; wsum += w; }
+      });
+      return wsum > 0 ? Math.round((sum / wsum) * 100) / 100 : 0;
+    })();
+    const delta = Math.round((actualTotal - predictedTotal) * 10) / 10;
+    const updatedPredictions = {
+      ...currentUser.predictions,
+      [String(savedTmdbId)]: {
+        ...entry,
+        actualTotal,
+        predictedTotal,
+        delta,
+        ratedAt: new Date().toISOString()
+      }
+    };
+    setCurrentUser({ ...currentUser, predictions: updatedPredictions });
+    saveUserLocally();
+  }
   saveToStorage();
-  import('../main.js').then(m => m.updateStorageStatus());
+  // Auto-remove from watch list when a film is rated
+  if (savedTmdbId) {
+    const onWatchlist = (currentUser?.watchlist || []).some(w => String(w.tmdbId) === String(savedTmdbId));
+    if (onWatchlist) removeFromWatchlist(savedTmdbId);
+  }
+  import('../ui-callbacks.js').then(({ updateStorageStatus }) => updateStorageStatus());
 
   newFilm = { title:'', year:null, director:'', writer:'', cast:'', productionCompanies:'', scores:{} };
   castChecked = {}; companyChecked = {}; tmdbFullCast = []; prefillScores = null;

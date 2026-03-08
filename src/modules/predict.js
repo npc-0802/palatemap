@@ -5,6 +5,13 @@ const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 const TMDB = 'https://api.themoviedb.org/3';
 const PROXY_URL = 'https://palate-map-proxy.noahparikhcott.workers.dev';
 
+function trimPredictions(predictions, limit = 50) {
+  const entries = Object.entries(predictions);
+  if (entries.length <= limit) return predictions;
+  entries.sort((a, b) => new Date(b[1].predictedAt) - new Date(a[1].predictedAt));
+  return Object.fromEntries(entries.slice(0, limit));
+}
+
 let predictDebounceTimer = null;
 let predictSelectedFilm = null;
 let lastPrediction = null;
@@ -275,7 +282,8 @@ Respond with this exact JSON structure:
     lastPrediction = prediction;
     const predictedAt = new Date().toISOString();
     // Store in prediction cache
-    const predictions = { ...(currentUser?.predictions || {}), [String(film.tmdbId)]: { film, prediction, predictedAt } };
+    const rawPredictions = { ...(currentUser?.predictions || {}), [String(film.tmdbId)]: { film, prediction, predictedAt } };
+    const predictions = trimPredictions(rawPredictions);
     setCurrentUser({ ...currentUser, predictions });
     saveUserLocally();
     syncToSupabase();

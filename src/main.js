@@ -1,4 +1,5 @@
 import { MOVIES, currentUser, setCurrentUser, setMovies, CATEGORIES, recalcAllTotals, applyUserWeights } from './state.js';
+import { registerUICallbacks } from './ui-callbacks.js';
 import { renderRankings, sortBy, setViewMode, updateTasteBanner } from './modules/rankings.js';
 import { openModal, closeModal } from './modules/modal.js';
 import { renderExploreIndex, exploreEntity } from './modules/explore.js';
@@ -100,6 +101,12 @@ window.startFromLandingReturning = function() {
 };
 
 async function init() {
+  registerUICallbacks({
+    setCloudStatus,
+    updateMastheadProfile,
+    updateStorageStatus,
+    showToast,
+  });
   loadFromStorage();
   runMigrations();
 

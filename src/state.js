@@ -45,10 +45,15 @@ export function getLabel(score) {
   return 'Unwatchable';
 }
 
-export function calcTotal(scores) {
+export function calcTotal(scores, weights) {
+  // weights: optional object { plot: N, execution: N, ... }
+  // falls back to currentUser.weights, then to CATEGORIES default weights
   let sum = 0, wsum = 0;
   for (const cat of CATEGORIES) {
-    if (scores[cat.key] != null) { sum += scores[cat.key] * cat.weight; wsum += cat.weight; }
+    const w = weights
+      ? (weights[cat.key] ?? cat.weight)
+      : (currentUser?.weights?.[cat.key] ?? cat.weight);
+    if (scores[cat.key] != null) { sum += scores[cat.key] * w; wsum += w; }
   }
   return wsum > 0 ? Math.round((sum / wsum) * 100) / 100 : 0;
 }
@@ -65,9 +70,5 @@ export function scoreClass(s) {
 
 export function applyUserWeights() {
   if (!currentUser || !currentUser.weights) return;
-  const w = currentUser.weights;
-  CATEGORIES.forEach(cat => {
-    if (w[cat.key] != null) cat.weight = w[cat.key];
-  });
   recalcAllTotals();
 }

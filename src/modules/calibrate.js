@@ -283,7 +283,7 @@ export function applyCalibration() {
     saveToStorage();
     const threshold = Math.floor(MOVIES.length / 10) * 10;
     localStorage.setItem('palatemap_calibrate_last_threshold', String(threshold));
-    import('../main.js').then(m => m.updateStorageStatus());
+    import('../ui-callbacks.js').then(({ updateStorageStatus }) => updateStorageStatus());
     renderRankings();
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('rankings').classList.add('active');

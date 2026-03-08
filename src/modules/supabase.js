@@ -62,7 +62,7 @@ export async function loadFromSupabaseByAuth(authId, email = null) {
 }
 
 async function _applyUserData(data) {
-  const { setCloudStatus, updateMastheadProfile, updateStorageStatus } = await import('../main.js');
+  const { setCloudStatus, updateMastheadProfile, updateStorageStatus } = await import('../ui-callbacks.js');
   const { renderRankings } = await import('./rankings.js');
 
   setCurrentUser({
@@ -98,7 +98,7 @@ async function _applyUserData(data) {
 export async function syncToSupabase() {
   const user = currentUser;
   if (!user) return;
-  const { setCloudStatus, showToast } = await import('../main.js');
+  const { setCloudStatus, showToast } = await import('../ui-callbacks.js');
   setCloudStatus('syncing');
   const payload = {
     id: user.id, username: user.username, display_name: user.display_name,
@@ -107,7 +107,13 @@ export async function syncToSupabase() {
     movies: MOVIES, updated_at: new Date().toISOString(),
     email: user.email || null, auth_id: user.auth_id || null,
     ...(user.watchlist !== undefined ? { watchlist: user.watchlist } : {}),
-    ...(user.predictions !== undefined ? { predictions: user.predictions } : {})
+    ...(user.predictions !== undefined ? { predictions: (() => {
+      if (!user.predictions) return {};
+      const entries = Object.entries(user.predictions);
+      if (entries.length <= 50) return user.predictions;
+      entries.sort((a, b) => new Date(b[1].predictedAt) - new Date(a[1].predictedAt));
+      return Object.fromEntries(entries.slice(0, 50));
+    })() } : {})
   };
   const MAX_RETRIES = 2;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -132,7 +138,7 @@ export async function syncToSupabase() {
 }
 
 export async function loadFromSupabase(userId) {
-  const { setCloudStatus, updateMastheadProfile, updateStorageStatus } = await import('../main.js');
+  const { setCloudStatus, updateMastheadProfile, updateStorageStatus } = await import('../ui-callbacks.js');
   const { renderRankings } = await import('./rankings.js');
   setCloudStatus('syncing');
   try {
