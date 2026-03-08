@@ -250,7 +250,7 @@ export async function searchUsers(query) {
   try {
     const { data } = await sb.from('palatemap_users')
       .select('id, display_name, username, archetype, archetype_secondary')
-      .ilike('username', `%${query}%`)
+      .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
       .neq('id', currentUser.id)
       .limit(8);
     return data || [];

@@ -659,7 +659,7 @@ function headerHTML() {
       <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(36px,5vw,52px);line-height:1;color:var(--ink)">Friends.</div>
       <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dim);line-height:1.7;max-width:560px;margin-top:10px">Compare archetypes, radar fingerprints, and the films you agree — and disagree — on most.</div>
       <div style="margin-top:20px;position:relative">
-        <input id="friends-search-input" type="text" placeholder="Search by username…" oninput="friendSearchDebounce()" autocomplete="off" style="width:100%;font-family:'DM Mono',monospace;font-size:12px;background:var(--cream);border:1px solid var(--rule-dark);padding:10px 14px;color:var(--ink);outline:none;letter-spacing:0.5px" />
+        <input id="friends-search-input" type="text" placeholder="Search by name or username…" oninput="friendSearchDebounce()" autocomplete="off" style="width:100%;font-family:'DM Mono',monospace;font-size:12px;background:var(--cream);border:1px solid var(--rule-dark);padding:10px 14px;color:var(--ink);outline:none;letter-spacing:0.5px" />
         <div id="friends-search-results"></div>
       </div>
     </div>`;

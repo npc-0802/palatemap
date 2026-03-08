@@ -1,5 +1,5 @@
 Palate Map
-Product Brief · Living Document · v3.13
+Product Brief · Living Document · v3.14
 Last updated: March 2026
 Confidential — do not distribute
 
@@ -190,6 +190,9 @@ Empty state: 60vh centered CTA — "Start with one you love." + persimmon "Rate 
 Film Modal
 TMDB poster · synopsis · rank #X of N · clickable director/writer/cast/company chips (→ Explore) · per-category scores + rank + weight bars · inline score editing (Edit scores → sliders → Save) · nearby films in rankings (leaderboard style with rank, diff indicator, current film highlighted in ink).
 Chip portraits: director/writer/cast chips show 20px TMDB circle portraits; company chips show 18px rounded-square logo — both load async after modal opens.
+If the film was predicted before rating, the modal shows the predicted total vs actual total with delta and accuracy label ("Nailed it" / "Close" / "Off the mark").
+Poster correction: view mode includes a "Fix poster" action. Selecting a new TMDB match updates poster, overview, TMDB id, and all linked metadata (director, writer, cast, production companies) in-place, then saves and syncs. If the user picks the wrong replacement, they must correct it again manually.
+Film removal: view mode includes "Remove from list" with a confirm-before-delete step. Removes from rankings, updates state, syncs to Supabase.
 Friends context: after the breakdown, a "Friends" section shows any friends who have rated the film (their score + rank in their list) or have it on their watch list. Loaded from window._friendsDataCache — background-populated on app init via a single Supabase query for all friends' movies + watchlists.
 
 Explore
@@ -210,6 +213,8 @@ Accessible via Profile screen "Calibrate your scores →" button (not in bottom 
 Add Film
 4-step: TMDB search → cast/crew/company curation → 8-category scoring → result card.
 Score guide in step 2 reflects actual LABELS thresholds (90/85/80/75/70/65/60/55/50) from state.js.
+Poster correction: curation step includes a "Wrong poster? Choose another match →" action. Opens alternate TMDB search results; selecting a replacement swaps in the new poster, metadata (title, year, director, writer, cast, companies, overview), and TMDB id before proceeding to scoring.
+Predicted vs actual: if the film was previously predicted, the Step 4 confirmation card shows predicted total vs actual total with delta and a qualitative accuracy label ("Nailed it" ≤3, "Close" ≤8, "Off the mark" >8). Delta is stored in the prediction cache entry (predictedTotal, actualTotal, delta, ratedAt).
 
 Nav Strip
 Top bar above nav tabs. Contains: "Add a film" (primary) + "Invite a friend →" (secondary). "Invite a friend →" opens invite modal (not nav to Friends screen).
@@ -217,9 +222,10 @@ Top bar above nav tabs. Contains: "Add a film" (primary) + "Invite a friend →"
 Watch List (Phase 3.4 — Complete)
 Own nav tab in both desktop strip and mobile bottom bar (bookmark icon).
 Films saved from anywhere in the app: entity stub modal (＋ Watchlist button), Predict result, friend film modal, Overlap Predict result. Button toggles to "✓ On Watch List" (green, click removes) everywhere it appears.
-Watch list screen: TMDB search bar at top (debounced, adds immediately without refresh); poster + title + year list below with "you'd give ~82.7 · Great" tier line (getLabel) once predicted; "estimating ···" pulsing blue dots while pending; Rank it → (navigates to Add Film pre-filled), ✕ remove. Empty state. Count header. Row has horizontal padding for proper hover state.
+Watch list screen: TMDB search bar at top (debounced, adds immediately without refresh); poster + title + year list below with "you'd give ~82.7 · Great" tier line (getLabel) once predicted; "estimating ···" pulsing blue dots while pending; Rank it → (navigates to Add Film pre-filled with cached/auto-predicted category scores), ✕ remove. Empty state. Count header. Row has horizontal padding for proper hover state.
 Clicking a row opens full film modal: dark header with portrait poster, TMDB overview, director/writer/cast/company chips with portraits/logos, streaming providers (JustWatch via TMDB), and predicted score block ("we think you'd give this", big ~score + tier label + "based on your palate" + reasoning + per-category grid).
 Auto-predict: 30s timer on add; also queued on renderWatchlist for any items missing scores (staggered 1.5s apart).
+When a watchlisted film is rated and saved, it is automatically removed from the watch list.
 Syncs to Supabase in user payload (watchlist jsonb field).
 
 Global Search (Phase 3.8 — Complete)
@@ -279,13 +285,12 @@ Sections:
 • Sign out at bottom.
 
 Archetype / Weight Editor Modal
-"Edit weights →" in Profile. Weight inputs capped at 5 (max). Save recalcs all totals, detects archetype shift via cosine similarity, shows toast if primary archetype changes ("OldArchetype → NewArchetype"), syncs to Supabase.
+"Edit weights →" in Profile. Weight inputs capped at 5 (max). Save recalcs all totals, detects archetype shift via cosine similarity, shows toast if primary archetype changes ("OldArchetype → NewArchetype"), syncs to Supabase. Profile fingerprint/radar and all weight-derived UI rerender immediately on save — no page refresh required.
 
 Masthead
 Wordmark ("palate map") is clickable — navigates to Rankings (home). Search bar spans the full eyebrow area below the wordmark: white background, full border, 11px DM Mono, opens global search overlay on click. All other meta items (cloud status, storage status, export, film count, display name) removed from visible UI; ghost elements remain in DOM for JS compatibility.
 
 07  Known Issues & Tech Debt
-• Cloud sync failures are silent — console.warn only. No user-facing error state. (Phase 2.3 partial)
 • No test coverage. Shipping by feel.
 • Cloudflare Worker renamed to palate-map-proxy — URL updated in all modules (predict.js, friends.js, insights.js).
 • Refreshing while inside a friend's profile page lands on friends list (friend ID not persisted). Acceptable for now.
@@ -294,6 +299,7 @@ Wordmark ("palate map") is clickable — navigates to Rankings (home). Search ba
 • Auth quiz loop: mitigated with auto auth_id linking (legacy profiles now link on first sign-in) and "← Wrong account? Sign out" escape hatch on quiz intro when a pending auth session is detected. Root cause (no localStorage on first device) is expected — escape hatch is the UX solution.
 • Friends data cache (window._friendsDataCache) is loaded on init and when Friends screen is visited. If a friend adds a new film between sessions, the modal context will be stale until next app load. Acceptable for now.
 • Prediction cache (currentUser.predictions) is per-user, client-side. No server-side invalidation. Re-predict available manually.
+• TMDB search can return an incorrect first-match poster/record for some titles. Users can now correct these manually during Add Film (curation step) and from the ranked-film modal ("Fix poster"). If a user picks the wrong replacement, they must correct it again manually.
 
 08  Full Product Roadmap
 Phase 0 — Foundation [COMPLETE]
@@ -310,7 +316,7 @@ Phase 1 — Identity & Value Prop [COMPLETE]
 • 1.6 Profile + Analysis design pass — dark archetype block, editorial category bars, entity leaderboards. ✓
 
 Phase 2 — Polish [COMPLETE]
-• 2.1 Modal polish ✓ — dark grid-texture header, Craft/Experience breakdown grouping, leaderboard nearby section with diff indicators, chip portraits (person circles + company rounded-square logos).
+• 2.1 Modal polish ✓ — dark grid-texture header, Craft/Experience breakdown grouping, leaderboard nearby section with diff indicators, chip portraits (person circles + company rounded-square logos). In-place poster/TMDB match correction ✓. Film removal from rankings with confirmation ✓.
 • 2.2 Calibration UX rewrite ✓ — Elo head-to-head, natural language prompts, full category names.
 • 2.3 Error surfaces + sync reliability ✓ — generic showToast system (success/error/info, stacking, action button); syncToSupabase retries 2x with exponential backoff; error toast with Retry action on final failure; archetype shift uses generic toast.
 • 2.4 Palate color system ✓ — per-archetype palette on profile, entity details, share cards; cartographic grid texture on dark surfaces; topographic score bars.
@@ -334,10 +340,12 @@ Phase 3 — Growth Features [IN PROGRESS]
 
 • 3.4 Watch List ✓ — own nav tab; films saved from entity stubs, predict results, and overlap predict; Rank it → launches Add Film pre-filled; synced to Supabase.
   Watch List detail (Phase 3.4 polish, complete): clicking a watchlist item opens the full film modal (dark header with portrait poster, TMDB overview, director/writer/cast/company chips with portraits + logos, streaming providers, predicted score block). Auto-predict: 30s after adding (if ≥10 films rated), prediction engine runs silently; also triggers on renderWatchlist for any items missing a score. Loading state: "estimating ···" pulsing dots shown until score arrives. Row shows "you'd give ~82.7 · Great" using getLabel(). Modal shows big score + tier label + "based on your palate" + "Here's our thinking" reasoning block + per-category grid. Watchlist adds from search immediately re-render the list (no refresh needed). Rows have horizontal padding for proper hover state.
+  Rank it → prefills Add Film category sliders from cached or auto-predicted scores (not just fresh prediction-screen results). ✓
+  Rating and saving a watchlisted film automatically removes it from the watch list. ✓
 
 • 3.5 Overlap Predict ✓ — search bar on friend Overlap tab; combined Claude prediction using both taste profiles; reasoning distinguishes each user by name with film-specific anchors; shared watchlist surfaces films both users have saved.
 
-• 3.6 Prediction engine polish — prediction caching ✓; Re-predict ✓; prediction history browser ✓ (browses past predictions sorted by date, click to reload cached result; rows show score + tier label + horizontal hover padding matching watchlist style); confidence calibration [not started].
+• 3.6 Prediction engine polish — prediction caching ✓; Re-predict ✓; prediction history browser ✓ (browses past predictions sorted by date, click to reload cached result; rows show score + tier label + horizontal hover padding matching watchlist style); confidence calibration [not started]. Predicted-vs-actual reconciliation surfaced in both Add Film Step 4 confirmation card and saved film modal ✓ (accuracy labels: "Nailed it" ≤3, "Close" ≤8, "Off the mark" >8).
 
 • 3.7 Social film modal ✓ — friend film clicks open rich listing modal (dark header, friend rank/score, own rate/watchlist actions, friend's breakdown). Film modals show Friends context section (friend scores + watchlist status) loaded from background cache.
 
@@ -379,4 +387,4 @@ Resend key:            stored in Cloudflare env var RESEND_API_KEY only
 GitHub repo:           github.com/npc-0802/palatemap (private)
 GitHub Pages:          palatemap.com (custom domain)
 
-Palate Map · private product brief · v3.13 · do not distribute
+Palate Map · private product brief · v3.14 · do not distribute
