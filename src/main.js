@@ -26,6 +26,13 @@ export function showScreen(id) {
   document.querySelectorAll('.nav-btn, .nav-mobile-btn').forEach(b => {
     b.classList.toggle('active', b.getAttribute('onclick')?.includes(`'${id}'`));
   });
+  // Always reset scroll position so top content isn't hidden behind the sticky banner
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  // Hide the add-film mobile banner when leaving that screen
+  if (id !== 'add') {
+    const addBanner = document.getElementById('mobile-addfilm-banner');
+    if (addBanner) { addBanner.style.display = 'none'; addBanner.innerHTML = ''; }
+  }
   if (id === 'analysis') renderAnalysis();
   if (id === 'calibration') resetCalibration();
   if (id === 'predict') initPredict();

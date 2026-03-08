@@ -182,6 +182,22 @@ export function resetToSearch() {
   document.getElementById('tmdb-search-phase').style.display = 'block';
   document.getElementById('tmdb-curation-phase').style.display = 'none';
   document.getElementById('tmdb-results').innerHTML = '';
+  hideAddFilmBanner();
+}
+
+function showAddFilmBanner(title, year) {
+  if (window.innerWidth > 768) return;
+  const el = document.getElementById('mobile-addfilm-banner');
+  if (!el) return;
+  el.innerHTML = `<div style="background:var(--cream);border-bottom:1px solid var(--rule-dark);padding:7px 20px;display:flex;align-items:center;gap:10px"><span style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--action);flex-shrink:0">Rating</span><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}${year ? ' · ' + year : ''}</span></div>`;
+  el.style.display = 'block';
+}
+
+function hideAddFilmBanner() {
+  const el = document.getElementById('mobile-addfilm-banner');
+  if (!el) return;
+  el.style.display = 'none';
+  el.innerHTML = '';
 }
 
 export function confirmTmdbData() {
@@ -196,6 +212,7 @@ export function confirmTmdbData() {
   newFilm.cast = selectedCast.join(', ');
   newFilm.productionCompanies = selectedCompanies.join(', ');
 
+  showAddFilmBanner(newFilm.title, newFilm.year);
   renderCalibration();
   updateStepUI(2);
 }
@@ -447,6 +464,7 @@ function renderResult() {
 }
 
 export function saveFilm() {
+  hideAddFilmBanner();
   newFilm.total = calcTotal(newFilm.scores);
   MOVIES.push({
     title: newFilm.title, year: newFilm.year, total: newFilm.total,

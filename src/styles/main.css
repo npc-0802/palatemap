@@ -297,6 +297,11 @@ body {
 
 @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.3 } }
 
+/* ── MOBILE ADD-FILM BANNER ── */
+#mobile-addfilm-banner {
+  display: none;
+}
+
 /* ── COLD LANDING ── */
 .cold-landing-grid {
   display: grid;
