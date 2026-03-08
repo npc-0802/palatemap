@@ -121,6 +121,7 @@ function renderModal() {
       ${writerChips ? `<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><span style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);min-width:44px;flex-shrink:0;padding-top:5px">Wri.</span><div style="display:flex;flex-wrap:wrap;gap:4px">${writerChips}</div></div>` : ''}
       ${castChips ? `<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><span style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);min-width:44px;flex-shrink:0;padding-top:5px">Cast</span><div style="display:flex;flex-wrap:wrap;gap:4px">${castChips}</div></div>` : ''}
       ${companyChips ? `<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><span style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);min-width:44px;flex-shrink:0;padding-top:5px">Prod.</span><div style="display:flex;flex-wrap:wrap;gap:4px">${companyChips}</div></div>` : ''}
+      <div id="modal-streaming"></div>
     </div>
     <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px">
       <span style="font-family:'Playfair Display',serif;font-size:52px;font-weight:900;color:var(--blue);letter-spacing:-2px" id="modal-total-display">${previewTotal}</span>
@@ -178,7 +179,7 @@ function renderModal() {
   document.getElementById('filmModal').classList.add('open');
   localStorage.setItem('palatemap_last_modal', idx);
 
-  if (!editMode) { loadModalInsight(m); loadChipImages(m); loadFriendContext(m); }
+  if (!editMode) { loadModalInsight(m); loadChipImages(m); loadFriendContext(m); loadStreamingProviders(m.tmdbId, m.title, m.year, 'modal-streaming'); }
 }
 
 async function loadChipImages(m) {
@@ -321,6 +322,48 @@ function loadFriendContext(film) {
       <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:8px">Friends</div>
       ${rows}
     </div>`;
+}
+
+export async function loadStreamingProviders(tmdbId, title, year, containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  try {
+    let id = tmdbId;
+    if (!id) {
+      const res = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(title)}${year ? '&year=' + year : ''}&language=en-US`);
+      const data = await res.json();
+      id = data.results?.[0]?.id;
+    }
+    if (!id) return;
+
+    const res = await fetch(`https://api.themoviedb.org/3/movie/${id}/watch/providers?api_key=${TMDB_KEY}`);
+    const data = await res.json();
+    const us = data.results?.US;
+    if (!us) return;
+
+    const flatrate = us.flatrate || [];
+    const rent = us.rent || [];
+    const free = us.free || [];
+    const ads = us.ads || [];
+
+    if (!flatrate.length && !rent.length && !free.length && !ads.length) return;
+
+    const logoHtml = (providers, label) => {
+      if (!providers.length) return '';
+      const logos = providers.slice(0, 6).map(p =>
+        `<img src="https://image.tmdb.org/t/p/w45${p.logo_path}" title="${p.provider_name}" alt="${p.provider_name}" style="width:24px;height:24px;border-radius:5px;object-fit:cover;flex-shrink:0">`
+      ).join('');
+      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span style="font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);width:44px;flex-shrink:0">${label}</span>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">${logos}</div>
+      </div>`;
+    };
+
+    const html = logoHtml([...flatrate, ...free, ...ads], 'Stream') + logoHtml(rent, 'Rent');
+    if (!html.trim()) return;
+
+    el.innerHTML = `<div style="padding:8px 0 4px;border-bottom:1px solid var(--rule);margin-bottom:8px">${html}<div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--dim);margin-top:4px;opacity:0.6">via JustWatch · US</div></div>`;
+  } catch(e) { /* silent — streaming data is supplementary */ }
 }
 
 export function closeModal(e) {

@@ -350,12 +350,19 @@ window.openFriendFilmDetail = function(index) {
       </div>
       <div style="padding:0 28px 28px">
         ${actionHTML}
+        <div id="friend-film-streaming"></div>
         <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);padding:16px 0 8px;border-bottom:1px solid var(--rule);margin-bottom:8px">${friendName}'s breakdown</div>
         ${scoreRows}
       </div>
     </div>`;
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
+
+  if (m.tmdbId) {
+    import('./modal.js').then(({ loadStreamingProviders }) => {
+      loadStreamingProviders(m.tmdbId, m.title, m.year, 'friend-film-streaming');
+    });
+  }
 };
 
 window.friendFilmWatchlist = function(index) {

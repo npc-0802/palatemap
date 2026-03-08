@@ -430,6 +430,7 @@ export function saveFilm() {
     productionCompanies: newFilm.productionCompanies || '',
     poster: newFilm._tmdbDetail?.poster_path || null,
     overview: newFilm._tmdbDetail?.overview || '',
+    tmdbId: newFilm._tmdbId || null,
     scores: { ...newFilm.scores }
   });
   saveToStorage();

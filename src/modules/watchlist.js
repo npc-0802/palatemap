@@ -5,7 +5,6 @@ const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 let wlSearchDebounce = null;
 let gsDebounceTimer = null;
 const autoPredictTimers = {};
-let wlSortMode = 'date';
 
 function calcWlPredictedTotal(prediction) {
   let sum = 0, wsum = 0;
@@ -31,10 +30,6 @@ export function renderWatchlist() {
     </div>`;
 }
 
-window.wlSetSort = function(mode) {
-  wlSortMode = mode;
-  renderWatchlist();
-};
 
 function emptyState() {
   return `
@@ -46,25 +41,9 @@ function emptyState() {
 }
 
 function listHTML(list) {
-  let sorted = [...list];
-  if (wlSortMode === 'score') {
-    sorted.sort((a, b) => {
-      const pa = a.tmdbId ? currentUser?.predictions?.[String(a.tmdbId)] : null;
-      const pb = b.tmdbId ? currentUser?.predictions?.[String(b.tmdbId)] : null;
-      const ta = pa ? calcWlPredictedTotal(pa.prediction) : -1;
-      const tb = pb ? calcWlPredictedTotal(pb.prediction) : -1;
-      return tb - ta;
-    });
-  }
   return `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim)">${list.length} film${list.length !== 1 ? 's' : ''} queued</div>
-      <div style="display:flex;gap:4px">
-        <button onclick="wlSetSort('date')" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;background:${wlSortMode==='date'?'var(--ink)':'none'};color:${wlSortMode==='date'?'white':'var(--dim)'};border:1px solid ${wlSortMode==='date'?'var(--ink)':'var(--rule-dark)'};cursor:pointer">Date</button>
-        <button onclick="wlSetSort('score')" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;background:${wlSortMode==='score'?'var(--ink)':'none'};color:${wlSortMode==='score'?'white':'var(--dim)'};border:1px solid ${wlSortMode==='score'?'var(--ink)':'var(--rule-dark)'};cursor:pointer">Predicted</button>
-      </div>
-    </div>
-    <div id="wl-list">${sorted.map(item => watchlistRow(item, list.indexOf(item))).join('')}</div>`;
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">${list.length} film${list.length !== 1 ? 's' : ''} queued</div>
+    <div id="wl-list">${list.map((item, i) => watchlistRow(item, i)).join('')}</div>`;
 }
 
 function watchlistRow(item, i) {
@@ -193,7 +172,7 @@ window.watchlistRemove = function(index) {
 window.watchlistRate = function(index) {
   const item = currentUser?.watchlist?.[index];
   if (!item) return;
-  document.getElementById('wl-detail-modal')?.remove();
+  window.closeModal?.();
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('add').classList.add('active');
   document.querySelectorAll('.nav-btn, .nav-mobile-btn').forEach(b => b.classList.remove('active'));
@@ -212,41 +191,95 @@ window.openWatchlistDetail = function(index) {
   if (!item) return;
   const prediction = item.tmdbId ? currentUser?.predictions?.[String(item.tmdbId)] : null;
   const predTotal = prediction ? calcWlPredictedTotal(prediction.prediction) : null;
-  const poster = item.poster
-    ? `<img src="https://image.tmdb.org/t/p/w342${item.poster}" style="width:90px;height:135px;object-fit:cover;flex-shrink:0">`
-    : '';
-  const predSection = predTotal != null ? `
-    <div style="display:flex;align-items:baseline;gap:8px;margin-top:12px">
-      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:38px;color:var(--blue);letter-spacing:-1px;line-height:1">${(Math.round(predTotal*10)/10).toFixed(1)}</div>
-      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim)">/100 predicted</div>
+
+  const headerHtml = item.poster
+    ? `<div style="position:relative;display:flex;align-items:stretch;background:var(--surface-dark);margin:-40px -40px 28px;padding:28px 32px">
+         <button onclick="closeModal()" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--on-dark-dim);line-height:1;padding:4px 8px">×</button>
+         <img style="width:100px;height:150px;object-fit:cover;flex-shrink:0;display:block" src="https://image.tmdb.org/t/p/w342${item.poster}" alt="">
+         <div style="flex:1;padding:0 40px 0 20px;display:flex;flex-direction:column;justify-content:flex-end">
+           <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px">Watch List</div>
+           <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(20px,3.5vw,30px);line-height:1.1;color:var(--on-dark);letter-spacing:-0.5px;margin-bottom:8px">${item.title}</div>
+           <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--on-dark-dim)">${item.year||''}</div>
+         </div>
+       </div>`
+    : `<div style="position:relative;background:var(--surface-dark);margin:-40px -40px 28px;padding:32px 40px 28px">
+         <button onclick="closeModal()" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--on-dark-dim);line-height:1;padding:4px 8px">×</button>
+         <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px">Watch List</div>
+         <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(20px,3.5vw,30px);line-height:1.1;color:var(--on-dark);letter-spacing:-0.5px;margin-bottom:8px">${item.title}</div>
+         <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--on-dark-dim)">${item.year||''}</div>
+       </div>`;
+
+  const predHtml = predTotal != null ? `
+    <div style="margin-bottom:20px">
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px">
+        <span style="font-family:'Playfair Display',serif;font-size:52px;font-weight:900;color:var(--blue);letter-spacing:-2px">${(Math.round(predTotal*10)/10).toFixed(1)}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--dim)">predicted</span>
+      </div>
+      ${prediction.prediction.reasoning ? `
+        <div style="padding:16px 20px;background:var(--surface-dark);border-radius:6px;margin-bottom:16px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--on-dark-dim);margin-bottom:8px">Why this score</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.7;color:var(--on-dark)">${prediction.prediction.reasoning}</div>
+        </div>` : ''}
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:20px">
+        ${CATEGORIES.map(cat => {
+          const v = prediction.prediction.predicted_scores?.[cat.key];
+          return v != null ? `<div style="text-align:center;padding:10px 6px;background:var(--cream)">
+            <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.5px;color:var(--dim);margin-bottom:4px">${cat.label}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--ink)">${v}</div>
+          </div>` : '';
+        }).join('')}
+      </div>
     </div>` : '';
-  document.getElementById('wl-detail-modal')?.remove();
-  const overlay = document.createElement('div');
-  overlay.id = 'wl-detail-modal';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(12,11,9,0.7);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px';
-  overlay.innerHTML = `
-    <div style="background:var(--paper);max-width:460px;width:100%;border-top:3px solid var(--blue);max-height:85vh;overflow-y:auto">
-      <div style="background:var(--surface-dark);padding:24px 28px;display:flex;gap:18px;align-items:flex-start;position:relative">
-        <button onclick="document.getElementById('wl-detail-modal').remove()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--on-dark-dim);line-height:1;padding:4px 8px">×</button>
-        ${poster}
-        <div style="flex:1;padding-top:4px;padding-right:28px">
-          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">Watch List</div>
-          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(16px,3vw,22px);line-height:1.2;color:var(--on-dark);margin-bottom:6px">${item.title}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim)">${item.year || ''}${item.director ? ' · ' + item.director.split(',')[0] : ''}</div>
-          ${predSection}
-        </div>
-      </div>
-      <div style="padding:20px 28px 28px;display:flex;flex-direction:column;gap:10px">
-        ${prediction?.prediction?.reasoning ? `<div style="padding:14px 16px;background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.6;color:var(--ink)">${prediction.prediction.reasoning}</div>` : ''}
-        <div style="display:flex;gap:8px">
-          <button onclick="document.getElementById('wl-detail-modal').remove();watchlistRemove(${index})" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;background:none;border:1px solid var(--rule-dark);color:var(--dim);padding:10px 16px;cursor:pointer;flex:1">Remove</button>
-          <button onclick="watchlistRate(${index})" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:10px 16px;cursor:pointer;flex:2">Rank it →</button>
-        </div>
-      </div>
-    </div>`;
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-  document.body.appendChild(overlay);
+
+  document.getElementById('modalContent').innerHTML = `
+    ${headerHtml}
+    <div id="wl-detail-meta" style="margin-bottom:16px">
+      ${item.overview ? `<div class="modal-overview">${item.overview}</div>` : ''}
+      ${item.director ? `<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><span style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);min-width:44px;flex-shrink:0;padding-top:5px">Dir.</span><span class="modal-meta-chip" onclick="closeModal();exploreEntity('director','${item.director.split(',')[0].trim().replace(/'/g,"\\'")}')">${item.director.split(',')[0].trim()}</span></div>` : ''}
+    </div>
+    <div id="modal-streaming" style="margin-bottom:4px"></div>
+    ${predHtml}
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button onclick="closeModal();watchlistRemove(${index})" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;background:none;border:1px solid var(--rule);color:var(--dim);padding:10px 20px;cursor:pointer;flex:1">Remove</button>
+      <button onclick="watchlistRate(${index})" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:10px 20px;cursor:pointer;flex:2">Rank it →</button>
+    </div>
+  `;
+  document.getElementById('filmModal').classList.add('open');
+
+  if (item.tmdbId) _loadWlTmdbDetails(item);
 };
+
+async function _loadWlTmdbDetails(item) {
+  try {
+    const [detailRes, creditsRes] = await Promise.all([
+      fetch(`https://api.themoviedb.org/3/movie/${item.tmdbId}?api_key=${TMDB_KEY}`),
+      fetch(`https://api.themoviedb.org/3/movie/${item.tmdbId}/credits?api_key=${TMDB_KEY}`)
+    ]);
+    const detail = await detailRes.json();
+    const credits = await creditsRes.json();
+    const directors = (credits.crew||[]).filter(c=>c.job==='Director').map(c=>c.name);
+    const writers = (credits.crew||[]).filter(c=>['Screenplay','Writer','Story'].includes(c.job)).map(c=>c.name).filter((v,i,a)=>a.indexOf(v)===i).slice(0,3);
+    const castList = (credits.cast||[]).slice(0,8).map(c=>c.name);
+    const companies = (detail.production_companies||[]).map(c=>c.name);
+    const overview = detail.overview || item.overview || '';
+    const metaEl = document.getElementById('wl-detail-meta');
+    if (!metaEl) return;
+    const chip = (name, type) => `<span class="modal-meta-chip" onclick="closeModal();exploreEntity('${type}','${name.replace(/'/g,"\\'")}')">${name}</span>`;
+    const row = (label, names, type) => names.length ? `<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
+      <span style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);min-width:44px;flex-shrink:0;padding-top:5px">${label}</span>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">${names.map(n=>chip(n,type)).join('')}</div>
+    </div>` : '';
+    metaEl.innerHTML = `
+      ${overview ? `<div class="modal-overview">${overview}</div>` : ''}
+      ${row('Dir.', directors, 'director')}
+      ${row('Wri.', writers, 'writer')}
+      ${row('Cast', castList, 'actor')}
+      ${row('Prod.', companies, 'company')}
+    `;
+    const { loadStreamingProviders } = await import('./modal.js');
+    loadStreamingProviders(item.tmdbId, item.title, item.year, 'modal-streaming');
+  } catch(e) { /* silent */ }
+}
 
 // ── GLOBAL SEARCH ──
 
