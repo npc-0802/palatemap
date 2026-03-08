@@ -232,7 +232,7 @@ window.openWatchlistDetail = function(index) {
   const predHtml = predTotal != null ? `
     <div style="border-top:1px solid var(--rule);padding-top:20px;margin-top:4px;margin-bottom:20px">
       <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:14px">— we think you'd give this —</div>
-      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:28px">
         <span style="font-family:'Playfair Display',serif;font-size:60px;font-weight:900;font-style:italic;color:var(--blue);letter-spacing:-3px;line-height:1">~${(Math.round(predTotal*10)/10).toFixed(1)}</span>
         <span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--dim);letter-spacing:0.5px">${getLabel(Math.round(predTotal))}</span>
       </div>
