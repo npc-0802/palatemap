@@ -279,7 +279,42 @@ window.openFriendFilmDetail = function(index) {
   const m = friendMoviesCache?.[index];
   if (!m) return;
   const color = friendColorCache || 'var(--blue)';
+  const friendName = currentFriendCache?.display_name || 'Friend';
   document.getElementById('friend-film-modal')?.remove();
+
+  const total = m.total != null ? (Math.round(m.total * 10) / 10).toFixed(1) : '—';
+  const rankInFriendList = index + 1;
+  const poster = m.poster
+    ? `<img src="https://image.tmdb.org/t/p/w342${m.poster}" style="width:90px;height:135px;object-fit:cover;flex-shrink:0">`
+    : '';
+
+  // Check if user has already rated this film
+  const myFilm = MOVIES.find(x => x.title === m.title && String(x.year) === String(m.year));
+  const myTotal = myFilm ? (Math.round(myFilm.total * 10) / 10).toFixed(1) : null;
+  const myIdx = myFilm ? MOVIES.indexOf(myFilm) : -1;
+
+  // Check if already on watchlist
+  const onWatchlist = (currentUser?.watchlist || []).some(w =>
+    m.tmdbId ? String(w.tmdbId) === String(m.tmdbId) : w.title === m.title
+  );
+
+  const safeTitle = (m.title || '').replace(/'/g, "&#39;").replace(/"/g, '&quot;');
+
+  const actionHTML = myFilm
+    ? `<div style="display:flex;align-items:center;gap:10px;padding:16px 0;border-bottom:1px solid var(--rule)">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--dim)">Your score</div>
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:24px;color:var(--blue);letter-spacing:-0.5px">${myTotal}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">/100</div>
+        <div style="flex:1"></div>
+        <button onclick="document.getElementById('friend-film-modal').remove();openModal(${myIdx})" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;background:none;color:var(--blue);border:1px solid var(--blue);padding:6px 12px;cursor:pointer">View →</button>
+      </div>`
+    : `<div style="display:flex;gap:8px;padding:16px 0;border-bottom:1px solid var(--rule)">
+        ${onWatchlist
+          ? `<span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);padding:8px 0;align-self:center">On watch list ✓</span>`
+          : `<button onclick="friendFilmWatchlist(${index})" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.5px;background:none;color:var(--dim);border:1px solid var(--rule-dark);padding:8px 14px;cursor:pointer;white-space:nowrap">＋ Watchlist</button>`
+        }
+        <button onclick="document.getElementById('friend-film-modal').remove();window.showScreen('add');setTimeout(()=>{const inp=document.getElementById('f-search');if(inp){inp.value='${safeTitle}';window.liveSearch&&window.liveSearch('${safeTitle}');}},100)" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:8px 14px;cursor:pointer;white-space:nowrap">Rate now →</button>
+      </div>`;
 
   const scoreRows = CATS.map(c => {
     const val = m.scores?.[c];
@@ -293,30 +328,38 @@ window.openFriendFilmDetail = function(index) {
     </div>`;
   }).join('');
 
-  const total = m.total != null ? (Math.round(m.total * 10) / 10).toFixed(1) : '—';
-  const poster = m.poster ? `<img src="https://image.tmdb.org/t/p/w185${m.poster}" style="width:80px;height:120px;object-fit:cover;flex-shrink:0">` : '';
-
   const overlay = document.createElement('div');
   overlay.id = 'friend-film-modal';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(12,11,9,0.7);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px';
   overlay.innerHTML = `
-    <div style="background:var(--paper);max-width:460px;width:100%;padding:32px;border-top:3px solid ${color};max-height:85vh;overflow-y:auto">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
-        <span onclick="document.getElementById('friend-film-modal').remove()" style="font-family:'DM Mono',monospace;font-size:18px;color:var(--dim);cursor:pointer;line-height:1">×</span>
-      </div>
-      <div style="display:flex;gap:20px;margin-bottom:24px;align-items:flex-start">
+    <div style="background:var(--paper);max-width:460px;width:100%;border-top:3px solid ${color};max-height:85vh;overflow-y:auto">
+      <div style="background:var(--surface-dark);padding:24px 28px;display:flex;gap:18px;align-items:flex-start;position:relative">
+        <button onclick="document.getElementById('friend-film-modal').remove()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--on-dark-dim);line-height:1;padding:4px 8px">×</button>
         ${poster}
-        <div>
-          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:20px;color:var(--ink);line-height:1.2;margin-bottom:6px">${m.title}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-bottom:16px">${m.year || ''}${m.director ? ' · ' + m.director.split(',')[0] : ''}</div>
-          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:44px;color:${color};letter-spacing:-1px;line-height:1">${total}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-top:5px">/100</div>
+        <div style="flex:1;padding-top:4px;padding-right:28px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">Rank #${rankInFriendList} · ${friendName}</div>
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(16px,3vw,22px);line-height:1.2;color:var(--on-dark);margin-bottom:6px">${m.title}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);margin-bottom:14px">${m.year || ''}${m.director ? ' · ' + m.director.split(',')[0] : ''}</div>
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:38px;color:${color};letter-spacing:-1px;line-height:1">${total}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);margin-top:3px">/100</div>
         </div>
       </div>
-      <div>${scoreRows}</div>
+      <div style="padding:0 28px 28px">
+        ${actionHTML}
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);padding:16px 0 8px;border-bottom:1px solid var(--rule);margin-bottom:8px">${friendName}'s breakdown</div>
+        ${scoreRows}
+      </div>
     </div>`;
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
+};
+
+window.friendFilmWatchlist = function(index) {
+  const m = friendMoviesCache?.[index];
+  if (!m) return;
+  import('./watchlist.js').then(({ addToWatchlist }) => {
+    addToWatchlist({ tmdbId: m.tmdbId, title: m.title, year: m.year, poster: m.poster, director: m.director });
+  });
 };
 
 window.openEntityStub = async function(name, isPerson) {
