@@ -1,4 +1,4 @@
-import { currentUser, setCurrentUser, MOVIES, CATEGORIES } from '../state.js';
+import { currentUser, setCurrentUser, MOVIES, CATEGORIES, getLabel } from '../state.js';
 import { syncToSupabase, saveUserLocally } from './supabase.js';
 
 const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
@@ -74,6 +74,7 @@ function watchlistRow(item, i) {
     ? `<div style="display:flex;align-items:baseline;gap:5px;margin-top:6px">
         <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.5px">you'd give</span>
         <span style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:16px;color:var(--blue);letter-spacing:-0.5px">~${(Math.round(predTotal*10)/10).toFixed(1)}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.5px">· ${getLabel(Math.round(predTotal))}</span>
       </div>`
     : isPending
       ? `<div class="wl-pred-pending">
@@ -231,10 +232,11 @@ window.openWatchlistDetail = function(index) {
   const predHtml = predTotal != null ? `
     <div style="border-top:1px solid var(--rule);padding-top:20px;margin-top:4px;margin-bottom:20px">
       <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:14px">— we think you'd give this —</div>
-      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">
         <span style="font-family:'Playfair Display',serif;font-size:60px;font-weight:900;font-style:italic;color:var(--blue);letter-spacing:-3px;line-height:1">~${(Math.round(predTotal*10)/10).toFixed(1)}</span>
         <span style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);line-height:1.4">based on<br>your palate</span>
       </div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.5px;margin-bottom:16px">${getLabel(Math.round(predTotal))}</div>
       ${prediction.prediction.reasoning ? `
         <div style="padding:16px 20px;background:var(--surface-dark);border-radius:6px;margin-bottom:16px">
           <div style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--on-dark-dim);margin-bottom:8px">Here's our thinking</div>
