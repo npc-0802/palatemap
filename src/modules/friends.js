@@ -9,6 +9,7 @@ const PROXY_URL = 'https://palate-map-proxy.noahparikhcott.workers.dev';
 const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 
 let friendsCache = null;
+let incomingCache = null;
 let inviteToken = null;
 let searchDebounceTimer = null;
 let friendMoviesCache = null;
@@ -63,6 +64,7 @@ export function renderFriends() {
     loadPendingOutgoing(currentUser.id)
   ]).then(([friends, incoming, outgoing]) => {
     friendsCache = friends;
+    incomingCache = incoming;
     updateFriendsNotificationDot(0);
     const area = document.getElementById('friends-list-area');
     if (area) area.outerHTML = friendListHTML(friends, incoming, outgoing);
@@ -202,6 +204,16 @@ window.unfriend = async function(friendId, friendName) {
   renderFriends();
 };
 
+window.scrollToIncomingRequests = function() {
+  const el = document.getElementById('friends-incoming-requests');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Clear search so the incoming block is visible
+  const input = document.getElementById('friends-search-input');
+  const results = document.getElementById('friends-search-results');
+  if (input) input.value = '';
+  if (results) results.innerHTML = '';
+};
+
 window.friendSearchDebounce = function() {
   clearTimeout(searchDebounceTimer);
   searchDebounceTimer = setTimeout(window.friendSearch, 300);
@@ -220,17 +232,24 @@ window.friendSearch = async function() {
     return;
   }
   const friendIds = new Set((friendsCache || []).map(f => f.id));
+  const incomingIds = new Set((incomingCache || []).map(f => f.id));
   results.innerHTML = users.map(u => {
     const isFriend = friendIds.has(u.id);
+    const hasRequestedMe = incomingIds.has(u.id);
+    let action;
+    if (isFriend) {
+      action = `<span onclick="openFriendProfile('${u.id}')" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);cursor:pointer;text-decoration:underline">View →</span>`;
+    } else if (hasRequestedMe) {
+      action = `<span onclick="scrollToIncomingRequests()" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--action);cursor:pointer;text-decoration:underline">Accept request →</span>`;
+    } else {
+      action = `<button id="add-btn-${u.id}" onclick="addFriendFromSearch('${u.id}')" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:6px 14px;cursor:pointer">Add</button>`;
+    }
     return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--rule)">
       <div style="flex:1">
         <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink)">${u.display_name} <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">@${u.username || ''}</span></div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px">${u.archetype || ''}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px">${u.archetype || ''}${hasRequestedMe ? ' · sent you a request' : ''}</div>
       </div>
-      ${isFriend
-        ? `<span onclick="openFriendProfile('${u.id}')" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);cursor:pointer;text-decoration:underline">View →</span>`
-        : `<button id="add-btn-${u.id}" onclick="addFriendFromSearch('${u.id}')" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:6px 14px;cursor:pointer">Add</button>`
-      }
+      ${action}
     </div>`;
   }).join('');
 };
@@ -673,7 +692,7 @@ function friendListHTML(friends, incoming = [], outgoing = []) {
     </div>`;
 
   const incomingHTML = incoming.length > 0 ? `
-    <div style="margin-bottom:24px;padding:16px 20px;background:#FDF1EC;border-left:3px solid var(--action)">
+    <div id="friends-incoming-requests" style="margin-bottom:24px;padding:16px 20px;background:#FDF1EC;border-left:3px solid var(--action)">
       <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--action);margin-bottom:12px">${incoming.length} pending request${incoming.length !== 1 ? 's' : ''}</div>
       ${incoming.map(u => {
         const color = ARCHETYPES[u.archetype]?.palette || 'var(--blue)';
