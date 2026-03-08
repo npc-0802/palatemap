@@ -69,12 +69,18 @@ function watchlistRow(item, i) {
     : `<div style="width:40px;height:60px;background:var(--rule);flex-shrink:0"></div>`;
   const prediction = item.tmdbId ? currentUser?.predictions?.[String(item.tmdbId)] : null;
   const predTotal = prediction ? calcWlPredictedTotal(prediction.prediction) : null;
+  const isPending = predTotal == null && item.tmdbId && MOVIES.length >= 10;
   const predLine = predTotal != null
     ? `<div style="display:flex;align-items:baseline;gap:5px;margin-top:6px">
         <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.5px">you'd give</span>
         <span style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:16px;color:var(--blue);letter-spacing:-0.5px">~${(Math.round(predTotal*10)/10).toFixed(1)}</span>
       </div>`
-    : '';
+    : isPending
+      ? `<div class="wl-pred-pending">
+          <span>estimating</span>
+          <div class="wl-pred-pending-dots"><i></i><i></i><i></i></div>
+        </div>`
+      : '';
   return `
     <div onclick="openWatchlistDetail(${i})" style="display:flex;align-items:center;gap:14px;padding:12px;border-bottom:1px solid var(--rule);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
       ${poster}
