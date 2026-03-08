@@ -1,5 +1,5 @@
 Palate Map
-Product Brief · Living Document · v3.12
+Product Brief · Living Document · v3.13
 Last updated: March 2026
 Confidential — do not distribute
 
@@ -169,12 +169,16 @@ Derived from 6-question onboarding quiz. Editable post-onboarding via weight edi
 
 06  Screens & Features (Current)
 Cold Landing
-Full-screen overlay for new/logged-out users. Headline: "Taste is everything." Supporting copy: "Everyone has a palate. The films you love are trying to tell you something about yourself. Palate Map listens — and shows you the pattern." Single persimmon CTA: "Discover your taste →". Footer: "Starting with film. Expanding to everything."
+Full-screen overlay for new/logged-out users. Layout: centered hero ("Taste is everything." + "Everyone has a palate. Palate Map maps yours."), then a rule, then a 50/50 grid (responsive, stacks under 760px).
+Left column: 4 numbered value props with blue number markers (01–04): "Your formula. Not an algorithm." / "Know if you'll love it before you watch." / "Rate what you've seen. Discover what you are." / "Taste is more interesting next to someone else's." — each with a 2-line description, no jargon, new-user-friendly.
+Right column: dark surface card ("Your taste has a shape. Let's find it." + brand copy), Google sign-in button, "or" divider, "Continue with email →" (persimmon), Log in / Import links in readable on-dark contrast. Card stretches to match left column height. Footer: "Starting with film. Expanding to everything."
 
 Onboarding (3 entry points)
-New user: cold landing → auth step (Google OAuth primary, or name + email → magic link) → 6-question quiz (dark surface intro block: "Six questions. Your taste, revealed.") → archetype reveal (dark surface: name + description + quote + secondary + username) → "Enter Palate Map →".
+New user: cold landing → auth step (Google OAuth primary, or name + email → magic link) → 6-question quiz (dark surface intro block: "Six questions. Your taste, revealed.") → archetype reveal (dark surface: name + description + quote + secondary + username) → "Enter Palate Map →" → welcome modal (one-time, localStorage flag).
 Returning user: "Log in →" link on auth step. Shows Google OAuth or email-only magic link (no name field). On click: redirects to Google or sends magic link. Supabase session auto-loads profile on return. Legacy profiles with no auth_id are auto-linked on first sign-in (auth session linked to localStorage user, auth_id + email written to Supabase row).
 Letterboxd import: drag-and-drop ratings.csv → parses star ratings (×20 = score) → loads films → proceeds to quiz. CTA on name step ("On Letterboxd? Import your ratings →").
+Quiz overlay: flex-column, flex-start, 48px top padding so content is scrollable and never clips. "← Start over" button renders below the card (outside it) when a pending auth session exists — plain border style, visually separated, hidden on all non-quiz steps.
+Welcome modal: fires once after obFinish() (palatemap_welcome_shown localStorage flag). Shows name + archetype type + 3 first steps (rate 10 films / try Predict / invite a friend). "Let's go →" dismisses.
 
 Rankings (Main Screen)
 Default: poster grid (5 columns). Sort pills above grid control sort order + which score badge shows on each card. Toggle to table view (8 category columns + total).
@@ -375,4 +379,4 @@ Resend key:            stored in Cloudflare env var RESEND_API_KEY only
 GitHub repo:           github.com/npc-0802/palatemap (private)
 GitHub Pages:          palatemap.com (custom domain)
 
-Palate Map · private product brief · v3.12 · do not distribute
+Palate Map · private product brief · v3.13 · do not distribute
