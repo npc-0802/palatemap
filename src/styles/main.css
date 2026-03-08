@@ -300,7 +300,7 @@ body {
 /* ── COLD LANDING ── */
 .cold-landing-grid {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr 1fr;
   gap: 64px;
   align-items: start;
 }
