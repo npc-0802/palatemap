@@ -17,6 +17,7 @@ let starterRated = [];        // tmdbIds of films rated during starters
 let starterScores = {};       // { tmdbId: { scores, total } }
 let starterShowMore = false;  // whether "show me more" has been tapped
 let starterExpandedId = null; // tmdbId of currently expanded rating card
+let starterFineTune = false;  // whether fine-tune sliders are shown
 
 let _obStartTime = null;
 
@@ -485,14 +486,16 @@ window.obFinishFromReveal = function() {
     obFinish(obRevealResult.primary, obRevealResult.secondary || '', arch.weights, obRevealResult.harmonySensitivity);
     return;
   }
-  // Cross-fade to starters
+  // Transition: fade out ob-card, shift overlay to dark, render starters
   const card = document.getElementById('ob-card-content');
+  const overlay = document.getElementById('onboarding-overlay');
   card.classList.add('ob-reveal-exit');
   setTimeout(() => {
+    overlay.classList.add('starters-mode');
     card.classList.remove('ob-reveal-exit');
     obStep = 'starters';
     renderObStep();
-  }, 300);
+  }, 400);
 };
 
 // ── STARTER FILMS ──
@@ -507,6 +510,36 @@ function getStarterDefaults() {
     defaults[cat.key] = Math.round(Math.min(95, 72 + (w / maxWeight) * 12));
   });
   return defaults;
+}
+
+function singleSliderToScores(overallScore) {
+  const weights = ARCHETYPES[obRevealResult.primary]?.weights || {};
+  const maxW = Math.max(...Object.values(weights), 1);
+  const scores = {};
+  CATEGORIES.forEach(cat => {
+    const w = weights[cat.key] || 1;
+    const importance = w / maxW; // 0–1
+    const pull = 65;
+    const tracking = 0.6 + (importance * 0.4); // 0.6–1.0
+    scores[cat.key] = Math.round(overallScore * tracking + pull * (1 - tracking));
+  });
+  return scores;
+}
+
+function groupFilmsByGenre(films) {
+  const dramaTypes = new Set(['Drama', 'Thriller', 'Crime', 'Romance', 'War', 'History', 'Mystery', 'Western', 'Documentary']);
+  const group1 = [], group2 = [];
+  films.forEach(f => {
+    if (dramaTypes.has(f.genre)) group1.push(f);
+    else group2.push(f);
+  });
+  // Balance: if one group is empty, split evenly
+  if (group1.length === 0) return [{ label: 'Selected for you', films }];
+  if (group2.length === 0) return [{ label: 'Selected for you', films }];
+  return [
+    { label: 'Dramas & thrillers', films: group1 },
+    { label: 'Sci-fi, animation & more', films: group2 }
+  ];
 }
 
 function getStarterFilms() {
@@ -542,42 +575,61 @@ function renderStarterFilms() {
   const palColor = arch?.palette || '#3d5a80';
   const { initial, extra } = getStarterFilms();
   const allFilms = [...initial, ...extra];
-  const pct = Math.min(100, Math.round((starterRated.length / 10) * 100));
   const nudge = getNudgeMessage();
+
+  // Progress circles
+  const circles = Array.from({ length: 10 }, (_, i) => {
+    const scored = starterRated[i];
+    const data = scored ? starterScores[scored] : null;
+    const total = data ? Math.round(data.total) : '';
+    return '<div class="starter-progress-circle' + (scored ? ' scored' : '') + '"' +
+      (scored ? ' style="border-color:' + palColor + ';color:' + palColor + '"' : '') +
+      '>' + total + '</div>';
+  }).join('');
+
+  // Genre-grouped grid
+  const groups = groupFilmsByGenre(allFilms.slice(0, 8));
+  let gridIdx = 0;
+  const gridsHTML = groups.map((g, gi) => {
+    const cardsHTML = g.films.map(film => {
+      const html = renderStarterCard(film, gridIdx, palColor);
+      gridIdx++;
+      return html;
+    }).join('');
+    return '<div class="starter-genre-label">' + g.label + '</div><div class="starter-grid">' + cardsHTML + '</div>';
+  }).join('');
+
+  // Extra films (from "show me more")
+  const extraHTML = extra.length > 0 ? '<div class="starter-genre-label">More films</div><div class="starter-grid">' +
+    extra.map(film => { const h = renderStarterCard(film, gridIdx, palColor); gridIdx++; return h; }).join('') + '</div>' : '';
 
   card.innerHTML = `
     <div class="ob-starters-enter">
-      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:12px">your palate · starter films</div>
-      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(22px,5vw,28px);line-height:1.15;color:${palColor};letter-spacing:-0.5px;margin-bottom:12px">Films ${obRevealResult.primary}s tend to love.</div>
-      <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--on-dark);opacity:0.75;line-height:1.6;margin-bottom:20px">Have you seen any of these? Tap to rate — it only takes a minute.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:${palColor};margin-bottom:10px">your palate · ${obRevealResult.primary}</div>
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(24px,5vw,32px);line-height:1.1;color:var(--on-dark);letter-spacing:-0.5px;margin-bottom:10px">Let's start with what you know.</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:15px;color:var(--on-dark);opacity:0.7;line-height:1.6;margin-bottom:24px;max-width:480px">These are films ${obRevealResult.primary}s tend to connect with — chosen because they reward ${arch?.starterDescription || 'what your palate values most'}. Have you seen any?</div>
 
-      ${starterRated.length > 0 ? `
-        <div style="margin-bottom:16px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);letter-spacing:1px">${starterRated.length} of 10 rated</span>
-            <span style="font-family:'DM Mono',monospace;font-size:10px;color:${palColor};letter-spacing:0.5px">${nudge}</span>
-          </div>
-          <div style="height:3px;background:rgba(244,239,230,0.1);overflow:hidden">
-            <div class="starter-progress-fill" style="height:100%;background:${palColor};width:${pct}%"></div>
-          </div>
-        </div>
-      ` : ''}
-
-      <div class="starter-grid">
-        ${allFilms.map((film, i) => renderStarterCard(film, i, palColor)).join('')}
+      <div style="margin-bottom:24px">
+        <div class="starter-progress-circles">${circles}</div>
+        ${nudge ? '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;color:var(--on-dark);text-align:center;margin-bottom:4px">' + nudge + '</div>' : ''}
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);text-align:center;letter-spacing:0.5px">${10 - starterRated.length > 0 ? (10 - starterRated.length) + ' more to unlock predictions' : ''}</div>
       </div>
+
+      ${gridsHTML}
+      ${extraHTML}
+
       ${starterExpandedId != null ? renderStarterRateCard(allFilms.find(f => f.tmdbId === starterExpandedId), palColor) : ''}
 
       ${!starterShowMore ? `
-        <div style="text-align:center;margin-top:20px">
-          <span style="font-family:'DM Mono',monospace;font-size:10px;color:${palColor};cursor:pointer;letter-spacing:1px" onclick="starterShowMoreFilms()">Show me more →</span>
+        <div style="text-align:center;margin-top:24px">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);cursor:pointer;letter-spacing:1px" onclick="starterShowMoreFilms()">Not seeing anything familiar? &nbsp;<span style="color:${palColor}">Show me different films →</span></span>
         </div>
       ` : ''}
 
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding-top:16px;border-top:1px solid rgba(244,239,230,0.1)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:16px;border-top:1px solid rgba(244,239,230,0.1)">
         <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);cursor:pointer;letter-spacing:0.5px" onclick="starterSkipToSearch()">Skip to search →</span>
         ${starterRated.length >= 10 ? `
-          <button class="ob-btn" style="margin:0;background:${palColor}" onclick="starterFinish()">Enter Palate Map →</button>
+          <button class="ob-btn" style="margin:0;background:${palColor};font-size:13px;padding:12px 28px" onclick="starterFinish()">Enter Palate Map →</button>
         ` : starterRated.length > 0 ? `
           <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);cursor:pointer;letter-spacing:0.5px" onclick="starterFinish()">Done for now →</span>
         ` : ''}
@@ -588,85 +640,99 @@ function renderStarterFilms() {
 
 function renderStarterCard(film, idx, palColor) {
   const isRated = starterRated.includes(film.tmdbId);
-  const isExpanded = starterExpandedId === film.tmdbId;
   const alreadyInMovies = MOVIES.some(m => String(m.tmdbId) === String(film.tmdbId));
-  const posterUrl = film.poster ? `https://image.tmdb.org/t/p/w185${film.poster}` : null;
+  const posterUrl = film.poster ? 'https://image.tmdb.org/t/p/w185' + film.poster : null;
   const ratedData = starterScores[film.tmdbId];
-  const badgeHtml = (isRated || alreadyInMovies) && ratedData ? `
-    <div class="starter-badge-enter" style="position:absolute;top:6px;right:6px;background:var(--surface-dark);border:1px solid ${palColor};padding:2px 6px;font-family:'DM Mono',monospace;font-size:10px;color:${palColor};letter-spacing:0.5px">${Math.round(ratedData.total)}</div>
-  ` : '';
+  const done = isRated || alreadyInMovies;
+  const badgeHtml = done && ratedData
+    ? '<div class="starter-badge-enter" style="position:absolute;top:6px;right:6px;background:var(--surface-dark);border:1px solid ' + palColor + ';padding:2px 6px;font-family:\'DM Mono\',monospace;font-size:10px;color:' + palColor + ';letter-spacing:0.5px">' + Math.round(ratedData.total) + '</div>'
+    : '';
 
-  return `
-    <div class="starter-card-wrap" style="animation-delay:${idx * 60}ms">
-      <div class="starter-card ${isRated || alreadyInMovies ? 'rated' : ''}"
-           onclick="${!alreadyInMovies && !isRated ? `starterTapFilm(${film.tmdbId})` : ''}"
-           style="${isExpanded ? `border-color:${palColor}` : ''}">
-        <div style="position:relative;overflow:hidden;aspect-ratio:2/3">
-          ${posterUrl ? `<img src="${posterUrl}" alt="${film.title}" style="width:100%;height:100%;object-fit:cover;display:block;${isRated || alreadyInMovies ? 'opacity:0.6' : ''}">` : `<div style="width:100%;height:100%;background:var(--surface-dark);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">No poster</div>`}
-          ${badgeHtml}
-        </div>
-        <div style="padding:8px 4px 4px">
-          <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:13px;color:var(--on-dark);line-height:1.2;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${film.title}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim)">${film.year} · ${(film.director || '').split(',')[0]}</div>
-        </div>
-      </div>
-    </div>
-  `;
+  const posterHtml = posterUrl
+    ? '<img src="' + posterUrl + '" alt="' + film.title + '">'
+    : '<div style="width:100%;aspect-ratio:2/3;background:var(--surface-dark);display:flex;align-items:center;justify-content:center;font-family:\'DM Mono\',monospace;font-size:10px;color:var(--dim)">No poster</div>';
+
+  return '<div class="starter-card-wrap" style="animation-delay:' + (idx * 60) + 'ms">' +
+    '<div class="starter-card-v2' + (done ? ' rated' : '') + '"' +
+    ' onclick="' + (!done ? 'starterTapFilm(' + film.tmdbId + ')' : '') + '">' +
+    '<div style="position:relative">' + posterHtml + badgeHtml + '</div>' +
+    '<div class="starter-card-v2-body">' +
+    '<div class="starter-card-v2-title">' + film.title + '</div>' +
+    '<div class="starter-card-v2-meta">' + film.year + ' · ' + (film.director || '').split(',')[0] + '</div>' +
+    '</div></div></div>';
+}
+
+function getScoreLabel(v) {
+  if (v >= 90) return 'All-time great';
+  if (v >= 80) return 'Excellent';
+  if (v >= 70) return 'Great';
+  if (v >= 60) return 'A cut above';
+  if (v >= 50) return 'Solid';
+  if (v >= 40) return 'Sub-par';
+  return 'Poor';
 }
 
 function renderStarterRateCard(film, palColor) {
   if (!film) return '';
-  const defaults = getStarterDefaults();
-  const existing = starterScores[film.tmdbId]?.scores || {};
-  const posterUrl = film.poster ? `https://image.tmdb.org/t/p/w92${film.poster}` : null;
+  const data = starterScores[film.tmdbId];
+  const overallVal = data ? Math.round(data.total) : 75;
+  const scores = data?.scores || singleSliderToScores(75);
+  const posterUrl = film.poster ? 'https://image.tmdb.org/t/p/w92' + film.poster : null;
+  const isMobile = window.innerWidth <= 768;
 
-  return `
-    <div class="starter-rate-card open" style="border-left:3px solid ${palColor};margin-top:16px">
-      <div style="display:flex;gap:14px;margin-bottom:14px;align-items:center">
-        ${posterUrl ? `<img src="${posterUrl}" style="width:46px;flex-shrink:0">` : ''}
-        <div style="flex:1;min-width:0">
-          <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:16px;color:var(--on-dark)">${film.title}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim)">${film.year} · ${film.director || ''}</div>
-        </div>
-        <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);cursor:pointer;text-decoration:underline;flex-shrink:0" onclick="starterCollapseCard()">← Back</span>
-      </div>
-      <div class="starter-sliders-grid">
-        ${CATEGORIES.map(cat => {
-          const val = existing[cat.key] ?? defaults[cat.key];
-          return `
-          <div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-              <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);text-transform:uppercase;letter-spacing:0.5px">${cat.label}</span>
-              <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark)" id="starter-sv-${film.tmdbId}-${cat.key}">${val}</span>
-            </div>
-            <input type="range" min="1" max="100" value="${val}" class="starter-slider"
-              oninput="starterSliderChange(${film.tmdbId}, '${cat.key}', this.value)">
-          </div>`;
-        }).join('')}
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px">
-        <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);cursor:pointer;text-decoration:underline" onclick="document.getElementById('starter-score-guide-${film.tmdbId}').style.display=document.getElementById('starter-score-guide-${film.tmdbId}').style.display==='none'?'block':'none'">What do the numbers mean?</span>
-        <button class="ob-btn" style="margin:0;padding:10px 24px;background:${palColor}" onclick="starterRateFilm(${film.tmdbId})">Rate this film →</button>
-      </div>
-      <div id="starter-score-guide-${film.tmdbId}" style="display:none;margin-top:10px;font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);line-height:1.8">
-        90+ All-time favorite · 80 Excellent · 70 Great · 60 A cut above · 50 Solid · 40 Sub-par · 30 Poor
-      </div>
-    </div>
-  `;
+  // Fine-tune 8-slider grid (hidden by default)
+  let fineTuneHTML = '';
+  if (starterFineTune) {
+    const sliders = CATEGORIES.map(function(cat) {
+      const val = scores[cat.key] || 65;
+      return '<div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">' +
+        '<span style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--on-dark-dim);text-transform:uppercase;letter-spacing:0.5px">' + cat.label + '</span>' +
+        '<span style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--on-dark)" id="starter-sv-' + film.tmdbId + '-' + cat.key + '">' + val + '</span>' +
+        '</div>' +
+        '<input type="range" min="1" max="100" value="' + val + '" class="starter-slider" oninput="starterSliderChange(' + film.tmdbId + ',\'' + cat.key + '\',this.value)">' +
+        '</div>';
+    }).join('');
+    fineTuneHTML = '<div class="starter-sliders-grid" style="margin-top:16px">' + sliders + '</div>';
+  }
+
+  return '<div class="starter-rate-card' + (isMobile ? ' mobile-sheet' : '') + '" style="border-left:3px solid ' + palColor + '">' +
+    '<div style="display:flex;gap:14px;margin-bottom:20px;align-items:center">' +
+    (posterUrl ? '<img src="' + posterUrl + '" style="width:46px;flex-shrink:0">' : '') +
+    '<div style="flex:1;min-width:0">' +
+    '<div style="font-family:\'Playfair Display\',serif;font-style:italic;font-size:16px;color:var(--on-dark)">' + film.title + '</div>' +
+    '<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--on-dark-dim)">' + film.year + ' · ' + (film.director || '') + '</div>' +
+    '</div>' +
+    '<span style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--on-dark-dim);cursor:pointer;text-decoration:underline;flex-shrink:0" onclick="starterCollapseCard()">\u2190 Back</span>' +
+    '</div>' +
+    // Single gut-feeling slider
+    '<div style="text-align:center;margin-bottom:8px">' +
+    '<div class="starter-single-slider-value" id="starter-overall-val" style="color:' + palColor + '">' + overallVal + '</div>' +
+    '<div class="starter-single-slider-label">' + getScoreLabel(overallVal) + '</div>' +
+    '</div>' +
+    '<input type="range" min="1" max="100" value="' + overallVal + '" class="starter-slider" style="margin-bottom:4px" oninput="starterSingleSliderChange(' + film.tmdbId + ',this.value)">' +
+    '<div style="display:flex;justify-content:space-between;font-family:\'DM Mono\',monospace;font-size:8px;color:var(--on-dark-dim);letter-spacing:0.5px;margin-bottom:16px"><span>Poor</span><span>All-time great</span></div>' +
+    // Fine-tune toggle + grid
+    '<div style="display:flex;align-items:center;justify-content:space-between">' +
+    '<button class="starter-finetune-toggle" onclick="starterToggleFineTune()">' + (starterFineTune ? 'Hide category scores \u2191' : 'Fine-tune each category \u2193') + '</button>' +
+    '<button class="ob-btn" style="margin:0;padding:10px 24px;background:' + palColor + '" onclick="starterRateFilm(' + film.tmdbId + ')">Rate \u2192</button>' +
+    '</div>' +
+    fineTuneHTML +
+    '</div>';
 }
 
 window.starterTapFilm = function(tmdbId) {
   if (starterRated.includes(tmdbId)) return;
   starterExpandedId = tmdbId;
-  // Initialize scores with defaults
+  starterFineTune = false;
+  // Initialize with single-slider default of 75
   if (!starterScores[tmdbId]) {
-    const defaults = getStarterDefaults();
-    starterScores[tmdbId] = { scores: { ...defaults }, total: calcTotal(defaults) };
+    const scores = singleSliderToScores(75);
+    starterScores[tmdbId] = { scores, total: calcTotal(scores) };
   }
   renderStarterFilms();
-  // Scroll the expanded card into view
   setTimeout(() => {
-    const card = document.querySelector('.starter-rate-card.open');
+    const card = document.querySelector('.starter-rate-card');
     if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, 50);
 };
@@ -676,19 +742,47 @@ window.starterCollapseCard = function() {
   renderStarterFilms();
 };
 
+window.starterSingleSliderChange = function(tmdbId, val) {
+  val = parseInt(val);
+  if (!starterFineTune) {
+    // Map single score to all 8 categories
+    const scores = singleSliderToScores(val);
+    starterScores[tmdbId] = { scores, total: calcTotal(scores) };
+  } else {
+    // In fine-tune mode, just update the total display
+    starterScores[tmdbId].total = val;
+  }
+  const valEl = document.getElementById('starter-overall-val');
+  if (valEl) { valEl.textContent = val; }
+  const labelEl = valEl?.nextElementSibling;
+  if (labelEl) labelEl.textContent = getScoreLabel(val);
+};
+
 window.starterSliderChange = function(tmdbId, catKey, val) {
   val = parseInt(val);
-  if (!starterScores[tmdbId]) starterScores[tmdbId] = { scores: { ...getStarterDefaults() }, total: 0 };
+  if (!starterScores[tmdbId]) starterScores[tmdbId] = { scores: singleSliderToScores(75), total: 0 };
   starterScores[tmdbId].scores[catKey] = val;
   starterScores[tmdbId].total = calcTotal(starterScores[tmdbId].scores);
-  const el = document.getElementById(`starter-sv-${tmdbId}-${catKey}`);
+  var el = document.getElementById('starter-sv-' + tmdbId + '-' + catKey);
   if (el) el.textContent = val;
+  // Update overall display
+  var valEl = document.getElementById('starter-overall-val');
+  if (valEl) valEl.textContent = Math.round(starterScores[tmdbId].total);
+};
+
+window.starterToggleFineTune = function() {
+  starterFineTune = !starterFineTune;
+  renderStarterFilms();
+  setTimeout(function() {
+    var card = document.querySelector('.starter-rate-card');
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 50);
 };
 
 window.starterRateFilm = async function(tmdbId) {
   const filmData = [...(STARTER_FILMS[obRevealResult.primary] || []), ...(STARTER_FILMS.universal || [])].find(f => f.tmdbId === tmdbId);
   if (!filmData || starterRated.includes(tmdbId)) return;
-  const scores = starterScores[tmdbId]?.scores || getStarterDefaults();
+  const scores = starterScores[tmdbId]?.scores || singleSliderToScores(75);
   const total = calcTotal(scores);
 
   // Build the film object with pre-baked metadata
@@ -705,7 +799,22 @@ window.starterRateFilm = async function(tmdbId) {
   starterRated.push(tmdbId);
   starterScores[tmdbId] = { scores: { ...scores }, total };
   starterExpandedId = null;
-  renderStarterFilms();
+  starterFineTune = false;
+
+  // Show score stamp on the poster card before re-rendering
+  const cardEl = document.querySelector('.starter-card-v2[onclick*="' + tmdbId + '"]');
+  if (cardEl) {
+    const imgWrap = cardEl.querySelector('div');
+    if (imgWrap) {
+      const stamp = document.createElement('div');
+      stamp.className = 'starter-score-stamp';
+      stamp.textContent = Math.round(total);
+      imgWrap.style.position = 'relative';
+      imgWrap.appendChild(stamp);
+    }
+  }
+  // Re-render after stamp animation plays
+  setTimeout(function() { renderStarterFilms(); }, 800);
 
   // Lazy-load full TMDB metadata in background
   try {

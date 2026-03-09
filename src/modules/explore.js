@@ -99,6 +99,9 @@ export function renderExploreIndex(tab) {
 }
 
 export function exploreEntity(type, name) {
+  localStorage.setItem('pm_hint_entity_clicked', '1');
+  const hintEl = document.getElementById('hint-analysis_entities');
+  if (hintEl) { hintEl.style.opacity = '0'; setTimeout(() => hintEl.remove(), 200); }
   const fmEl = document.getElementById('filmModal');
   fmEl.classList.remove('visible');
   fmEl.classList.remove('open');

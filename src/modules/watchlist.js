@@ -1,6 +1,7 @@
 import { currentUser, setCurrentUser, MOVIES, CATEGORIES, getLabel } from '../state.js';
 import { syncToSupabase, saveUserLocally } from './supabase.js';
 import { isNewTerritory, DISCOVERY_ICON_SVG } from './predict.js';
+import { shouldShowHint, renderHint } from './hints.js';
 
 const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 let wlSearchDebounce = null;
@@ -91,11 +92,18 @@ function sortPill(mode, label) {
 
 function listHTML(list) {
   const sorted = wlGetSortedList(list);
+  const hasPrediction = list.some(item => item.tmdbId && currentUser?.predictions?.[String(item.tmdbId)]);
+  const wlHint = hasPrediction && shouldShowHint('watchlist_predict', () => {
+    const visits = parseInt(localStorage.getItem('pm_wl_visits') || '0') + 1;
+    localStorage.setItem('pm_wl_visits', String(visits));
+    return visits <= 3;
+  }) ? renderHint('watchlist_predict', 'Scores are predicted by your taste profile — tap any film to see the reasoning.') : '';
   return `
     <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:16px;gap:4px">
       ${sortPill('added', 'Added')}
       ${sortPill('score', 'Score ↓')}
     </div>
+    ${wlHint}
     <div id="wl-list" class="wl-grid">${sorted.map(({ item, originalIndex }) => watchlistCard(item, originalIndex)).join('')}</div>`;
 }
 

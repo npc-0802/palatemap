@@ -1,4 +1,5 @@
 import { MOVIES, CATEGORIES, scoreClass } from '../state.js';
+import { shouldShowHint, renderHint } from './hints.js';
 
 let currentSort = { key: 'total', dir: 'desc' };
 let viewMode = 'grid';
@@ -75,6 +76,9 @@ export function setViewMode(mode) {
 }
 
 export function sortBy(key) {
+  localStorage.setItem('pm_hint_sort_clicked', '1');
+  const sortHintEl = document.getElementById('hint-rankings_sort');
+  if (sortHintEl) { sortHintEl.style.opacity = '0'; setTimeout(() => sortHintEl.remove(), 200); }
   if (currentSort.key === key) {
     currentSort.dir = currentSort.dir === 'desc' ? 'asc' : 'desc';
   } else {
@@ -122,10 +126,14 @@ export function renderRankings() {
 
 function toolbar(active) {
   const sortKey = currentSort.key;
+  const sortHint = viewMode === 'grid' && shouldShowHint('rankings_sort', () => MOVIES.length >= 10 && !localStorage.getItem('pm_hint_sort_clicked'))
+    ? renderHint('rankings_sort', 'Sort by any category to see which films score highest in what you care about most.')
+    : '';
   const pills = viewMode === 'grid' ? `
     <div class="sort-pills">
       ${SORT_CATS.map(c => `<button class="sort-pill${sortKey === c.key ? ' active' : ''}" onclick="sortBy('${c.key}')">${c.label}</button>`).join('')}
-    </div>` : '<div></div>';
+    </div>
+    ${sortHint}` : '<div></div>';
   return `<div class="rankings-toolbar">
     ${pills}
     <div class="view-toggle">

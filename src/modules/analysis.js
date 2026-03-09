@@ -1,5 +1,6 @@
 import { MOVIES, CATEGORIES } from '../state.js';
 import { renderExploreIndex } from './explore.js';
+import { shouldShowHint, renderHint } from './hints.js';
 
 export function renderAnalysis() {
   const avg = arr => arr.length ? Math.round(arr.reduce((s,v) => s+v, 0) / arr.length * 100) / 100 : null;
@@ -28,6 +29,14 @@ export function renderAnalysis() {
       </div>
 
       <!-- CATEGORY AVERAGES -->
+      ${(() => {
+        const filtered = catAvgs.filter(c => c.avg != null && !isNaN(c.avg));
+        const topCat = filtered.length ? filtered.reduce((a, b) => (b.avg > a.avg ? b : a)) : null;
+        if (shouldShowHint('analysis_settling', () => MOVIES.length < 20) && topCat) {
+          return renderHint('analysis_settling', 'Your averages are still settling — they\'ll sharpen as you rate more films. Right now your strongest category is <strong>' + topCat.label + '</strong> at ' + topCat.avg + '.');
+        }
+        return '';
+      })()}
       <div style="margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--rule)">
         <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:20px">Category averages · all films</div>
         ${(() => {
@@ -61,6 +70,9 @@ export function renderAnalysis() {
       </div>
 
       <!-- EXPLORE SECTION -->
+      ${shouldShowHint('analysis_entities', () => MOVIES.length >= 5 && !localStorage.getItem('pm_hint_entity_clicked'))
+        ? renderHint('analysis_entities', 'Tap any tab below to see your top directors, actors, and studios — ranked by your scores.')
+        : ''}
       <div id="explore-section"></div>
 
     </div>

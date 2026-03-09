@@ -3,6 +3,7 @@ import { ARCHETYPES } from '../data/archetypes.js';
 import { saveToStorage } from './storage.js';
 import { syncToSupabase } from './supabase.js';
 import { updateDisplayName, updateUsername, exportFullData, exportFilmsCSV } from './account.js';
+import { shouldShowHint, renderHint } from './hints.js';
 
 let profileImportedMovies = null;
 
@@ -254,6 +255,13 @@ window.profileConfirmImport = async function() {
   window.showScreen?.('calibrate');
 };
 
+function radarLegend(archetype) {
+  if (shouldShowHint('profile_radar', () => true) && archetype) {
+    return renderHint('profile_radar', 'Solid line is your weighting. Dashed is a typical <strong>' + archetype + '</strong>. Where they diverge is what makes your palate unique. <span style="color:var(--blue);cursor:pointer;text-decoration:underline" onclick="openArchetypeModal()">Adjust your weights →</span>');
+  }
+  return '<div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-family:\'DM Mono\',monospace;font-size:9px;color:var(--dim)"><span style="display:flex;align-items:center;gap:5px"><svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke="var(--blue)" stroke-width="1.5"/></svg>yours</span><span style="display:flex;align-items:center;gap:5px"><svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke="var(--dim)" stroke-width="1" stroke-dasharray="3,2"/></svg>archetype</span></div>';
+}
+
 export function renderProfile() {
   const el = document.getElementById('profileContent');
   if (!el) return;
@@ -304,14 +312,7 @@ export function renderProfile() {
         <div style="display:flex;gap:48px;align-items:flex-start;flex-wrap:wrap">
           <div style="flex-shrink:0">
             ${radarChart(weights, archWeights)}
-            <div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">
-              <span style="display:flex;align-items:center;gap:5px">
-                <svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke="var(--blue)" stroke-width="1.5"/></svg>yours
-              </span>
-              <span style="display:flex;align-items:center;gap:5px">
-                <svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke="var(--dim)" stroke-width="1" stroke-dasharray="3,2"/></svg>archetype
-              </span>
-            </div>
+            ${radarLegend(user.archetype)}
           </div>
           <div style="flex:1;min-width:200px;padding-top:12px">
             <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">avg score by category</div>
@@ -342,6 +343,9 @@ export function renderProfile() {
       </div>
 
       <!-- CALIBRATE -->
+      ${shouldShowHint('profile_calibrate', () => MOVIES.length >= 15 && !localStorage.getItem('palatemap_calibrate_last_threshold'))
+        ? renderHint('profile_calibrate', 'You have <strong>' + MOVIES.length + ' films</strong> ranked — enough for calibration to be useful. It runs head-to-head matchups to sharpen scores that are close together.')
+        : ''}
       <div style="margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--rule);text-align:center">
         <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:12px">Calibrate</div>
         <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);margin-bottom:18px;line-height:1.7">Run Elo head-to-head matchups to sharpen your scores. Two films, one question — your instincts do the work.</div>

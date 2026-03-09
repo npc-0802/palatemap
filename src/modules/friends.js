@@ -1,6 +1,7 @@
 import { MOVIES, currentUser, setCurrentUser, mergeSplitNames } from '../state.js';
 import { ARCHETYPES } from '../data/archetypes.js';
 import { sb, loadFriends, loadFriendFull, acceptFriendInvite, confirmFriendInvite, unfriendUser, searchUsers, sendFriendRequest, loadPendingIncoming, loadPendingOutgoing, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, getUserEmail, loadAllFriendsFilmData } from './supabase.js';
+import { shouldShowHint, renderHint } from './hints.js';
 
 const CATS = ['plot','execution','acting','production','enjoyability','rewatchability','ending','uniqueness'];
 const CAT_SHORT = { plot:'Plot', execution:'Exec', acting:'Acting', production:'Prod', enjoyability:'Enjoy', rewatchability:'Rewatch', ending:'Ending', uniqueness:'Unique' };
@@ -818,6 +819,9 @@ function renderFriendProfile(el, friend) {
       </div>
 
       <div id="friend-overlap-panel" style="display:none">
+        ${shouldShowHint('overlap_compat', () => true)
+          ? renderHint('overlap_compat', '<strong>' + compat.total + '%</strong> — that\'s how similar your taste formulas are. High compatibility means you weight the same categories. It doesn\'t mean you rate the same films the same way.')
+          : ''}
         <div style="padding-bottom:28px;margin-bottom:28px;border-bottom:1px solid var(--rule)">
           <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">Compatibility</div>
           <div style="display:flex;align-items:center;gap:32px;flex-wrap:wrap">

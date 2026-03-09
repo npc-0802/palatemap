@@ -2,6 +2,7 @@ import { MOVIES, CATEGORIES, currentUser, setCurrentUser, scoreClass, getLabel, 
 import { syncToSupabase, saveUserLocally } from './supabase.js';
 import { ARCHETYPES } from '../data/archetypes.js';
 import { track } from '../analytics.js';
+import { shouldShowHint, renderHint } from './hints.js';
 
 const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 const TMDB = 'https://api.themoviedb.org/3';
@@ -67,6 +68,18 @@ export function initPredict() {
   if (secondarySection) secondarySection.style.display = '';
   if (manualSection) manualSection.style.display = '';
   if (constrainedSection) constrainedSection.style.display = '';
+
+  // For You intro hint
+  const hintSlot = document.getElementById('foryou-hint-slot');
+  if (hintSlot) {
+    const visitCount = parseInt(localStorage.getItem('pm_foryou_visits') || '0') + 1;
+    localStorage.setItem('pm_foryou_visits', String(visitCount));
+    if (shouldShowHint('foryou_intro', () => visitCount <= 3 && currentUser?.cachedRecommendations?.length)) {
+      hintSlot.innerHTML = renderHint('foryou_intro', 'These picks are chosen by your taste profile — not popularity, not reviews. The more you rate, the sharper they get.');
+    } else {
+      hintSlot.innerHTML = '';
+    }
+  }
 
   // Reset manual predict section
   const searchEl = document.getElementById('predict-search');
