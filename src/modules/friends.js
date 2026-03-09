@@ -1,4 +1,4 @@
-import { MOVIES, currentUser } from '../state.js';
+import { MOVIES, currentUser, setCurrentUser, mergeSplitNames } from '../state.js';
 import { ARCHETYPES } from '../data/archetypes.js';
 import { sb, loadFriends, loadFriendFull, acceptFriendInvite, confirmFriendInvite, unfriendUser, searchUsers, sendFriendRequest, loadPendingIncoming, loadPendingOutgoing, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, getUserEmail, loadAllFriendsFilmData } from './supabase.js';
 
@@ -853,6 +853,16 @@ function renderFriendProfile(el, friend) {
           <div id="friend-insight" style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dim);font-style:italic;line-height:1.8">Analyzing…</div>
         </div>
 
+        <div style="padding-bottom:28px;margin-bottom:28px;border-bottom:1px solid var(--rule)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim)">For You Two</div>
+            <span id="foryou-two-status" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);font-style:italic"></span>
+          </div>
+          <div id="foryou-two-grid" style="display:grid;grid-template-columns:1fr;gap:12px">
+            <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);font-style:italic">Loading recommendations…</div>
+          </div>
+        </div>
+
         <div style="padding-bottom:48px">
           <div class="dark-grid" style="background:var(--surface-dark);padding:28px 32px;border-top:3px solid ${color}">
             <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:10px">palate map · overlap predict</div>
@@ -868,6 +878,7 @@ function renderFriendProfile(el, friend) {
     </div>`;
 
   loadFriendInsight(friend, compat, color);
+  loadForYouTwo(friend, color);
 }
 
 window.showFriendTab = function(tab) {
@@ -1414,3 +1425,430 @@ Write exactly 2 sentences addressed to ${currentUser.display_name} (2nd person) 
     if (label) label.style.display = 'none';
   }
 }
+
+// ── FOR YOU TWO ─────────────────────────────────────────────────────────────
+
+const TMDB_BASE = 'https://api.themoviedb.org/3';
+
+function normTitle(t) {
+  return (t || '').toLowerCase().replace(/\b(the|a|an)\b\s*/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function entityAffinityFromMovies(movies, candidateNames, movieField) {
+  if (!candidateNames.length) return 0;
+  const matched = movies.filter(m => {
+    const names = mergeSplitNames((m[movieField] || '').split(',').map(s => s.trim()).filter(Boolean));
+    return candidateNames.some(n => names.includes(n));
+  });
+  if (!matched.length) return 0;
+  const avg = matched.reduce((s, m) => s + m.total, 0) / matched.length;
+  if (matched.length >= 2) return avg >= 90 ? 30 : avg >= 80 ? 21 : avg >= 70 ? 12 : 5;
+  return avg >= 85 ? 18 : avg >= 75 ? 10 : 4;
+}
+
+function scoreCandidateForPair(film, friendMovies) {
+  // Score a candidate against both movie sets, average the results
+  const dirNames = mergeSplitNames((film.director || '').split(',').map(s => s.trim()).filter(Boolean));
+  const castNames = mergeSplitNames((film.cast || '').split(',').map(s => s.trim()).filter(Boolean));
+
+  const myDir = entityAffinityFromMovies(MOVIES, dirNames, 'director');
+  const myCast = entityAffinityFromMovies(MOVIES, castNames, 'cast');
+  const theirDir = entityAffinityFromMovies(friendMovies, dirNames, 'director');
+  const theirCast = entityAffinityFromMovies(friendMovies, castNames, 'cast');
+
+  // Genre affinity for both
+  const genreScore = (movies) => {
+    const candidateGenres = (film.genres || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    if (!candidateGenres.length) return 0;
+    const gs = {}, gc = {};
+    movies.forEach(m => {
+      (m.genres || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean).forEach(g => {
+        gs[g] = (gs[g] || 0) + m.total; gc[g] = (gc[g] || 0) + 1;
+      });
+    });
+    let score = 0, matched = 0;
+    candidateGenres.forEach(g => { if (gc[g] >= 2) { score += gs[g] / gc[g]; matched++; } });
+    return matched > 0 ? Math.round((score / matched / 100) * 25) : 0;
+  };
+
+  const myGenre = genreScore(MOVIES);
+  const theirGenre = genreScore(friendMovies);
+
+  const myTotal = myDir + myCast + myGenre;
+  const theirTotal = theirDir + theirCast + theirGenre;
+
+  // Geometric-ish mean: rewards films both users score well, penalizes one-sided
+  return Math.round(Math.sqrt(Math.max(myTotal, 1) * Math.max(theirTotal, 1)));
+}
+
+const GENRE_ID_MAP = {
+  'Action': 28, 'Adventure': 12, 'Animation': 16, 'Comedy': 35,
+  'Crime': 80, 'Documentary': 99, 'Drama': 18, 'Family': 10751,
+  'Fantasy': 14, 'History': 36, 'Horror': 27, 'Music': 10402,
+  'Mystery': 9648, 'Romance': 10749, 'Science Fiction': 878,
+  'Thriller': 53, 'War': 10752, 'Western': 37
+};
+
+async function buildSharedCandidatePool(friend) {
+  const friendMovies = friend.movies || [];
+  const allMovies = [...MOVIES, ...friendMovies];
+
+  // Exclude films either user has seen or has on watchlist
+  const ratedIds = new Set(allMovies.map(m => String(m.tmdbId)).filter(Boolean));
+  const ratedTitles = new Set(allMovies.map(m => normTitle(m.title)));
+  const wlIds = new Set([
+    ...(currentUser?.watchlist || []).map(w => String(w.tmdbId)),
+    ...(friend.watchlist || []).map(w => String(w.tmdbId))
+  ]);
+  const seen = new Set([...ratedIds, ...wlIds]);
+  const isKnown = (id, title) => seen.has(String(id)) || ratedTitles.has(normTitle(title));
+
+  // Find shared top entities (entities both users rate highly)
+  const buildEntityMap = (movies, field) => {
+    const map = {};
+    movies.forEach(m => {
+      mergeSplitNames((m[field] || '').split(',').map(s => s.trim()).filter(Boolean)).forEach(name => {
+        if (!map[name]) map[name] = { total: 0, count: 0 };
+        map[name].total += m.total;
+        map[name].count++;
+      });
+    });
+    return map;
+  };
+
+  const myDirs = buildEntityMap(MOVIES, 'director');
+  const theirDirs = buildEntityMap(friendMovies, 'director');
+  const myActors = buildEntityMap(MOVIES, 'cast');
+  const theirActors = buildEntityMap(friendMovies, 'cast');
+
+  // Shared directors: both have rated 1+ film by this director, combined avg is high
+  const sharedDirs = Object.keys(myDirs).filter(d => theirDirs[d])
+    .map(d => ({
+      name: d,
+      combinedAvg: (myDirs[d].total / myDirs[d].count + theirDirs[d].total / theirDirs[d].count) / 2
+    }))
+    .sort((a, b) => b.combinedAvg - a.combinedAvg)
+    .slice(0, 3);
+
+  // Shared actors
+  const sharedActors = Object.keys(myActors).filter(a => theirActors[a])
+    .map(a => ({
+      name: a,
+      combinedAvg: (myActors[a].total / myActors[a].count + theirActors[a].total / theirActors[a].count) / 2
+    }))
+    .sort((a, b) => b.combinedAvg - a.combinedAvg)
+    .slice(0, 3);
+
+  // Also include top non-shared directors/actors from each user (for breadth)
+  const topFromMap = (map, exclude, n) =>
+    Object.entries(map)
+      .filter(([name, v]) => v.count >= 2 && !exclude.has(name))
+      .map(([name, v]) => ({ name, avg: v.total / v.count }))
+      .sort((a, b) => b.avg - a.avg)
+      .slice(0, n);
+
+  const sharedDirNames = new Set(sharedDirs.map(d => d.name));
+  const sharedActorNames = new Set(sharedActors.map(a => a.name));
+  const myTopDirs = topFromMap(myDirs, sharedDirNames, 1);
+  const theirTopDirs = topFromMap(theirDirs, sharedDirNames, 1);
+  const myTopActors = topFromMap(myActors, sharedActorNames, 1);
+  const theirTopActors = topFromMap(theirActors, sharedActorNames, 1);
+
+  const allDirs = [...sharedDirs, ...myTopDirs, ...theirTopDirs];
+  const allActors = [...sharedActors, ...myTopActors, ...theirTopActors];
+
+  const candidates = [];
+
+  // Stream A: Director filmographies
+  await Promise.allSettled(allDirs.map(async ({ name }) => {
+    try {
+      const sRes = await fetch(`${TMDB_BASE}/search/person?api_key=${TMDB_KEY}&query=${encodeURIComponent(name)}`);
+      const sData = await sRes.json();
+      const person = (sData.results || [])[0];
+      if (!person) return;
+      const cRes = await fetch(`${TMDB_BASE}/person/${person.id}/movie_credits?api_key=${TMDB_KEY}`);
+      const cData = await cRes.json();
+      (cData.crew || [])
+        .filter(c => c.job === 'Director' && c.vote_count > 100 && c.poster_path && !isKnown(c.id, c.title))
+        .sort((a, b) => b.vote_average - a.vote_average)
+        .slice(0, 3)
+        .forEach(f => {
+          if (seen.has(String(f.id))) return;
+          seen.add(String(f.id));
+          candidates.push({
+            tmdbId: f.id, title: f.title, year: (f.release_date || '').slice(0, 4),
+            poster: f.poster_path, director: name, cast: '', genres: '',
+            overview: f.overview || '', source: 'director'
+          });
+        });
+    } catch {}
+  }));
+
+  // Stream B: Actor filmographies
+  await Promise.allSettled(allActors.map(async ({ name }) => {
+    try {
+      const sRes = await fetch(`${TMDB_BASE}/search/person?api_key=${TMDB_KEY}&query=${encodeURIComponent(name)}`);
+      const sData = await sRes.json();
+      const person = (sData.results || [])[0];
+      if (!person) return;
+      const cRes = await fetch(`${TMDB_BASE}/person/${person.id}/movie_credits?api_key=${TMDB_KEY}`);
+      const cData = await cRes.json();
+      (cData.cast || [])
+        .filter(c => c.vote_count > 100 && c.poster_path && !isKnown(c.id, c.title))
+        .sort((a, b) => b.vote_average - a.vote_average)
+        .slice(0, 3)
+        .forEach(f => {
+          if (seen.has(String(f.id))) return;
+          seen.add(String(f.id));
+          candidates.push({
+            tmdbId: f.id, title: f.title, year: (f.release_date || '').slice(0, 4),
+            poster: f.poster_path, director: '', cast: name, genres: '',
+            overview: f.overview || '', source: 'actor'
+          });
+        });
+    } catch {}
+  }));
+
+  // Stream C: Shared top genres via TMDB discover
+  const myGenres = {}, myGc = {}, theirGenres = {}, theirGc = {};
+  MOVIES.forEach(m => (m.genres || '').split(',').map(s => s.trim()).filter(Boolean).forEach(g => {
+    myGenres[g] = (myGenres[g] || 0) + m.total; myGc[g] = (myGc[g] || 0) + 1;
+  }));
+  friendMovies.forEach(m => (m.genres || '').split(',').map(s => s.trim()).filter(Boolean).forEach(g => {
+    theirGenres[g] = (theirGenres[g] || 0) + m.total; theirGc[g] = (theirGc[g] || 0) + 1;
+  }));
+
+  const sharedGenres = Object.keys(myGenres)
+    .filter(g => theirGenres[g] && myGc[g] >= 2 && theirGc[g] >= 2 && GENRE_ID_MAP[g])
+    .map(g => ({
+      name: g, id: GENRE_ID_MAP[g],
+      combinedAvg: (myGenres[g] / myGc[g] + theirGenres[g] / theirGc[g]) / 2
+    }))
+    .sort((a, b) => b.combinedAvg - a.combinedAvg)
+    .slice(0, 2);
+
+  await Promise.allSettled(sharedGenres.map(async (genre) => {
+    try {
+      const params = new URLSearchParams({
+        api_key: TMDB_KEY, with_genres: genre.id,
+        sort_by: 'vote_average.desc', 'vote_count.gte': 200, page: '1'
+      });
+      const res = await fetch(`${TMDB_BASE}/discover/movie?${params}`);
+      const data = await res.json();
+      (data.results || [])
+        .filter(f => f.poster_path && !isKnown(f.id, f.title))
+        .slice(0, 4)
+        .forEach(f => {
+          if (seen.has(String(f.id))) return;
+          seen.add(String(f.id));
+          candidates.push({
+            tmdbId: f.id, title: f.title, year: (f.release_date || '').slice(0, 4),
+            poster: f.poster_path, director: '', cast: '', genres: genre.name,
+            overview: f.overview || '', source: 'genre'
+          });
+        });
+    } catch {}
+  }));
+
+  return candidates;
+}
+
+function forYouTwoCacheKey(friend) {
+  return `fy2::${currentUser.id}::${friend.id}::${MOVIES.length}::${(friend.movies || []).length}`;
+}
+
+async function loadForYouTwo(friend, color) {
+  const gridEl = document.getElementById('foryou-two-grid');
+  const statusEl = document.getElementById('foryou-two-status');
+  if (!gridEl) return;
+
+  // Need enough data from both users
+  if (MOVIES.length < 10 || (friend.movies || []).length < 10) {
+    gridEl.innerHTML = `<div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);font-style:italic">Both users need 10+ rated films for recommendations.</div>`;
+    return;
+  }
+
+  // Check cache
+  const cacheKey = forYouTwoCacheKey(friend);
+  try {
+    const cached = JSON.parse(localStorage.getItem(cacheKey));
+    if (cached?.length) {
+      renderForYouTwoCards(cached, friend, color, gridEl);
+      if (statusEl) statusEl.textContent = 'cached';
+      return;
+    }
+  } catch {}
+
+  gridEl.innerHTML = `<div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);font-style:italic">Scouting films for both of you…</div>`;
+
+  try {
+    // Build pool and score
+    const pool = await buildSharedCandidatePool(friend);
+    if (!pool.length) {
+      gridEl.innerHTML = `<div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);font-style:italic">Couldn't find shared candidates right now.</div>`;
+      return;
+    }
+
+    const friendMovies = friend.movies || [];
+    const scored = pool
+      .map(c => ({ ...c, pairScore: scoreCandidateForPair(c, friendMovies) }))
+      .sort((a, b) => b.pairScore - a.pairScore);
+
+    // Predict top 4, show top 3
+    const top = scored.slice(0, 4);
+
+    await Promise.allSettled(top.map(async (c) => {
+      const film = {
+        tmdbId: c.tmdbId, title: c.title, year: c.year,
+        director: c.director || '', cast: c.cast || '',
+        genres: c.genres || '', overview: c.overview || '',
+        poster: c.poster || null
+      };
+      try {
+        // Fetch credits to enrich the film data for better predictions
+        const [detailRes, creditsRes] = await Promise.all([
+          fetch(`${TMDB_BASE}/movie/${c.tmdbId}?api_key=${TMDB_KEY}`),
+          fetch(`${TMDB_BASE}/movie/${c.tmdbId}/credits?api_key=${TMDB_KEY}`)
+        ]);
+        const detail = await detailRes.json();
+        const credits = await creditsRes.json();
+        film.director = film.director || (credits.crew || []).filter(x => x.job === 'Director').map(x => x.name).join(', ');
+        film.cast = film.cast || (credits.cast || []).slice(0, 8).map(x => x.name).join(', ');
+        film.genres = film.genres || (detail.genres || []).map(g => g.name).join(', ');
+        film.overview = film.overview || detail.overview || '';
+
+        // Run overlap prediction
+        const me = buildOverlapProfile(MOVIES, currentUser.weights, currentUser.archetype, currentUser.display_name);
+        const them = buildOverlapProfile(friend.movies, friend.weights, friend.archetype, friend.display_name);
+        const myComps = overlapFindComps(film, MOVIES);
+        const friendComps = overlapFindComps(film, friend.movies);
+
+        const compStr = (arr) => arr.length
+          ? arr.map(m => `  - ${m.title} (${m.total})`).join('\n')
+          : '  None';
+
+        const prompt = `Two users want to know how a film would land for them watching together. Predict a single combined score and explain what each would respond to specifically.
+
+USER 1 — ${me.displayName} (${me.archetype}):
+Films rated: ${me.totalFilms} · Weights: ${me.weightStr}
+Category avgs: ${Object.entries(me.avgs).map(([k,v])=>`${k}:${v}`).join(', ')}
+Top 10: ${me.top10 || 'N/A'} · Bottom 5: ${me.bottom5 || 'N/A'}
+Relevant comparables:
+${compStr(myComps)}
+
+USER 2 — ${them.displayName} (${them.archetype}):
+Films rated: ${them.totalFilms} · Weights: ${them.weightStr}
+Category avgs: ${Object.entries(them.avgs).map(([k,v])=>`${k}:${v}`).join(', ')}
+Top 10: ${them.top10 || 'N/A'} · Bottom 5: ${them.bottom5 || 'N/A'}
+Relevant comparables:
+${compStr(friendComps)}
+
+FILM TO PREDICT:
+Title: ${film.title}
+Year: ${film.year}
+Director: ${film.director || 'unknown'}
+Genres: ${film.genres || 'unknown'}
+Synopsis: ${film.overview || 'not available'}
+
+TASK: Predict one combined score (0–100). Write 1 short sentence about why this film works for both. Use their names directly — never say "User 1" or "User 2."
+
+Respond with valid JSON only:
+{"predicted_score":<integer>,"confidence":"high"|"medium"|"low","reasoning":"<1 sentence>"}`;
+
+        const res = await fetch(PROXY_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system: 'You are a precise film taste prediction engine. Respond ONLY with valid JSON — no preamble, no markdown.',
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+        const data = await res.json();
+        const text = data.content?.[0]?.text || '';
+        const prediction = JSON.parse(text.replace(/```json|```/g, '').trim());
+        c.prediction = prediction;
+        c.film = film;
+      } catch { /* skip this candidate */ }
+    }));
+
+    const results = top.filter(c => c.prediction)
+      .sort((a, b) => b.prediction.predicted_score - a.prediction.predicted_score)
+      .slice(0, 3);
+
+    if (!results.length) {
+      gridEl.innerHTML = `<div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);font-style:italic">Couldn't generate shared predictions right now.</div>`;
+      return;
+    }
+
+    // Cache
+    try { localStorage.setItem(cacheKey, JSON.stringify(results)); } catch {}
+
+    renderForYouTwoCards(results, friend, color, gridEl);
+    if (statusEl) statusEl.textContent = '';
+
+  } catch {
+    gridEl.innerHTML = `<div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);font-style:italic">Something went wrong.</div>`;
+  }
+}
+
+function renderForYouTwoCards(results, _friend, color, gridEl) {
+  const friendColor = color;
+
+  gridEl.innerHTML = results.map(r => {
+    const score = r.prediction?.predicted_score;
+    const reasoning = r.prediction?.reasoning || '';
+    const poster = r.film?.poster || r.poster;
+    const posterHtml = poster
+      ? `<img src="https://image.tmdb.org/t/p/w92${poster}" style="width:48px;height:72px;object-fit:cover;flex-shrink:0;display:block">`
+      : `<div style="width:48px;height:72px;background:var(--rule);flex-shrink:0"></div>`;
+    const title = r.film?.title || r.title;
+    const year = r.film?.year || r.year;
+    const director = (r.film?.director || r.director || '').split(',')[0];
+    const onWl = (currentUser?.watchlist || []).some(w => String(w.tmdbId) === String(r.tmdbId));
+
+    return `<div style="display:flex;gap:14px;padding:14px;border:1px solid var(--rule);cursor:default">
+      ${posterHtml}
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px">
+          <span style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</span>
+          ${score != null ? `<span style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:18px;color:${friendColor};letter-spacing:-0.5px;flex-shrink:0">~${score}</span>` : ''}
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-bottom:6px">${year}${director ? ' · ' + director : ''}</div>
+        ${reasoning ? `<div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--dim);line-height:1.5">${reasoning}</div>` : ''}
+        <div style="margin-top:8px">
+          <button onclick="forYouTwoWatchlist('${r.tmdbId}')" id="fy2-wl-${r.tmdbId}" style="font-family:'DM Mono',monospace;font-size:9px;padding:5px 10px;background:${onWl ? 'var(--green)' : 'none'};color:${onWl ? 'white' : 'var(--dim)'};border:1px solid ${onWl ? 'var(--green)' : 'var(--rule-dark)'};cursor:pointer;letter-spacing:0.5px">${onWl ? '✓ List' : '+ List'}</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.forYouTwoWatchlist = async function(tmdbId) {
+  const onWl = (currentUser?.watchlist || []).some(w => String(w.tmdbId) === String(tmdbId));
+  const { addToWatchlist, removeFromWatchlist } = await import('./watchlist.js');
+
+  // Try to find film data from the cached results
+  const cacheKey = currentFriendCache ? forYouTwoCacheKey(currentFriendCache) : null;
+  let filmData = null;
+  try {
+    const cached = JSON.parse(localStorage.getItem(cacheKey));
+    const match = (cached || []).find(r => String(r.tmdbId) === String(tmdbId));
+    if (match?.film) filmData = match.film;
+  } catch {}
+
+  if (onWl) {
+    removeFromWatchlist(tmdbId);
+  } else if (filmData) {
+    addToWatchlist({ tmdbId: filmData.tmdbId, title: filmData.title, year: filmData.year, poster: filmData.poster, director: filmData.director, overview: filmData.overview });
+  }
+
+  // Update button state
+  const btn = document.getElementById(`fy2-wl-${tmdbId}`);
+  if (btn) {
+    const nowOn = (currentUser?.watchlist || []).some(w => String(w.tmdbId) === String(tmdbId));
+    btn.textContent = nowOn ? '✓ List' : '+ List';
+    btn.style.background = nowOn ? 'var(--green)' : 'none';
+    btn.style.color = nowOn ? 'white' : 'var(--dim)';
+    btn.style.borderColor = nowOn ? 'var(--green)' : 'var(--rule-dark)';
+  }
+};
