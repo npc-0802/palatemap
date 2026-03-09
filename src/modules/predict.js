@@ -18,6 +18,7 @@ let predictSelectedFilm = null;
 let lastPrediction = null;
 let recommendPage = 1;
 let dismissedTmdbIds = new Set(); // tracks films dismissed this session
+let constrainedDebounceTimer = null;
 
 export function initPredict() {
   const MIN_FILMS = 10;
@@ -85,6 +86,16 @@ export function initPredict() {
     loadForYouRecommendations();
   } else {
     renderForYouFromCache();
+  }
+
+  // Restore constrained results if cached
+  const lastConstrained = currentUser?.lastConstrainedEntity;
+  if (lastConstrained?.results?.length) {
+    const searchInput = document.getElementById('constrained-search');
+    if (searchInput) searchInput.style.display = 'none';
+    const resultsEl = document.getElementById('constrained-results');
+    if (resultsEl) resultsEl.style.display = '';
+    renderConstrainedResults(lastConstrained.name, lastConstrained.type, lastConstrained.tmdbId, lastConstrained.results);
   }
 }
 
@@ -619,7 +630,7 @@ async function buildCandidatePool() {
   return candidates;
 }
 
-async function callClaudeForPrediction(film) {
+async function callClaudeForPrediction(film, entityConstraint = null) {
   const profile = buildTasteProfile();
   const comps = findComparableFilms(film);
 
@@ -668,7 +679,7 @@ Cast: ${film.cast || 'unknown'}
 Genres: ${film.genres || 'unknown'}
 Synopsis: ${film.overview || 'not available'}
 
-TASK:
+${entityConstraint ? `CONTEXT: The user specifically asked for a ${entityConstraint.type === 'company' ? entityConstraint.name + ' film' : entityConstraint.name + ' (' + entityConstraint.type + ') film'}. Weight the ${entityConstraint.type === 'actor' ? 'acting and cast-specific' : entityConstraint.type === 'director' ? 'directing and execution' : 'production and studio-specific'} reasoning more heavily.\n\n` : ''}TASK:
 Predict the scores this person would give this film. Use comparable films as the strongest signal. Weight director/cast patterns heavily. If a prediction track record is present, use it to correct for known systematic errors.
 
 The reasoning must feel personal and specific to THIS person's taste — not a general film analysis. Write like you genuinely understand how they think about film. Reference their actual rated films by name. Focus on what THEY care about based on their scoring patterns. Be direct and confident. 2-3 sentences max. Never describe the film in general terms — always anchor to their specific ratings and patterns.
@@ -957,10 +968,281 @@ async function findMeAFilm() {
   }
 }
 
+// ── ENTITY-CONSTRAINED RECOMMENDATIONS ──────────────────────────────────────
+
+function constrainedSearchDebounce() {
+  clearTimeout(constrainedDebounceTimer);
+  constrainedDebounceTimer = setTimeout(constrainedSearch, 500);
+}
+
+async function constrainedSearch() {
+  const q = document.getElementById('constrained-search')?.value.trim();
+  const resultsEl = document.getElementById('constrained-search-results');
+  if (!resultsEl) return;
+  if (!q || q.length < 2) { resultsEl.innerHTML = ''; return; }
+
+  try {
+    const [personData, companyData] = await Promise.all([
+      fetch(`${TMDB}/search/person?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}&language=en-US&page=1`).then(r => r.json()),
+      fetch(`${TMDB}/search/company?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}`).then(r => r.json()),
+    ]);
+
+    const people = (personData.results || []).slice(0, 4);
+    const companies = (companyData.results || []).slice(0, 2);
+
+    if (!people.length && !companies.length) { resultsEl.innerHTML = ''; return; }
+
+    const chips = [];
+    people.forEach(p => {
+      const dept = p.known_for_department || 'Person';
+      const type = dept === 'Directing' ? 'director' : dept === 'Writing' ? 'writer' : 'actor';
+      const safeName = (p.name || '').replace(/'/g, "\\'");
+      const photo = p.profile_path
+        ? `<img class="constrained-chip-photo" src="https://image.tmdb.org/t/p/w92${p.profile_path}">`
+        : `<div class="constrained-chip-photo-none"></div>`;
+      chips.push(`<div class="constrained-chip" onclick="constrainedSelectEntity('${type}',${p.id},'${safeName}')">
+        ${photo}
+        <div>
+          <div class="constrained-chip-name">${p.name}</div>
+          <div class="constrained-chip-type">${dept}</div>
+        </div>
+      </div>`);
+    });
+    companies.forEach(c => {
+      const safeName = (c.name || '').replace(/'/g, "\\'");
+      const logo = c.logo_path
+        ? `<div class="constrained-chip-company"><img src="https://image.tmdb.org/t/p/w92${c.logo_path}"></div>`
+        : `<div class="constrained-chip-company"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="3" width="10" height="8" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M4 3V2a2 2 0 0 1 4 0v1" stroke="currentColor" stroke-width="1.2"/></svg></div>`;
+      chips.push(`<div class="constrained-chip" onclick="constrainedSelectEntity('company',${c.id},'${safeName}')">
+        ${logo}
+        <div>
+          <div class="constrained-chip-name">${c.name}</div>
+          <div class="constrained-chip-type">Company</div>
+        </div>
+      </div>`);
+    });
+
+    resultsEl.innerHTML = `<div class="constrained-chips">${chips.join('')}</div>`;
+  } catch { resultsEl.innerHTML = ''; }
+}
+
+async function constrainedSelectEntity(type, tmdbId, name) {
+  // Hide input, show loading state in results area
+  const searchInput = document.getElementById('constrained-search');
+  const searchResults = document.getElementById('constrained-search-results');
+  const resultsEl = document.getElementById('constrained-results');
+  if (searchInput) searchInput.style.display = 'none';
+  if (searchResults) searchResults.innerHTML = '';
+  if (!resultsEl) return;
+
+  resultsEl.style.display = '';
+  resultsEl.innerHTML = `
+    <div class="constrained-results-header">
+      <span class="constrained-results-title">Films from ${name}</span>
+      <button class="constrained-clear-btn" onclick="constrainedClear()">× Clear</button>
+    </div>
+    <div class="constrained-loading">
+      <div class="constrained-loading-title">Finding ${name}'s best films for you…</div>
+      <div class="constrained-loading-sub">Fetching filmography · scoring by your taste · predicting</div>
+    </div>`;
+
+  const entityConstraint = { type, tmdbId, name };
+
+  try {
+    // Step 1: Fetch filmography
+    let films = [];
+    const ratedIds = new Set(MOVIES.map(m => String(m.tmdbId)).filter(Boolean));
+    const ratedTitlesNorm = new Set(MOVIES.map(m => normTitle(m.title)));
+    const watchlistIds = new Set((currentUser?.watchlist || []).map(w => String(w.tmdbId)));
+    const isKnown = (id, title) =>
+      ratedIds.has(String(id)) || ratedTitlesNorm.has(normTitle(title)) || watchlistIds.has(String(id));
+
+    if (type === 'company') {
+      const res = await fetch(`${TMDB}/discover/movie?api_key=${TMDB_KEY}&with_companies=${tmdbId}&sort_by=vote_average.desc&vote_count.gte=50&page=1`);
+      const data = await res.json();
+      films = (data.results || []).filter(f => f.poster_path && !isKnown(f.id, f.title));
+    } else {
+      const credRes = await fetch(`${TMDB}/person/${tmdbId}/movie_credits?api_key=${TMDB_KEY}`);
+      const credData = await credRes.json();
+      if (type === 'director') {
+        films = (credData.crew || []).filter(c => c.job === 'Director' && c.vote_count >= 50 && c.poster_path && !isKnown(c.id, c.title));
+      } else {
+        // actor or writer — use cast credits for actors, crew for writers
+        if (type === 'writer') {
+          films = (credData.crew || []).filter(c => ['Screenplay', 'Writer', 'Story'].includes(c.job) && c.vote_count >= 50 && c.poster_path && !isKnown(c.id, c.title));
+        } else {
+          films = (credData.cast || []).filter(c => c.vote_count >= 50 && c.poster_path && !isKnown(c.id, c.title));
+        }
+      }
+    }
+
+    if (!films.length) {
+      resultsEl.innerHTML = `
+        <div class="constrained-results-header">
+          <span class="constrained-results-title">Films from ${name}</span>
+          <button class="constrained-clear-btn" onclick="constrainedClear()">× Clear</button>
+        </div>
+        <div style="padding:24px;text-align:center;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim)">No unrated films found for ${name}.</div>`;
+      return;
+    }
+
+    // Step 2: Fetch full details for scoring
+    const candidates = films.slice(0, 20).map(f => ({
+      tmdbId: f.id,
+      title: f.title,
+      year: (f.release_date || '').slice(0, 4),
+      poster: f.poster_path,
+      director: '',
+      cast: '',
+      genres: '',
+      overview: f.overview || '',
+      source: type
+    }));
+
+    await Promise.allSettled(candidates.map(async (c) => {
+      try {
+        const [dRes, crRes] = await Promise.all([
+          fetch(`${TMDB}/movie/${c.tmdbId}?api_key=${TMDB_KEY}`),
+          fetch(`${TMDB}/movie/${c.tmdbId}/credits?api_key=${TMDB_KEY}`)
+        ]);
+        const detail = await dRes.json();
+        const credits = await crRes.json();
+        c.director = (credits.crew || []).filter(x => x.job === 'Director').map(x => x.name).join(', ');
+        c.cast = (credits.cast || []).slice(0, 8).map(x => x.name).join(', ');
+        c.genres = (detail.genres || []).map(g => g.name).join(', ');
+        c.overview = c.overview || detail.overview || '';
+      } catch { /* candidate will score lower */ }
+    }));
+
+    // Step 3: Score and rank
+    const scored = candidates
+      .map(c => ({ ...c, compatScore: scoreCandidate(c) }))
+      .sort((a, b) => b.compatScore - a.compatScore);
+
+    // Step 4: Predict top 5 (cache-first)
+    const top5 = scored.slice(0, 5);
+    const toPredict = top5.filter(c => !currentUser?.predictions?.[String(c.tmdbId)]);
+    const toCall = toPredict.slice(0, 5);
+
+    await Promise.allSettled(toCall.map(async (c) => {
+      const film = {
+        tmdbId: c.tmdbId, title: c.title, year: c.year,
+        director: c.director || '', writer: '',
+        cast: c.cast || '', genres: c.genres || '',
+        overview: c.overview || '', poster: c.poster || null
+      };
+      try {
+        const { prediction } = await callClaudeForPrediction(film, entityConstraint);
+        const predictedAt = new Date().toISOString();
+        const newPredictions = {
+          ...(currentUser?.predictions || {}),
+          [String(film.tmdbId)]: {
+            film, prediction, predictedAt,
+            archetype_at_time: currentUser?.archetype || null,
+            weights_at_time: currentUser?.weights ? { ...currentUser.weights } : null
+          }
+        };
+        setCurrentUser({ ...currentUser, predictions: trimPredictions(newPredictions) });
+        saveUserLocally();
+        syncToSupabase();
+      } catch { /* prediction failure */ }
+    }));
+
+    // Step 5: Collect and render top 3
+    const results = top5
+      .map(c => {
+        const cached = currentUser?.predictions?.[String(c.tmdbId)];
+        if (!cached?.prediction) return null;
+        return { ...c, prediction: cached.prediction, predTotal: calcPredictedTotal(cached.prediction) };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.predTotal - a.predTotal)
+      .slice(0, 3);
+
+    if (!results.length) {
+      resultsEl.innerHTML = `
+        <div class="constrained-results-header">
+          <span class="constrained-results-title">Films from ${name}</span>
+          <button class="constrained-clear-btn" onclick="constrainedClear()">× Clear</button>
+        </div>
+        <div style="padding:24px;text-align:center;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim)">Couldn't generate predictions. <a style="color:var(--blue);cursor:pointer" onclick="constrainedSelectEntity('${type}',${tmdbId},'${name.replace(/'/g,"\\'")}')">Try again</a></div>`;
+      return;
+    }
+
+    // Cache the constrained entity for re-render on nav back
+    setCurrentUser({
+      ...currentUser,
+      lastConstrainedEntity: { type, tmdbId, name, results }
+    });
+    saveUserLocally();
+
+    renderConstrainedResults(name, type, tmdbId, results);
+
+  } catch(e) {
+    resultsEl.innerHTML = `
+      <div class="constrained-results-header">
+        <span class="constrained-results-title">Films from ${name}</span>
+        <button class="constrained-clear-btn" onclick="constrainedClear()">× Clear</button>
+      </div>
+      <div style="padding:24px;text-align:center;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim)">Something went wrong — ${e.message}. <button class="constrained-clear-btn" onclick="constrainedClear()">Try again</button></div>`;
+  }
+}
+
+function getConstrainedSourceLabel(type, name) {
+  if (type === 'director') return `Directed by ${name}`;
+  if (type === 'actor') return `Starring ${name}`;
+  if (type === 'writer') return `Written by ${name}`;
+  if (type === 'company') return `From ${name}`;
+  return name;
+}
+
+function renderConstrainedResults(name, type, _tmdbId, results) {
+  const resultsEl = document.getElementById('constrained-results');
+  if (!resultsEl) return;
+
+  const cards = results.map(r => {
+    const poster = r.poster
+      ? `<img class="constrained-card-poster" src="https://image.tmdb.org/t/p/w92${r.poster}" alt="${r.title}">`
+      : `<div class="constrained-card-poster-none"></div>`;
+    const total = (Math.round(r.predTotal * 10) / 10).toFixed(1);
+    const safeTmdbId = parseInt(r.tmdbId);
+    const safeTitle = (r.title || '').replace(/'/g, "\\'");
+    const safeYear = (r.year || '').replace(/'/g, "\\'");
+    return `<div class="constrained-card" onclick="predictSelectFilm(${safeTmdbId},'${safeTitle}','${safeYear}');document.getElementById('predict-result').scrollIntoView({behavior:'smooth'})">
+      ${poster}
+      <div class="constrained-card-body">
+        <div class="constrained-card-source">${getConstrainedSourceLabel(type, name)}</div>
+        <div class="constrained-card-title">${r.title}</div>
+        <div class="constrained-card-meta">${r.year || ''}${r.director ? ' · ' + r.director.split(',')[0] : ''}</div>
+        <div class="constrained-card-score">~${total}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  resultsEl.innerHTML = `
+    <div class="constrained-results-header">
+      <span class="constrained-results-title">${getConstrainedSourceLabel(type, name)} — for your taste</span>
+      <button class="constrained-clear-btn" onclick="constrainedClear()">× Clear</button>
+    </div>
+    <div class="constrained-results-grid">${cards}</div>`;
+}
+
+function constrainedClear() {
+  const searchInput = document.getElementById('constrained-search');
+  const searchResults = document.getElementById('constrained-search-results');
+  const resultsEl = document.getElementById('constrained-results');
+  if (searchInput) { searchInput.value = ''; searchInput.style.display = ''; }
+  if (searchResults) searchResults.innerHTML = '';
+  if (resultsEl) { resultsEl.style.display = 'none'; resultsEl.innerHTML = ''; }
+}
+
 // ── GLOBALS ─────────────────────────────────────────────────────────────────
 
 window.findMeAFilm = findMeAFilm;
 window.loadForYouRecommendations = loadForYouRecommendations;
+window.constrainedSearchDebounce = constrainedSearchDebounce;
+window.constrainedSelectEntity = constrainedSelectEntity;
+window.constrainedClear = constrainedClear;
 
 window.findMeAFilmRefresh = function() {
   loadForYouRecommendations();

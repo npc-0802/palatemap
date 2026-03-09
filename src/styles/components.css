@@ -890,6 +890,196 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); 
 }
 .foryou-sec-card:hover .foryou-sec-dismiss { opacity: 1; }
 
+/* Entity-constrained recommendations */
+.foryou-constrained {
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 1px solid var(--rule);
+}
+.foryou-constrained-label {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 14px;
+}
+.foryou-constrained-input::placeholder {
+  font-style: italic;
+  color: var(--dim);
+}
+.constrained-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.constrained-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--rule-dark);
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.constrained-chip:hover {
+  border-color: var(--blue);
+  background: var(--blue-pale);
+}
+.constrained-chip-photo {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.constrained-chip-photo-none {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--rule);
+  flex-shrink: 0;
+}
+.constrained-chip-company {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  background: white;
+  border: 1px solid var(--rule);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.constrained-chip-company img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+.constrained-chip-name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+}
+.constrained-chip-type {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 0.5px;
+}
+.constrained-results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.constrained-results-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.constrained-clear-btn {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  background: none;
+  border: none;
+  color: var(--dim);
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.12s;
+}
+.constrained-clear-btn:hover { color: var(--ink); }
+.constrained-results-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.constrained-card {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--rule);
+  background: var(--card-bg);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.constrained-card:hover {
+  border-color: var(--blue);
+  background: var(--blue-pale);
+}
+.constrained-card-poster {
+  width: 56px;
+  height: 84px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.constrained-card-poster-none {
+  width: 56px;
+  height: 84px;
+  background: var(--cream);
+  flex-shrink: 0;
+}
+.constrained-card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.constrained-card-source {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.constrained-card-title {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
+  margin-bottom: 3px;
+}
+.constrained-card-meta {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--dim);
+  margin-bottom: 6px;
+}
+.constrained-card-score {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--blue);
+  letter-spacing: -0.5px;
+}
+.constrained-loading {
+  padding: 40px 20px;
+  text-align: center;
+}
+.constrained-loading-title {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 18px;
+  color: var(--dim);
+  margin-bottom: 8px;
+}
+.constrained-loading-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--dim);
+  letter-spacing: 1px;
+}
+
 /* Manual predict section */
 .foryou-manual {
   margin-top: 40px;
@@ -913,4 +1103,5 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); 
   .foryou-hero-reasoning { display: none; }
   .foryou-hero { padding: 20px; }
   .foryou-nudge { flex-wrap: wrap; }
+  .constrained-results-grid { grid-template-columns: 1fr; }
 }

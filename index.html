@@ -368,6 +368,16 @@
     <div id="foryou-secondary-grid" class="foryou-secondary-grid"></div>
   </div>
 
+  <!-- Section D: Entity-constrained recommendations -->
+  <div id="foryou-constrained" class="foryou-constrained">
+    <div class="foryou-constrained-label">I'm in the mood for…</div>
+    <div style="max-width:600px">
+      <input class="field-input foryou-constrained-input" id="constrained-search" type="text" placeholder="an actor, director, or studio…" style="width:100%;box-sizing:border-box;font-style:italic" oninput="constrainedSearchDebounce()">
+      <div id="constrained-search-results"></div>
+    </div>
+    <div id="constrained-results" style="display:none"></div>
+  </div>
+
   <!-- Section C: Manual predict (demoted) -->
   <div id="foryou-manual" class="foryou-manual">
     <div class="foryou-manual-label">Or predict any film →</div>
