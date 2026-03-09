@@ -1914,10 +1914,148 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); 
   border-top: 1px solid var(--rule);
   text-align: center;
 }
-/* foryou-constrained-label removed — title inlined in HTML */
-.foryou-constrained-input::placeholder {
-  font-style: italic;
+.mood-section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
   color: var(--dim);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.mood-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.mood-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px 8px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 24px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+}
+.mood-chip:hover {
+  border-color: var(--blue);
+  background: #dce8f5;
+}
+.mood-chip-portrait {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.mood-chip-portrait-co {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: contain;
+  flex-shrink: 0;
+  background: white;
+  border: 1px solid var(--rule);
+  padding: 3px;
+}
+.mood-chip-portrait-none {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--cream);
+  flex-shrink: 0;
+}
+.mood-chip-meta {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--dim);
+}
+.mood-search {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--rule);
+  background: white;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.mood-search::placeholder { color: var(--rule-dark, #b0a898); }
+.mood-search:focus { border-color: var(--blue); }
+
+/* Divider between mood and predict */
+.foryou-vs-divider {
+  text-align: center;
+  padding: 28px 0;
+  position: relative;
+}
+.foryou-vs-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--rule);
+}
+.foryou-vs-label {
+  position: relative;
+  display: inline-block;
+  background: var(--paper);
+  padding: 0 16px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+/* Predict eyebrow */
+.predict-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--on-dark-dim);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Predict recent hint */
+.predict-recent-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+.predict-recent-poster {
+  width: 28px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 2px;
+  opacity: 0.6;
+}
+.predict-recent-text {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--on-dark-dim);
+  letter-spacing: 0.5px;
 }
 .constrained-chips {
   display: flex;

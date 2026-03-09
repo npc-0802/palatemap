@@ -32,8 +32,8 @@
 
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-CF6HABrC.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-B0DAHeno.css">
+  <script type="module" crossorigin src="/assets/index-BlnChF9k.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-CgZO-u84.css">
 </head>
 <body>
 <!-- GTM noscript fallback -->
@@ -406,23 +406,36 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   <!-- Section C: Entity-constrained ("I'm in the mood for…") -->
   <div id="foryou-constrained" class="foryou-constrained">
-    <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:22px;color:var(--ink);letter-spacing:-0.5px;margin-bottom:14px">I'm in the mood for…</div>
-    <div style="max-width:600px;margin:0 auto;text-align:left">
-      <input class="field-input foryou-constrained-input" id="constrained-search" type="text" placeholder="an actor, director, or studio…" style="width:100%;box-sizing:border-box;font-style:italic;padding:14px 20px;border-radius:6px" oninput="constrainedSearchDebounce()">
+    <div class="mood-section-label">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><circle cx="7" cy="7" r="1.5" fill="currentColor"/></svg>
+      Browse by who made it
+    </div>
+    <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:24px;color:var(--ink);letter-spacing:-0.5px;margin-bottom:6px">I'm in the mood for…</div>
+    <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dim);margin-bottom:20px">Pick a director, actor, or studio. We'll find what you'd like best from their catalog.</div>
+    <div id="mood-entity-chips" class="mood-chips"></div>
+    <div style="max-width:480px;text-align:left">
+      <input class="mood-search" id="constrained-search" type="text" placeholder="or search someone else…" oninput="constrainedSearchDebounce()">
       <div id="constrained-search-results"></div>
     </div>
     <div id="constrained-results" style="display:none"></div>
   </div>
 
-  <!-- Section E: Manual predict -->
+  <!-- Divider -->
+  <div class="foryou-vs-divider"><span class="foryou-vs-label">or</span></div>
+
+  <!-- Section D: Manual predict -->
   <div id="foryou-manual" class="foryou-manual">
-    <div class="foryou-manual-eyebrow">palate map · predict</div>
+    <div class="predict-eyebrow">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1L8.5 5.5L13 7L8.5 8.5L7 13L5.5 8.5L1 7L5.5 5.5Z" fill="currentColor" opacity="0.6"/></svg>
+      Predict a specific film
+    </div>
     <div class="foryou-manual-headline">What would you score it?</div>
-    <div class="foryou-manual-sub">Pick any film and we'll predict your scores before you watch it.</div>
-    <div style="max-width:500px;margin:0 auto;text-align:left">
+    <div class="foryou-manual-sub">Search any film you haven't rated. We'll predict all 8 of your category scores — with reasoning based on your taste.</div>
+    <div style="max-width:480px;margin:0 auto;text-align:left">
       <input class="foryou-manual-input" id="predict-search" type="text" placeholder="Search for a film…" oninput="predictSearchDebounce()">
       <div id="predict-search-results" style="margin-bottom:12px;margin-top:12px"></div>
     </div>
+    <div id="predict-recent-hint"></div>
   </div>
   <div id="predict-result" style="margin-top:24px"></div>
 </div>

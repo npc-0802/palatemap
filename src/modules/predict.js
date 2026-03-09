@@ -120,6 +120,10 @@ export function initPredict() {
     renderForYouFromCache();
   }
 
+  // Mood entity chips + predict recent hint
+  renderMoodChips();
+  renderPredictRecentHint();
+
   // Restore constrained results if cached
   const lastConstrained = currentUser?.lastConstrainedEntity;
   if (lastConstrained?.results?.length) {
@@ -1603,6 +1607,119 @@ function renderDiscoveryCards(results) {
   }).join('');
 }
 
+// ── MOOD ENTITY CHIPS ────────────────────────────────────────────────────────
+
+function renderMoodChips() {
+  const container = document.getElementById('mood-entity-chips');
+  if (!container || MOVIES.length < 5) return;
+
+  // Build top entities from user's library
+  const entityMap = {};
+  MOVIES.forEach(m => {
+    const directors = (m.director || '').split(',').map(s => s.trim()).filter(Boolean);
+    directors.forEach(name => {
+      if (!entityMap[name]) entityMap[name] = { name, type: 'director', films: [] };
+      entityMap[name].films.push(m);
+    });
+    const actors = (m.cast || '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 5);
+    actors.forEach(name => {
+      if (!entityMap[name]) entityMap[name] = { name, type: 'actor', films: [] };
+      entityMap[name].films.push(m);
+    });
+    const companies = (m.productionCompanies || '').split(',').map(s => s.trim()).filter(Boolean);
+    companies.forEach(name => {
+      if (!entityMap[name]) entityMap[name] = { name, type: 'company', films: [] };
+      entityMap[name].films.push(m);
+    });
+  });
+
+  const entities = Object.values(entityMap)
+    .filter(e => e.films.length >= 2)
+    .map(e => ({
+      ...e,
+      avg: Math.round(e.films.reduce((s, f) => s + f.total, 0) / e.films.length)
+    }))
+    .sort((a, b) => b.avg - a.avg)
+    .slice(0, 6);
+
+  if (!entities.length) return;
+
+  container.innerHTML = entities.map(e => {
+    const safeName = e.name.replace(/'/g, "\\'");
+    return `<div class="mood-chip" onclick="moodChipSelect('${e.type}','${safeName}')">
+      <div class="mood-chip-portrait-none"></div>
+      <span>${e.name}</span>
+      <span class="mood-chip-meta">avg ${e.avg}</span>
+    </div>`;
+  }).join('');
+
+  // Async load TMDB photos
+  entities.forEach(async (e, i) => {
+    try {
+      const isCompany = e.type === 'company';
+      const url = isCompany
+        ? `${TMDB}/search/company?api_key=${TMDB_KEY}&query=${encodeURIComponent(e.name)}`
+        : `${TMDB}/search/person?api_key=${TMDB_KEY}&query=${encodeURIComponent(e.name)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const match = (data.results || [])[0];
+      if (!match) return;
+      const imgPath = isCompany ? match.logo_path : match.profile_path;
+      if (!imgPath) return;
+      const chip = container.children[i];
+      if (!chip) return;
+      const placeholder = chip.querySelector('.mood-chip-portrait-none');
+      if (!placeholder) return;
+      const img = document.createElement('img');
+      img.className = isCompany ? 'mood-chip-portrait-co' : 'mood-chip-portrait';
+      img.src = `https://image.tmdb.org/t/p/w45${imgPath}`;
+      img.alt = '';
+      placeholder.replaceWith(img);
+    } catch {}
+  });
+}
+
+// ── PREDICT RECENT HINT ──────────────────────────────────────────────────────
+
+function renderPredictRecentHint() {
+  const container = document.getElementById('predict-recent-hint');
+  if (!container) return;
+  const predictions = currentUser?.predictions;
+  if (!predictions) { container.innerHTML = ''; return; }
+
+  // Find most recent prediction that also has a rated film to compare
+  const entries = Object.entries(predictions)
+    .filter(([, v]) => v.predictedAt && v.prediction)
+    .sort((a, b) => new Date(b[1].predictedAt) - new Date(a[1].predictedAt));
+
+  if (!entries.length) { container.innerHTML = ''; return; }
+
+  const [tmdbId, entry] = entries[0];
+  const film = entry.film;
+  const predTotal = calcPredictedTotal(entry.prediction);
+  const rated = MOVIES.find(m => String(m.tmdbId) === String(tmdbId));
+  const posterHtml = film?.poster
+    ? `<img class="predict-recent-poster" src="https://image.tmdb.org/t/p/w92${film.poster}" alt="">`
+    : '';
+
+  const title = film?.title || 'Unknown';
+  let compareHtml = '';
+  if (rated) {
+    const diff = Math.abs(predTotal - rated.total);
+    const accuracy = diff < 3 ? 'Nailed it.' : diff < 6 ? 'Close.' : 'Off the mark.';
+    compareHtml = `<div class="predict-recent-text" style="margin-top:2px;opacity:0.6">${accuracy} · You gave it ${rated.total.toFixed(1)}</div>`;
+  }
+
+  container.innerHTML = `
+    <div class="predict-recent-hint">
+      ${posterHtml}
+      <div>
+        <div class="predict-recent-text">Last prediction: <span style="color:rgba(244,239,230,0.7)">${title}</span> → <span style="color:var(--blue)">~${(Math.round(predTotal * 10) / 10).toFixed(1)}</span></div>
+        ${compareHtml}
+      </div>
+    </div>`;
+}
+
 // ── ENTITY-CONSTRAINED RECOMMENDATIONS ──────────────────────────────────────
 
 function constrainedSearchDebounce() {
@@ -2007,6 +2124,20 @@ window.loadForYouRecommendations = loadForYouRecommendations;
 window.constrainedSearchDebounce = constrainedSearchDebounce;
 window.constrainedSelectEntity = constrainedSelectEntity;
 window.constrainedClear = constrainedClear;
+window.moodChipSelect = async function(type, name) {
+  try {
+    const isCompany = type === 'company';
+    const url = isCompany
+      ? `${TMDB}/search/company?api_key=${TMDB_KEY}&query=${encodeURIComponent(name)}`
+      : `${TMDB}/search/person?api_key=${TMDB_KEY}&query=${encodeURIComponent(name)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const match = (data.results || [])[0];
+    if (match) {
+      constrainedSelectEntity(type, match.id, name);
+    }
+  } catch {}
+};
 window.openRecommendedDetail = openRecommendedDetail;
 window.recDetailToggleWl = async function(tmdbId) {
   await window.toggleRecommendWatchlist(tmdbId);
