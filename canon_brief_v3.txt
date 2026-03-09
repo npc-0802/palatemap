@@ -1,5 +1,5 @@
 Palate Map
-Product Brief · Living Document · v3.14
+Product Brief · Living Document · v3.15
 Last updated: March 2026
 Confidential — do not distribute
 
@@ -202,6 +202,7 @@ Empty state: "Terra incognita." dashed-border uncharted treatment.
 
 Predict
 Search unrated films. Builds taste fingerprint. Finds comparables by shared director/cast. Calls Claude via Cloudflare proxy. Returns predicted score per category, confidence, 2nd-person reasoning anchored to user's specific films. Results cached in currentUser.predictions (keyed by tmdbId) and synced to Supabase — subsequent opens show cached result instantly with "Re-predict →" available. ＋ Watchlist and Rate now → actions on result.
+"Find me a film →": button below search input. Fetches TMDB popular (2 pages) + 1 genre-seeded discover page using user's most-rated genre. Filters out rated + watchlisted films. Takes top 6 by quality-weighted vote_average. Runs 6 Claude predictions in parallel. Shows top 3 ranked by predicted total as recommendation cards. Each card: poster, title, predicted total, confidence, truncated reasoning, "+ Watch List" and "Full prediction →" buttons. "Full prediction →" loads cached result (no second API call). "Refresh →" advances page offset for fresh candidates.
 
 Analysis
 Editorial header. Category averages split into Craft (Plot/Execution/Acting/Production) and Experience (Enjoyability/Rewatchability/Ending/Uniqueness) axis groups, shown as horizontal score bars. Below: Explore tabs — Directors / Writers / Actors / Production Co. / Years — ranked entity lists with click-through to entity detail pages.
@@ -353,6 +354,21 @@ Phase 3 — Growth Features [IN PROGRESS]
 
 • 3.9 Tagging system — context tags (alone / with someone / rewatch / bad week). [not started]
 
+• 3.10 Prediction engine — learning directions (see prediction-learning-spec.md for full detail):
+  Direction 1 ✓ — feed Claude its own track record (reconciled predictions injected into prompt; ≥2 threshold; sorted by recency).
+  Direction 2 — per-category bias correction. Compute average delta per category across all reconciled predictions; inject as explicit correction signal ("Your Acting predictions run 8 points low on average"). Trigger: 10+ reconciled predictions.
+  Direction 3 — weighted comparable scoring. Replace binary director/cast match with similarity score across genre, era, director, cast overlap, total score range. Heavily-weighted comparables anchor predictions more precisely.
+  Direction 4 — confidence calibration from actuals. Once 20+ reconciled predictions exist, group by reported confidence level and compute mean absolute delta per group. Store as currentUser.predictionCalibration and surface in Predict screen UI.
+  Direction 5 — true fine-tuning on per-user prediction errors. Requires own model infrastructure. Out of scope until Phase 4 / ~10,000 paid users.
+
+• 3.11 "Find us a film" — recommendation engine for friend pairs. Appears in the Overlap tab. Blends two users' taste profiles; finds films predicted to score well for both. Same pipeline as "Find me a film" (findMeAFilm in predict.js) but called with a merged taste profile. [not started]
+
+• 3.12 Monetization / paywall — see Section 11. Launch sequence ordered by dependency; gating logic goes in after Netlify migration + Stripe. Key gating points: prediction counter (predictedAt timestamps already stored — no schema change needed), watch list auto-predict limit (first 3 items free), prediction history access. [not started]
+
+• 3.13 Google OAuth verification — submit app for Google review to remove "unverified app" warning. Required before public launch. [not started]
+
+• 3.14 Terms of Service page — required before taking payment. Must include anti-scraping, anti-reverse-engineering, prohibition on using Palate Map data to train competing models. [not started]
+
 Phase 4 — Platform
 • 4.1 Universal entity search — global search surfacing any director/actor/writer/company (entity-level, not film-level — film search is covered by 3.8 Global Search). Entity page shows: TMDB data, user's own rankings (if any), community avg score (requires 4.2). Requires schema change: separate palatemap_ratings table (see below).
 • 4.2 Community ratings layer — requires migrating films from per-user JSON blob to a normalized palatemap_ratings table (user_id, film_tmdb_id, scores jsonb, total). Enables: community avg score on any film or entity, "popular with users like you" discovery. Major schema change — plan carefully.
@@ -387,4 +403,98 @@ Resend key:            stored in Cloudflare env var RESEND_API_KEY only
 GitHub repo:           github.com/npc-0802/palatemap (private)
 GitHub Pages:          palatemap.com (custom domain)
 
-Palate Map · private product brief · v3.14 · do not distribute
+11  Monetization
+
+Model: Freemium. Free tier is fully functional and designed to create the "aha" moment before any paywall is encountered. Paid tier unlocks intelligence features — things that make Palate Map smarter and more personal over time.
+
+Positioning: "Letterboxd charges you to log. Palate Map charges you to learn."
+Palate Map is currently priced as a niche film tool. When cross-domain expansion lands (Phase 4.3+), pricing will be revisited upward to reflect the product as a taste OS.
+
+Pricing
+• Monthly: $4.99/mo
+• Annual: $39.99/yr (~$3.33/mo effective, ~33% discount)
+Annual is positioned at 2x Letterboxd Pro ($19.99/yr). Price increase trigger: when first non-film domain ships, move to $9.99/mo / $89.99/yr.
+
+Free vs Paid
+Feature                              Free              Paid
+------------------------------------------------------------
+Rate & rank films                    Yes               Yes
+Taste profile & palate type          Yes               Yes
+Calibration (Elo)                    Yes               Yes
+Friends & 1:1 taste overlap          Yes               Yes
+Predictions                          5 per month       Unlimited
+Prediction history & accuracy        No                Yes
+Predicted vs actual comparison       No                Yes
+Watch list predictions               First 3 items     All items
+"Why was I wrong" deep dive          No                Yes
+Group taste overlap (3+ friends)     No                Yes
+Monthly taste report                 No                Yes
+Data export (JSON/CSV)               No                Yes
+Early access to new domains          No                Yes
+
+Infrastructure costs (monthly estimates)
+• Netlify: $0–19/mo (free at launch, Pro at scale)
+• Cloudflare Workers: $5/mo (pay from day one, free tier insufficient at soft-launch)
+• Supabase: $0/mo (free tier; upgrade to Pro at ~500 users, $25/mo)
+• Anthropic API: variable — ~$75–150/mo at 100 users. Scales with engagement not just users. Auto-predict caching is the primary cost control lever. Do not re-run auto-predict if cache is less than 7 days old.
+• TMDB API: $15–20/mo (commercial use required at launch)
+• Resend: $20/mo (magic link login volume exceeds free tier at soft-launch scale)
+• Stripe: effective rate 3.6% + $0.30 per transaction (2.9% processing + 0.7% Billing)
+• Total fixed at launch: ~$40–65/mo excluding Anthropic variable cost
+
+Break-even: approximately 20–25 paid subscribers (mix of monthly and annual). Gross margin is 50–65% at modest scale, compressing toward 50% at 1,000+ paid users primarily due to Anthropic API scaling.
+
+Scaling thresholds
+• ~500 users: upgrade Supabase to Pro ($25/mo); monitor Netlify function limits
+• ~1,000 paid: contact Anthropic for volume pricing; tighten prediction caching rules
+• Phase 4 expansion: raise pricing; migrate schema from JSONB blob to normalized tables; evaluate cheaper model for auto-predict
+• ~10,000 paid: evaluate fine-tuned smaller model for predictions; negotiate Stripe interchange-plus; evaluate Supabase alternatives
+
+Launch sequence (ordered by dependency)
+1. Google OAuth verification — publish app, removes unverified warning for new users
+2. Terms of Service page — required before taking money
+3. Migrate hosting to Netlify — required for Stripe webhook serverless functions
+4. Stripe integration — products, webhook handler, subscription status on user object
+5. Upgrade flow UI — paywall modal, Stripe checkout, success state
+6. Feature gating — prediction counter, watch list lock, prediction history
+7. Account management — Stripe billing portal in Profile screen
+8. Build group overlap (3+ friends) — listed in paid tier, not yet built
+9. Pre-launch smoke test — full flow on mobile and desktop
+
+12  Ownable Intelligence — Strategic Principle
+
+Core principle: every engineering decision should increase the intelligence Palate Map owns outright and decrease reliance on any third-party API or service. The goal is not to eliminate the Anthropic API dependency immediately — it is to ensure that dependency becomes increasingly substitutable over time, and that the irreplaceable value lives in Palate Map's data and architecture, not in any external model.
+
+What Palate Map owns
+• User rating data — every score, weight adjustment, calibration session, and prediction delta. This compounds with time and has no equivalent at any competitor.
+• The taste model architecture — the 8-category scoring system, archetype framework, weighting engine, and Elo calibration logic. These are Palate Map inventions, not API outputs.
+• The prediction reconciliation loop — predicted vs actual deltas, per-category bias vectors, confidence calibration data. This is the seed of a proprietary learning system.
+• The social graph — friendship connections, overlap scores, and compatibility data. A network asset with no external equivalent.
+• The prompt architecture — structured so the underlying model (Claude, GPT, or a future fine-tune) can be swapped without changing the surrounding system.
+
+What is currently rented
+• Language model reasoning — the Anthropic API performs the final prediction inference. If Anthropic changes pricing, terms, or availability, predictions are affected. This is the primary substitution risk.
+
+Engineering rules that follow from this principle
+1. Never put scoring logic, archetype detection, or weighting calculations inside a prompt. These must live in code (state.js, predict.js) and be passed as structured data to the model, not derived by it.
+2. Every prediction call must produce structured, storable output — scores, confidence, reasoning, and delta when rated. No intelligence should be generated and discarded.
+3. The prompt interface must be model-agnostic. System prompts and user prompts should not reference Claude or Anthropic by name internally, and should be written so a different model could be substituted by changing one import or config value.
+4. As prediction volume grows, the reconciled prediction dataset (predicted scores + actual scores + deltas) is a first-class asset to be preserved and structured for eventual fine-tuning use.
+5. Bias correction vectors, confidence calibration data, and per-category accuracy metrics should be stored on the user object and updated over time — not recomputed from scratch on each call.
+6. Avoid using any external service for logic that could reasonably be computed locally. Examples: archetype detection (cosine similarity, already in JS), compatibility scoring (already in JS), total score calculation (already in JS). These must never migrate into API calls.
+
+The substitution path
+Phase 1 (current): Claude Sonnet via Anthropic API. Full reasoning capability, higher cost, external dependency.
+Phase 2 (future, ~1,000+ paid users): Evaluate fine-tuned smaller model (e.g. a quantized open-source model hosted on Modal or Replicate) for auto-predict calls. Reserve Sonnet for manual predictions and deep-dive features. Target: cut API cost by 60–80% while maintaining accuracy on routine predictions.
+Phase 3 (future, ~10,000+ paid users): The reconciled prediction dataset is large enough to fine-tune a dedicated Palate Map prediction model. This model is trained on real user prediction errors, owns the task completely, and runs at a fraction of the per-call cost. This is Direction 5 of the prediction learning roadmap.
+
+IP protection posture
+• Trademark: file "Palate Map" with USPTO (one-time ~$250–350, recommended before public launch).
+• Trade secrets: keep prompt architecture, scoring formula, and prediction logic out of client-side code. The Cloudflare Worker proxy already ensures prompts are not visible in network requests. Maintain this.
+• Terms of Service: include anti-scraping, anti-reverse-engineering, and prohibition on using Palate Map data to train competing models.
+• Copyright: code and UI content are automatically protected. No registration required, though registration strengthens legal standing.
+• Real moat: user data depth, social graph lock-in, and execution speed. Legal protection is secondary to these.
+
+Note for Claude Code sessions: when implementing any feature that involves intelligence, prediction, scoring, or user modeling, default to keeping the logic in JavaScript rather than delegating it to the API. Only use the API for natural language generation tasks (reasoning text, blurbs, explanations) that genuinely require it. If a feature can be computed deterministically from user data, compute it in code.
+
+Palate Map · private product brief · v3.15 · do not distribute

@@ -1365,6 +1365,18 @@ async function loadFriendInsight(friend, compat, color) {
   const el = document.getElementById('friend-insight');
   if (!el) return;
 
+  // Cache key: stable as long as compatibility score and film counts don't change
+  const cacheKey = `palatemap_blurb::${currentUser.id}::${friend.id}::${compat.total}::${MOVIES.length}::${(friend.movies||[]).length}`;
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      el.textContent = cached;
+      el.style.color = 'var(--ink)';
+      el.style.fontStyle = 'normal';
+      return;
+    }
+  } catch {}
+
   const top3User = [...MOVIES].sort((a,b) => b.total - a.total).slice(0,3).map(m => m.title);
   const top3Friend = [...(friend.movies||[])].sort((a,b) => b.total - a.total).slice(0,3).map(m => m.title);
 
@@ -1390,7 +1402,12 @@ Write exactly 2 sentences addressed to ${currentUser.display_name} (2nd person) 
     });
     const data = await res.json();
     const text = data.content?.[0]?.text || '';
-    if (el) { el.textContent = text; el.style.color = 'var(--ink)'; el.style.fontStyle = 'normal'; }
+    if (el) {
+      el.textContent = text;
+      el.style.color = 'var(--ink)';
+      el.style.fontStyle = 'normal';
+      try { localStorage.setItem(cacheKey, text); } catch {}
+    }
   } catch(e) {
     if (el) { el.style.display = 'none'; }
     const label = document.getElementById('friend-insight-label');
