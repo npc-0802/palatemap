@@ -1631,6 +1631,7 @@ async function constrainedSearch() {
     people.forEach(p => {
       const dept = p.known_for_department || 'Person';
       const type = dept === 'Directing' ? 'director' : dept === 'Writing' ? 'writer' : 'actor';
+      const deptLabel = dept === 'Acting' ? 'Actor' : dept === 'Directing' ? 'Director' : dept === 'Writing' ? 'Writer' : dept;
       const safeName = (p.name || '').replace(/'/g, "\\'");
       const photo = p.profile_path
         ? `<img class="constrained-chip-photo" src="https://image.tmdb.org/t/p/w92${p.profile_path}">`
@@ -1639,7 +1640,7 @@ async function constrainedSearch() {
         ${photo}
         <div>
           <div class="constrained-chip-name">${p.name}</div>
-          <div class="constrained-chip-type">${dept}</div>
+          <div class="constrained-chip-type">${deptLabel}</div>
         </div>
       </div>`);
     });

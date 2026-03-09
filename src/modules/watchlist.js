@@ -521,6 +521,7 @@ async function gsSearch() {
     html += gsSecHeader('People & companies');
     html += tmdbPeople.map(p => {
       const dept = p.known_for_department || 'Person';
+      const deptLabel = dept === 'Acting' ? 'Actor' : dept === 'Directing' ? 'Director' : dept === 'Writing' ? 'Writer' : dept;
       const safeName = p.name.replace(/'/g, "\\'");
       const photo = p.profile_path
         ? `<img src="https://image.tmdb.org/t/p/w92${p.profile_path}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0">`
@@ -529,7 +530,7 @@ async function gsSearch() {
         ${photo}
         <div style="flex:1;min-width:0">
           <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink)">${p.name}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">${dept}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">${deptLabel}</div>
         </div>
       </div>`;
     }).join('');
