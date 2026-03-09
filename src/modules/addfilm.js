@@ -88,6 +88,8 @@ export function liveSearch(val) {
 }
 
 // Show watchlist films below search when step 1 is active
+let wlSearchLimit = 6;
+const WL_PAGE_SIZE = 6;
 export function renderWatchlistInSearch() {
   const section = document.getElementById('add-watchlist-section');
   const container = document.getElementById('add-watchlist-films');
@@ -95,7 +97,7 @@ export function renderWatchlistInSearch() {
   import('./watchlist.js').then(mod => {
     const wl = mod.getWatchlist ? mod.getWatchlist() : [];
     if (!wl || wl.length === 0) { section.style.display = 'none'; return; }
-    const films = wl.slice(0, 6);
+    const films = wl.slice(0, wlSearchLimit);
     section.style.display = '';
     container.innerHTML = films.map(f => {
       const poster = f.poster ? 'https://image.tmdb.org/t/p/w92' + f.poster : '';
@@ -104,8 +106,22 @@ export function renderWatchlistInSearch() {
         '<div class="add-recent-title">' + (f.title||'') + '</div>' +
       '</div>';
     }).join('');
+    const moreEl = document.getElementById('add-watchlist-more');
+    if (moreEl) {
+      const remaining = wl.length - wlSearchLimit;
+      if (remaining > 0) {
+        moreEl.style.display = '';
+        moreEl.textContent = `Show more (${remaining}) →`;
+      } else {
+        moreEl.style.display = 'none';
+      }
+    }
   }).catch(() => { section.style.display = 'none'; });
 }
+window.addWatchlistShowMore = function() {
+  wlSearchLimit += WL_PAGE_SIZE;
+  renderWatchlistInSearch();
+};
 
 // ── STEP 1: FILM SELECTION + CONFIRMATION CARD ──
 
@@ -259,6 +275,7 @@ export function toggleCompany(companyId) {
 
 export function resetToSearch() {
   prefillScores = null;
+  wlSearchLimit = WL_PAGE_SIZE;
   document.getElementById('tmdb-search-phase').style.display = '';
   document.getElementById('tmdb-curation-phase').style.display = 'none';
   document.getElementById('tmdb-results').innerHTML = '';
