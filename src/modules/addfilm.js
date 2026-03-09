@@ -433,7 +433,6 @@ function renderScoreCard() {
 
   container.innerHTML = `
     <div style="position:relative">
-      <button class="score-showall-toggle" onclick="toggleScoringMode()">Show all categories →</button>
       <div class="score-progress-dots">${dots}</div>
     </div>
     <div class="score-card score-card-enter-right" id="activeScoreCard">
@@ -525,11 +524,9 @@ window.updateScoreCard = function(val) {
 window.selectAnchorCard = function(catKey, anchorScore, el) {
   el.closest('.anchor-row').querySelectorAll('.anchor-film').forEach(a => a.classList.remove('selected'));
   el.classList.add('selected');
-  const current = newFilm.scores[catKey] ?? 50;
-  const nudged = Math.round((current + anchorScore) / 2);
   const slider = document.getElementById('scoreCardSlider');
-  if (slider) { slider.value = nudged; }
-  window.updateScoreCard(nudged);
+  if (slider) { slider.value = anchorScore; }
+  window.updateScoreCard(anchorScore);
 };
 
 window.toggleScoringMode = function() {
@@ -552,10 +549,8 @@ window.toggleScoringMode = function() {
 window.selectAnchor = function(catKey, anchorScore, el) {
   el.closest('.anchor-row').querySelectorAll('.anchor-film').forEach(a => a.classList.remove('selected'));
   el.classList.add('selected');
-  const current = newFilm.scores[catKey] ?? 50;
-  const nudged = Math.round((current + anchorScore) / 2);
-  document.getElementById('slider_' + catKey).value = nudged;
-  updateSlider(catKey, nudged);
+  document.getElementById('slider_' + catKey).value = anchorScore;
+  updateSlider(catKey, anchorScore);
 };
 
 window.updateSlider = function(catKey, val) {
