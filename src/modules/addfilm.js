@@ -16,23 +16,34 @@ let tmdbFullCast = [];
 let castChecked = {};
 let companyChecked = {};
 
+// ── STEP INDICATOR ──
+
+const STEP_LABELS = {
+  1: 'Select a film',
+  2: 'Score',
+  3: 'Refine',
+  4: 'Result'
+};
+
 export function goToStep(n) { updateStepUI(n); }
 
 function updateStepUI(step) {
-  for (let i = 1; i <= 4; i++) {
-    const num = document.getElementById('sn'+i);
-    const lbl = document.getElementById('sl'+i);
-    if (i < step) { num.className = 'step-num done'; num.textContent = '✓'; }
-    else if (i === step) { num.className = 'step-num active'; num.textContent = i; lbl.className = 'step-label active'; }
-    else { num.className = 'step-num'; num.textContent = i; lbl.className = 'step-label'; }
-  }
   document.querySelectorAll('.step-panel').forEach((p,i) => {
     p.classList.toggle('active', i+1 === step);
   });
   currentStep = step;
+  const indicator = document.getElementById('addfilm-step-indicator');
+  if (indicator) {
+    if (step === 2 && scoringMode === 'card') {
+      const cat = CATEGORIES[currentCardIdx];
+      indicator.textContent = `Score · ${cat ? cat.label : ''}`;
+    } else {
+      indicator.textContent = STEP_LABELS[step] || '';
+    }
+  }
 }
 
-// LIVE SEARCH
+// ── LIVE SEARCH ──
 let searchDebounceTimer = null;
 
 export function liveSearch(val) {
@@ -72,6 +83,8 @@ export function liveSearch(val) {
   }, 280);
 }
 
+// ── STEP 1: FILM SELECTION + CONFIRMATION CARD ──
+
 export async function tmdbSelect(tmdbId, title) {
   document.getElementById('tmdb-results').innerHTML = '<div class="tmdb-loading">Loading film details…</div>';
   try {
@@ -92,8 +105,10 @@ export async function tmdbSelect(tmdbId, title) {
     companyChecked = {};
     companies.forEach(c => { companyChecked[c.id] = { company: c, checked: true }; });
 
-    renderTmdbHeader();
+    // Render the confirmation hero card
+    renderConfirmationHero();
 
+    // Populate the collapsible curation section
     document.getElementById('curate-directors').textContent = directors.join(', ') || 'Unknown';
     document.getElementById('curate-writers').textContent = writers.join(', ') || 'Unknown';
     renderCastCuration(top8Cast);
@@ -102,23 +117,33 @@ export async function tmdbSelect(tmdbId, title) {
     document.getElementById('tmdb-search-phase').style.display = 'none';
     document.getElementById('tmdb-results').innerHTML = '';
     document.getElementById('tmdb-curation-phase').style.display = 'block';
+    // Collapse the curate section by default
+    document.getElementById('addfilm-curate').classList.remove('expanded');
 
   } catch(e) {
     document.getElementById('tmdb-results').innerHTML = '<div class="tmdb-error">Failed to load film details. Try again.</div>';
   }
 }
 
-function renderTmdbHeader() {
+function renderConfirmationHero() {
   const detail = newFilm._tmdbDetail;
   if (!detail) return;
-  document.getElementById('tmdb-film-header').innerHTML = `
-    ${newFilm._posterUrl ? `<img src="${newFilm._posterUrl}" style="width:80px;border-radius:4px;flex-shrink:0" alt="">` : ''}
-    <div>
-      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;line-height:1.1">${detail.title}</div>
-      <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--dim);margin-top:4px">${newFilm.year || ''} · ${detail.runtime ? detail.runtime + ' min' : ''}</div>
-      <div style="font-size:13px;color:var(--dim);margin-top:8px;max-width:480px;line-height:1.5">${(detail.overview||'').slice(0,200)}${detail.overview && detail.overview.length > 200 ? '…':''}</div>
-      <button onclick="openAddFilmPosterPicker()" style="margin-top:12px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;background:none;border:none;color:var(--blue);padding:0;cursor:pointer;text-decoration:underline">Wrong poster? Choose another match →</button>
-    </div>`;
+  const posterSrc = newFilm._posterUrl
+    ? newFilm._posterUrl.replace('/w185', '/w342')
+    : '';
+  const directorStr = (newFilm._allDirectors || []).join(', ');
+  const overview = (detail.overview || '').slice(0, 200) + (detail.overview && detail.overview.length > 200 ? '…' : '');
+
+  document.getElementById('addfilm-hero').innerHTML = `
+    ${posterSrc ? `<img class="addfilm-hero-poster" src="${posterSrc}" alt="">` : ''}
+    <div class="addfilm-hero-title">${detail.title}</div>
+    <div class="addfilm-hero-meta">${newFilm.year || ''} · ${detail.runtime ? detail.runtime + ' min' : ''}${directorStr ? ' · ' + directorStr : ''}</div>
+    ${overview ? `<div class="addfilm-hero-overview">${overview}</div>` : ''}
+    <div class="addfilm-hero-cta">
+      <button class="btn btn-action" onclick="confirmTmdbData()">Rate this film →</button>
+    </div>
+    <div><button class="addfilm-hero-back" onclick="resetToSearch()">← Search again</button></div>
+  `;
 }
 
 function renderCastCuration(castList) {
@@ -218,10 +243,36 @@ export function confirmTmdbData() {
   updateStepUI(2);
 }
 
+// ── STEP 2: SCORING ──
+
 let prefillScores = null;
+let scoringMode = localStorage.getItem('pm_scoring_mode') || 'card'; // 'card' or 'all'
+let currentCardIdx = 0;
+let showingInterstitial = false;
 
 export function prefillWithPrediction(scores) {
   prefillScores = scores;
+}
+
+const CATEGORY_TIPS = {
+  plot: "How strong is the story on its own merits?",
+  execution: "Execution is about the filmmaker's choices, not the budget.",
+  acting: "Think of the cast as a whole, not just the lead.",
+  production: "Score, sets, costumes — the craft that surrounds the story.",
+  enjoyability: "This is the most honest question — trust your gut.",
+  rewatchability: "Would you watch this on a lazy Sunday?",
+  ending: "Did it earn its conclusion?",
+  uniqueness: "Could only this film exist this way?"
+};
+
+function getTierColor(score) {
+  if (score >= 90) return '#1a5c2e';
+  if (score >= 80) return '#2e7d4e';
+  if (score >= 70) return '#5a7a3a';
+  if (score >= 60) return '#7a7040';
+  if (score >= 50) return 'var(--dim)';
+  if (score >= 40) return '#8b4020';
+  return 'var(--red)';
 }
 
 function getPredictionComparison(tmdbId, actualTotal) {
@@ -261,10 +312,28 @@ function getAnchors(catKey) {
 }
 
 function renderCalibration() {
+  // Initialize scores
+  CATEGORIES.forEach(cat => {
+    newFilm.scores[cat.key] = prefillScores?.[cat.key] ?? newFilm.scores[cat.key] ?? 50;
+  });
+
+  if (scoringMode === 'card') {
+    currentCardIdx = 0;
+    showingInterstitial = false;
+    renderScoreCard();
+  } else {
+    renderAllAtOnce();
+  }
+}
+
+function renderAllAtOnce() {
+  document.getElementById('scoreCardContainer').style.display = 'none';
+  document.getElementById('calibrationAllAtOnce').style.display = 'block';
+
   const container = document.getElementById('calibrationCategories');
   container.innerHTML = CATEGORIES.map(cat => {
     const anchors = getAnchors(cat.key);
-    const initVal = prefillScores?.[cat.key] ?? newFilm.scores[cat.key] ?? 50;
+    const initVal = newFilm.scores[cat.key] ?? 50;
     return `<div class="category-section" id="catSection_${cat.key}">
       <div class="cat-header">
         <div class="cat-name">${cat.label}</div>
@@ -297,12 +366,146 @@ function renderCalibration() {
       </div>
     </div>`;
   }).join('');
-  CATEGORIES.forEach(cat => {
-    newFilm.scores[cat.key] = prefillScores?.[cat.key] ?? newFilm.scores[cat.key] ?? 50;
-  });
 }
 
-// Expose inline handlers
+function renderScoreCard() {
+  const container = document.getElementById('scoreCardContainer');
+  container.style.display = 'block';
+  document.getElementById('calibrationAllAtOnce').style.display = 'none';
+
+  const cat = CATEGORIES[currentCardIdx];
+  const groupLabel = currentCardIdx < 4 ? 'Craft' : 'Experience';
+  const val = newFilm.scores[cat.key] ?? 50;
+  const anchors = getAnchors(cat.key);
+  const tip = CATEGORY_TIPS[cat.key] || '';
+
+  // Progress dots
+  const dots = CATEGORIES.map((c, i) => {
+    const score = newFilm.scores[c.key];
+    const isActive = i === currentCardIdx;
+    const isScored = i < currentCardIdx;
+    const color = isScored ? getTierColor(score) : '';
+    return `<div class="score-dot${isActive ? ' active' : ''}${isScored ? ' scored' : ''}" style="${isScored ? `background:${color}` : ''}"></div>`;
+  }).join('');
+
+  // Update step indicator text
+  const indicator = document.getElementById('addfilm-step-indicator');
+  if (indicator) indicator.textContent = `Score · ${cat.label}`;
+
+  container.innerHTML = `
+    <div style="position:relative">
+      <button class="score-showall-toggle" onclick="toggleScoringMode()">Show all categories →</button>
+      <div class="score-progress-dots">${dots}</div>
+    </div>
+    <div class="score-card score-card-enter-right" id="activeScoreCard">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:8px">${groupLabel} · Category ${currentCardIdx + 1} of 8</div>
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:32px;color:var(--ink);letter-spacing:-1px;margin-bottom:6px">${cat.label}</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dim);font-style:italic;margin-bottom:28px">"${cat.question}"</div>
+      ${anchors.length > 0 ? `
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Reference</div>
+        <div class="anchor-row" style="display:grid;grid-template-columns:repeat(${Math.min(anchors.length, 3)}, 1fr);gap:8px;max-width:400px;margin:0 auto 20px">
+          ${anchors.slice(0, 3).map(a => `
+            <div class="anchor-film" onclick="selectAnchorCard('${cat.key}', ${a.scores[cat.key]}, this)">
+              <div class="anchor-film-title">${a.title}</div>
+              <div class="anchor-film-score">${a.scores[cat.key]}</div>
+            </div>`).join('')}
+        </div>` : ''}
+      <div class="score-card-value" id="scoreCardValue" style="color:${getTierColor(val)}">${val}</div>
+      <div class="score-card-label" id="scoreCardLabel">${getLabel(val)}</div>
+      <div style="max-width:400px;margin:20px auto 0">
+        <input type="range" min="1" max="100" value="${val}" id="scoreCardSlider"
+          style="background:linear-gradient(to right,rgba(180,50,40,0.45) 0%,rgba(180,50,40,0.45) 15%,var(--rule) 15%,var(--rule) 85%,rgba(40,130,60,0.45) 85%,rgba(40,130,60,0.45) 100%)"
+          oninput="updateScoreCard(this.value)">
+        <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-top:2px">
+          <span>1</span><span>50</span><span>100</span>
+        </div>
+      </div>
+    </div>
+    <div class="score-card-nav">
+      <button class="btn btn-outline" onclick="${currentCardIdx === 0 ? 'goToStep(1)' : 'scoreCardPrev()'}" style="min-width:100px">← ${currentCardIdx === 0 ? 'Back' : 'Prev'}</button>
+      <button class="btn btn-primary" onclick="scoreCardNext()" style="min-width:100px">${currentCardIdx === 7 ? 'Continue →' : 'Next →'}</button>
+    </div>
+    ${tip ? `<div class="score-card-tip">${tip}</div>` : ''}
+  `;
+}
+
+function renderInterstitial() {
+  showingInterstitial = true;
+  const container = document.getElementById('scoreCardContainer');
+  container.innerHTML = `
+    <div class="score-interstitial">
+      <div class="score-interstitial-title">Now for how it made you feel.</div>
+      <div class="score-interstitial-sub">The first four categories measured craft — how well the film was made. The next four measure experience — how the film landed for you personally.</div>
+      <div style="margin-top:32px">
+        <button class="btn btn-primary" onclick="dismissInterstitial()">Continue →</button>
+      </div>
+    </div>
+  `;
+}
+
+window.dismissInterstitial = function() {
+  showingInterstitial = false;
+  renderScoreCard();
+};
+
+window.scoreCardNext = function() {
+  if (currentCardIdx < 7) {
+    currentCardIdx++;
+    // Show interstitial between craft and experience (after index 3, before index 4)
+    if (currentCardIdx === 4 && !showingInterstitial) {
+      renderInterstitial();
+      return;
+    }
+    renderScoreCard();
+  } else {
+    // Done scoring — go to step 3
+    goToStep3();
+  }
+};
+
+window.scoreCardPrev = function() {
+  if (currentCardIdx > 0) {
+    currentCardIdx--;
+    renderScoreCard();
+  }
+};
+
+window.updateScoreCard = function(val) {
+  val = parseInt(val);
+  const cat = CATEGORIES[currentCardIdx];
+  newFilm.scores[cat.key] = val;
+  const numEl = document.getElementById('scoreCardValue');
+  const lblEl = document.getElementById('scoreCardLabel');
+  if (numEl) { numEl.textContent = val; numEl.style.color = getTierColor(val); }
+  if (lblEl) lblEl.textContent = getLabel(val);
+};
+
+window.selectAnchorCard = function(catKey, anchorScore, el) {
+  el.closest('.anchor-row').querySelectorAll('.anchor-film').forEach(a => a.classList.remove('selected'));
+  el.classList.add('selected');
+  const current = newFilm.scores[catKey] ?? 50;
+  const nudged = Math.round((current + anchorScore) / 2);
+  const slider = document.getElementById('scoreCardSlider');
+  if (slider) { slider.value = nudged; }
+  window.updateScoreCard(nudged);
+};
+
+window.toggleScoringMode = function() {
+  if (scoringMode === 'card') {
+    scoringMode = 'all';
+    localStorage.setItem('pm_scoring_mode', 'all');
+    renderAllAtOnce();
+    const indicator = document.getElementById('addfilm-step-indicator');
+    if (indicator) indicator.textContent = 'Score';
+  } else {
+    scoringMode = 'card';
+    localStorage.setItem('pm_scoring_mode', 'card');
+    currentCardIdx = 0;
+    renderScoreCard();
+  }
+};
+
+// Keep old handlers for all-at-once mode
 window.selectAnchor = function(catKey, anchorScore, el) {
   el.closest('.anchor-row').querySelectorAll('.anchor-film').forEach(a => a.classList.remove('selected'));
   el.classList.add('selected');
@@ -318,6 +521,8 @@ window.updateSlider = function(catKey, val) {
   document.getElementById('sliderVal_' + catKey).textContent = val;
   document.getElementById('sliderDesc_' + catKey).textContent = getLabel(val);
 };
+
+// ── STEP 3: HEAD-TO-HEAD ──
 
 export function goToStep3() {
   renderHth();
@@ -341,42 +546,64 @@ function renderHth() {
   });
   hthComparisons = hthComparisons.slice(0, 6);
   hthIdx = 0;
+
+  if (hthComparisons.length === 0) {
+    // Auto-advance after brief message
+    const container = document.getElementById('hthContainer');
+    container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--dim)">
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:20px;color:var(--ink);margin-bottom:8px">Your scores are clearly differentiated.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px">No adjustments needed.</div>
+    </div>`;
+    setTimeout(() => goToStep4(), 1500);
+    return;
+  }
   renderHthCard();
 }
 
 function renderHthCard() {
   const container = document.getElementById('hthContainer');
-  if (hthComparisons.length === 0 || hthIdx >= hthComparisons.length) {
+  if (hthIdx >= hthComparisons.length) {
     container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--dim);font-style:italic">
-      No close comparisons needed — your scores are clearly differentiated. Click Continue.
+      All comparisons complete. Click Continue.
     </div>`;
     return;
   }
   const { cat, film } = hthComparisons[hthIdx];
   const myScore = newFilm.scores[cat.key];
+
+  // Poster thumbnails
+  const newPoster = newFilm._posterUrl
+    ? `<img class="hth-poster" src="${newFilm._posterUrl}" alt="">`
+    : '';
+  const existPoster = film.poster
+    ? `<img class="hth-poster" src="https://image.tmdb.org/t/p/w92${film.poster}" alt="">`
+    : '';
+
   container.innerHTML = `
-    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">
-      Comparison ${hthIdx+1} of ${hthComparisons.length} &nbsp;·&nbsp; ${cat.label} (×${cat.weight})
-    </div>
-    <div class="hth-prompt">Which has the better <em>${cat.label.toLowerCase()}</em>?</div>
-    <div class="hth-row">
-      <div class="hth-card" onclick="hthChoice('new', '${cat.key}', ${film.scores[cat.key]})">
-        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">New film</div>
-        <div class="hth-title">${newFilm.title}</div>
-        <div class="hth-score">${myScore}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:4px">${getLabel(myScore)}</div>
+    <div class="hth-card-transition">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;text-align:center">
+        Comparison ${hthIdx+1} of ${hthComparisons.length} &nbsp;·&nbsp; ${cat.label} (×${cat.weight})
       </div>
-      <div class="hth-vs">vs</div>
-      <div class="hth-card" onclick="hthChoice('existing', '${cat.key}', ${film.scores[cat.key]})">
-        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">From your list</div>
-        <div class="hth-title">${film.title}</div>
-        <div class="hth-score">${film.scores[cat.key]}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:4px">${getLabel(film.scores[cat.key])}</div>
+      <div class="hth-prompt">Which has the better <em>${cat.label.toLowerCase()}</em>?</div>
+      <div class="hth-row">
+        <div class="hth-card" onclick="hthChoice('new', '${cat.key}', ${film.scores[cat.key]})">
+          ${newPoster}
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">New film</div>
+          <div class="hth-title">${newFilm.title}</div>
+          <div class="hth-score">${myScore} · ${getLabel(myScore)}</div>
+        </div>
+        <div class="hth-vs">vs</div>
+        <div class="hth-card" onclick="hthChoice('existing', '${cat.key}', ${film.scores[cat.key]})">
+          ${existPoster}
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">From your list</div>
+          <div class="hth-title">${film.title}</div>
+          <div class="hth-score">${film.scores[cat.key]} · ${getLabel(film.scores[cat.key])}</div>
+        </div>
       </div>
-    </div>
-    <div style="display:flex;justify-content:center;align-items:center;gap:24px;margin-top:4px">
-      ${hthIdx > 0 ? `<span class="hth-skip" onclick="hthUndo()">← Undo</span>` : ''}
-      <span class="hth-skip" onclick="hthSkip()">They're equal / skip this one</span>
+      <div style="display:flex;justify-content:center;align-items:center;gap:24px;margin-top:4px">
+        ${hthIdx > 0 ? `<span class="hth-skip" onclick="hthUndo()">← Undo</span>` : ''}
+        <span class="hth-skip" onclick="hthSkip()">They're equal / skip this one</span>
+      </div>
     </div>
   `;
 }
@@ -404,6 +631,8 @@ window.hthUndo = function() {
   renderHthCard();
 };
 
+// ── STEP 4: RESULT REVEAL ──
+
 export function goToStep4() {
   renderResult();
   updateStepUI(4);
@@ -415,54 +644,69 @@ function renderResult() {
   const sorted = [...MOVIES, newFilm].sort((a,b) => b.total - a.total);
   const rank = sorted.indexOf(newFilm) + 1;
   const predictionComparison = getPredictionComparison(newFilm._tmdbId, total);
+  const totalDisplay = (Math.round(total * 10) / 10).toFixed(1);
 
   document.getElementById('resultCard').innerHTML = `
-    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">
-      Would rank #${rank} of ${MOVIES.length + 1}
-    </div>
-    <div class="result-film-title">${newFilm.title}</div>
-    <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--dim);margin-bottom:12px">${newFilm.year || ''} ${newFilm.director ? '· ' + newFilm.director : ''}</div>
-    <div class="result-total">${total}</div>
-    <div class="result-label">${getLabel(total)}</div>
-    ${predictionComparison ? `<div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin:12px 0 20px;display:flex;align-items:center;gap:8px">
-      <span>Predicted ${predictionComparison.predictedTotal}</span>
-      <span style="color:${predictionComparison.color};font-weight:600">${predictionComparison.delta > 0 ? '+' : ''}${predictionComparison.delta} · ${predictionComparison.label}</span>
-    </div>` : ''}
-    <div class="result-grid">
-      ${CATEGORIES.map(cat => `
-        <div class="result-cat">
-          <div class="result-cat-name">${cat.label} ×${cat.weight}</div>
-          <div class="result-cat-val ${scoreClass(newFilm.scores[cat.key] || 0)}">${newFilm.scores[cat.key] || '—'}</div>
-        </div>`).join('')}
-    </div>
-    <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--rule)">
-      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);margin-bottom:10px">Where it lands</div>
-      ${[-2,-1,0,1,2].map(offset => {
-        const slotRank = rank + offset;
-        if (slotRank < 1 || slotRank > sorted.length) return '';
-        const film = sorted[slotRank - 1];
-        const isCurrent = film === newFilm;
-        const filmTotal = isCurrent ? total : film.total;
-        const displayTotal = (Math.round(filmTotal * 10) / 10).toFixed(1);
-        if (isCurrent) {
-          return `<div style="display:flex;align-items:center;gap:12px;padding:9px 12px;background:var(--ink);margin:2px 0">
-            <span style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.45);min-width:20px;text-align:right">${slotRank}</span>
-            <span style="font-family:'Playfair Display',serif;font-weight:700;font-style:italic;flex:1;color:white;font-size:14px">${film.title}</span>
-            <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:white">${displayTotal}</span>
+    <div class="result-reveal">
+      <div class="result-reveal-eyebrow">Your verdict</div>
+
+      <div class="result-reveal-title">${newFilm.title}</div>
+      <div class="result-reveal-meta">${newFilm.year || ''}${newFilm.director ? ' · ' + newFilm.director : ''}</div>
+
+      <div class="result-reveal-score" style="color:${getTierColor(total)}">${totalDisplay}</div>
+      <div class="result-reveal-label">${getLabel(total)}</div>
+
+      ${predictionComparison ? `<div class="result-reveal-prediction">
+        <span>Predicted ${predictionComparison.predictedTotal}</span>
+        <span style="color:${predictionComparison.color};font-weight:600">${predictionComparison.delta > 0 ? '+' : ''}${predictionComparison.delta} · ${predictionComparison.label}</span>
+      </div>` : ''}
+
+      <div class="result-reveal-rank">Would rank #${rank} of ${MOVIES.length + 1}</div>
+
+      <div class="result-reveal-grid">
+        ${CATEGORIES.map(cat => `
+          <div class="result-cat">
+            <div class="result-cat-name">${cat.label} ×${cat.weight}</div>
+            <div class="result-cat-val ${scoreClass(newFilm.scores[cat.key] || 0)}">${newFilm.scores[cat.key] || '—'}</div>
+          </div>`).join('')}
+      </div>
+
+      <div class="result-reveal-leaderboard">
+        <div class="result-reveal-leaderboard-label">Where it lands</div>
+        ${[-2,-1,0,1,2].map(offset => {
+          const slotRank = rank + offset;
+          if (slotRank < 1 || slotRank > sorted.length) return '';
+          const film = sorted[slotRank - 1];
+          const isCurrent = film === newFilm;
+          const filmTotal = isCurrent ? total : film.total;
+          const displayTotal = (Math.round(filmTotal * 10) / 10).toFixed(1);
+          if (isCurrent) {
+            return `<div style="display:flex;align-items:center;gap:12px;padding:9px 12px;background:rgba(255,255,255,0.08);margin:2px 0;border-radius:2px">
+              <span style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.45);min-width:20px;text-align:right">${slotRank}</span>
+              <span style="font-family:'Playfair Display',serif;font-weight:700;font-style:italic;flex:1;color:white;font-size:14px">${film.title}</span>
+              <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:white">${displayTotal}</span>
+            </div>`;
+          }
+          const diff = (film.total - total).toFixed(1);
+          const diffColor = diff > 0 ? 'rgba(60,180,100,0.9)' : 'rgba(200,80,60,0.9)';
+          return `<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.06);margin:0">
+            <span style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.35);min-width:20px;text-align:right">${slotRank}</span>
+            <span style="font-family:'Playfair Display',serif;font-weight:700;flex:1;color:rgba(255,255,255,0.7);font-size:14px">${film.title}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:12px;color:rgba(255,255,255,0.45)">${displayTotal}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:${diffColor};min-width:36px;text-align:right">${diff > 0 ? '+' : ''}${diff}</span>
           </div>`;
-        }
-        const diff = (film.total - total).toFixed(1);
-        const diffColor = diff > 0 ? 'var(--green)' : 'var(--red)';
-        return `<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid var(--rule);margin:0">
-          <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);min-width:20px;text-align:right">${slotRank}</span>
-          <span style="font-family:'Playfair Display',serif;font-weight:700;flex:1;color:var(--ink);font-size:14px">${film.title}</span>
-          <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--dim)">${displayTotal}</span>
-          <span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:${diffColor};min-width:36px;text-align:right">${diff > 0 ? '+' : ''}${diff}</span>
-        </div>`;
-      }).join('')}
+        }).join('')}
+      </div>
+
+      <div class="result-reveal-actions">
+        <button class="btn btn-outline" onclick="goToStep(2)" style="color:rgba(255,255,255,0.6);border-color:rgba(255,255,255,0.2)">← Adjust Scores</button>
+        <button class="btn btn-action" onclick="saveFilm()">Save to Rankings ✓</button>
+      </div>
     </div>
   `;
 }
+
+// ── SAVE ──
 
 export function saveFilm() {
   hideAddFilmBanner();
@@ -476,7 +720,7 @@ export function saveFilm() {
     tmdbId: newFilm._tmdbId || null,
     scores: { ...newFilm.scores }
   });
-  // Prediction reconciliation — if this film was predicted, record actual vs predicted
+  // Prediction reconciliation
   const savedTmdbId = newFilm._tmdbId;
   if (savedTmdbId && currentUser?.predictions?.[String(savedTmdbId)]) {
     const entry = currentUser.predictions[String(savedTmdbId)];
@@ -504,7 +748,7 @@ export function saveFilm() {
     setCurrentUser({ ...currentUser, predictions: updatedPredictions });
     saveUserLocally();
   }
-  // Analytics: film rated
+  // Analytics
   track('film_rated', {
     tmdb_id: savedTmdbId || null,
     title: MOVIES[MOVIES.length - 1].title,
@@ -512,7 +756,6 @@ export function saveFilm() {
     films_rated_count: MOVIES.length,
     source: prefillScores ? 'watchlist' : 'search',
   });
-  // Analytics: prediction reconciled (if this film was previously predicted)
   if (savedTmdbId && currentUser?.predictions?.[String(savedTmdbId)]?.delta != null) {
     const entry = currentUser.predictions[String(savedTmdbId)];
     track('prediction_reconciled', {
@@ -524,7 +767,7 @@ export function saveFilm() {
   }
 
   saveToStorage();
-  // Auto-remove from watch list when a film is rated
+  // Auto-remove from watch list
   if (savedTmdbId) {
     const onWatchlist = (currentUser?.watchlist || []).some(w => String(w.tmdbId) === String(savedTmdbId));
     if (onWatchlist) removeFromWatchlist(savedTmdbId);

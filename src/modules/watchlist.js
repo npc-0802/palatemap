@@ -24,11 +24,18 @@ export function renderWatchlist() {
 
   content.innerHTML = `
     <div style="padding:28px 0 48px">
-      <div style="margin-bottom:24px">
+      <!-- Editorial header -->
+      <div style="margin-bottom:28px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);margin-bottom:10px">watch list · ${list.length} film${list.length !== 1 ? 's' : ''}</div>
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(28px,4vw,40px);line-height:1;color:var(--ink);letter-spacing:-1px;margin-bottom:12px">Up next.</div>
+        <div style="width:40px;height:3px;background:var(--blue);margin-bottom:16px"></div>
+      </div>
+      ${list.length === 0 ? emptyState() : listHTML(list)}
+      <!-- Search below content -->
+      <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--rule)">
         <input id="wl-search" type="text" placeholder="Search a film to add…" oninput="wlSearchDebounce()" style="width:100%;box-sizing:border-box;padding:13px 16px;border:1px solid var(--rule-dark);background:white;font-family:'DM Sans',sans-serif;font-size:15px;outline:none;color:var(--ink)" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--rule-dark)'">
         <div id="wl-search-results"></div>
       </div>
-      ${list.length === 0 ? emptyState() : listHTML(list)}
     </div>`;
 
   // Schedule background predictions for items that don't have one yet
@@ -54,8 +61,9 @@ function emptyState() {
   return `
     <div style="padding:48px 0;text-align:center;max-width:400px;margin:0 auto">
       <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:12px">— nothing queued —</div>
-      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;color:var(--ink);letter-spacing:-0.5px;margin-bottom:10px">Your queue is empty.</div>
-      <div style="font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.7;color:var(--dim)">Search above, or tap <strong style="color:var(--ink)">＋ Watchlist</strong> on any film across the app.</div>
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;color:var(--ink);letter-spacing:-0.5px;margin-bottom:10px">What's next?</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.7;color:var(--dim);margin-bottom:24px">Add films from anywhere in the app, or search below.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">Or check <span style="color:var(--blue);cursor:pointer" onclick="showScreen('predict')">For You</span> for recommendations →</div>
     </div>`;
 }
 
@@ -84,52 +92,50 @@ function sortPill(mode, label) {
 function listHTML(list) {
   const sorted = wlGetSortedList(list);
   return `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px">
-      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim)">${list.length} film${list.length !== 1 ? 's' : ''} queued</div>
-      <div style="display:flex;gap:4px;align-items:center">
-        ${sortPill('added', 'Added')}
-        ${sortPill('score', 'Score ↓')}
-      </div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:16px;gap:4px">
+      ${sortPill('added', 'Added')}
+      ${sortPill('score', 'Score ↓')}
     </div>
-    <div id="wl-list">${sorted.map(({ item, originalIndex }) => watchlistRow(item, originalIndex)).join('')}</div>`;
+    <div id="wl-list" class="wl-grid">${sorted.map(({ item, originalIndex }) => watchlistCard(item, originalIndex)).join('')}</div>`;
 }
 
-function watchlistRow(item, i) {
-  const poster = item.poster
-    ? `<img src="https://image.tmdb.org/t/p/w92${item.poster}" style="width:40px;height:60px;object-fit:cover;flex-shrink:0" loading="lazy">`
-    : `<div style="width:40px;height:60px;background:var(--rule);flex-shrink:0"></div>`;
+function watchlistCard(item, i) {
   const prediction = item.tmdbId ? currentUser?.predictions?.[String(item.tmdbId)] : null;
   const predTotal = prediction ? calcWlPredictedTotal(prediction.prediction) : null;
   const isPending = predTotal == null && item.tmdbId && MOVIES.length >= 10;
   const filmData = prediction?.film || item;
   const newTerr = isNewTerritory(filmData);
-  const discoveryBadge = newTerr ? `<span class="discovery-badge">${DISCOVERY_ICON_SVG}new territory</span>` : '';
-  const predLine = predTotal != null
-    ? `<div style="display:flex;align-items:baseline;gap:5px;margin-top:6px">
-        <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.5px">you'd give</span>
-        <span style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:16px;color:var(--blue);letter-spacing:-0.5px">~${(Math.round(predTotal*10)/10).toFixed(1)}</span>
-        <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.5px">· ${getLabel(Math.round(predTotal))}</span>
-      </div>`
+
+  const posterImg = item.poster
+    ? `<img class="wl-card-poster" src="https://image.tmdb.org/t/p/w342${item.poster}" alt="${item.title}" loading="lazy">`
+    : `<div class="wl-card-poster" style="background:var(--rule);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">${item.title}</div>`;
+
+  const scoreBadge = predTotal != null
+    ? `<div class="wl-card-score">~${Math.round(predTotal)}</div>`
     : isPending
-      ? `<div class="wl-pred-pending">
-          <span>estimating</span>
-          <div class="wl-pred-pending-dots"><i></i><i></i><i></i></div>
-        </div>`
+      ? `<div class="wl-card-score pending">est…</div>`
       : '';
+
+  const discoveryBadge = newTerr
+    ? `<div style="position:absolute;top:6px;left:6px;display:flex;align-items:center;gap:3px;background:rgba(0,0,0,0.6);padding:2px 6px;border-radius:2px">${DISCOVERY_ICON_SVG}</div>`
+    : '';
+
   return `
-    <div onclick="openWatchlistDetail(${i})" style="display:flex;align-items:center;gap:14px;padding:12px;border-bottom:1px solid var(--rule);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-      ${poster}
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px"><span style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:16px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.title}</span>${discoveryBadge}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:3px">${item.year || ''}${item.director ? ' · ' + item.director.split(',')[0] : ''}</div>
-        ${predLine}
+    <div class="wl-card" onclick="openWatchlistDetail(${i})">
+      <div class="wl-card-poster-wrap">
+        ${posterImg}
+        ${scoreBadge}
+        ${discoveryBadge}
       </div>
-      <div style="display:flex;gap:8px;flex-shrink:0;align-items:center" onclick="event.stopPropagation()">
-        <button onclick="watchlistRemove(${i})" style="font-family:'DM Mono',monospace;font-size:10px;padding:8px 10px;background:none;border:1px solid var(--rule-dark);color:var(--dim);cursor:pointer">✕</button>
-        <button onclick="watchlistRate(${i})" style="font-family:'DM Mono',monospace;font-size:10px;padding:8px 14px;background:var(--action);color:white;border:none;cursor:pointer;letter-spacing:1px;text-transform:uppercase;white-space:nowrap">Rank it →</button>
+      <div class="wl-card-meta">
+        <div class="wl-card-title">${item.title}</div>
+        <div class="wl-card-sub">${item.year || ''}${item.director ? ' · ' + item.director.split(',')[0] : ''}</div>
       </div>
     </div>`;
 }
+
+// Legacy alias for any internal references
+function watchlistRow(item, i) { return watchlistCard(item, i); }
 
 export function addToWatchlist(item) {
   if (!currentUser) return;

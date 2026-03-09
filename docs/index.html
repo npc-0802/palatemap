@@ -32,8 +32,8 @@
 
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-DCbxkQlk.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-Ba3pGoxx.css">
+  <script type="module" crossorigin src="/assets/index-Gigu1Ygc.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DPVLvyId.css">
 </head>
 <body>
 <!-- GTM noscript fallback -->
@@ -243,31 +243,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <div id="add" class="screen">
 <div class="add-layout">
   <h1 class="add-title">Rate a new film</h1>
-  <p class="add-sub">Score each of the 8 categories from 0–100. Don't stress about exact numbers — just go with your gut. You'll calibrate against other films over time, and your scores will sharpen as your list grows.</p>
 
-  <div class="steps-bar">
-    <div class="step-item">
-      <div class="step-num active" id="sn1">1</div>
-      <div class="step-label active" id="sl1">Details</div>
-      <div class="step-line"></div>
-    </div>
-    <div class="step-item">
-      <div class="step-num" id="sn2">2</div>
-      <div class="step-label" id="sl2">Calibrate</div>
-      <div class="step-line"></div>
-    </div>
-    <div class="step-item">
-      <div class="step-num" id="sn3">3</div>
-      <div class="step-label" id="sl3">Refine</div>
-      <div class="step-line"></div>
-    </div>
-    <div class="step-item" style="flex:0">
-      <div class="step-num" id="sn4">4</div>
-      <div class="step-label" id="sl4">Confirm</div>
-    </div>
-  </div>
+  <div class="addfilm-step-indicator" id="addfilm-step-indicator">Select a film</div>
 
-  <!-- STEP 1: TMDB Search + Cast Curation -->
+  <!-- STEP 1: TMDB Search + Film Confirmation -->
   <div class="step-panel active" id="step1">
     <div id="tmdb-search-phase">
       <div class="field-group">
@@ -283,50 +262,58 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
 
     <div id="tmdb-curation-phase" style="display:none">
-      <div id="tmdb-film-header" style="display:flex;gap:20px;align-items:flex-start;margin-bottom:28px;padding-bottom:24px;border-bottom:2px solid var(--ink)"></div>
+      <!-- Film confirmation hero card -->
+      <div id="addfilm-hero" class="addfilm-hero"></div>
 
-      <div style="margin-bottom:28px">
-        <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:4px">Director</div>
-        <div id="curate-directors" style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700"></div>
-      </div>
-
-      <div style="margin-bottom:28px">
-        <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:4px">Writer(s)</div>
-        <div id="curate-writers" style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600"></div>
-      </div>
-
-      <div style="margin-bottom:28px">
-        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px">
-          <div>
-            <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:2px">Cast — check who's load-bearing</div>
-            <div style="font-size:12px;color:var(--dim)">Top 8 billed pre-checked. Uncheck cameos/extras, add others if needed.</div>
+      <!-- Collapsible cast/crew curation -->
+      <div class="addfilm-curate" id="addfilm-curate">
+        <div class="addfilm-curate-toggle" onclick="this.parentElement.classList.toggle('expanded')">Adjust cast & crew ▸</div>
+        <div class="addfilm-curate-content">
+          <div style="margin-bottom:28px">
+            <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:4px">Director</div>
+            <div id="curate-directors" style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700"></div>
           </div>
-          <button class="btn btn-outline" onclick="showMoreCast()" id="moreCastBtn" style="font-size:12px;padding:8px 14px">+ More cast</button>
+
+          <div style="margin-bottom:28px">
+            <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:4px">Writer(s)</div>
+            <div id="curate-writers" style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600"></div>
+          </div>
+
+          <div style="margin-bottom:28px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px">
+              <div>
+                <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:2px">Cast — check who's load-bearing</div>
+                <div style="font-size:12px;color:var(--dim)">Top 8 billed pre-checked. Uncheck cameos/extras, add others if needed.</div>
+              </div>
+              <button class="btn btn-outline" onclick="showMoreCast()" id="moreCastBtn" style="font-size:12px;padding:8px 14px">+ More cast</button>
+            </div>
+            <div id="curate-cast"></div>
+          </div>
+
+          <div style="margin-bottom:28px">
+            <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:10px">Production Companies — uncheck distributors</div>
+            <div id="curate-companies"></div>
+          </div>
+
+          <button onclick="openAddFilmPosterPicker()" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;background:none;border:none;color:var(--blue);padding:0;cursor:pointer;text-decoration:underline">Wrong poster? Choose another match →</button>
         </div>
-        <div id="curate-cast"></div>
-      </div>
-
-      <div style="margin-bottom:28px">
-        <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:10px">Production Companies — uncheck distributors</div>
-        <div id="curate-companies"></div>
-      </div>
-
-      <div class="btn-row">
-        <button class="btn btn-outline" onclick="resetToSearch()">← Search again</button>
-        <button class="btn btn-primary" onclick="confirmTmdbData()">Looks good — Calibrate →</button>
       </div>
     </div>
   </div>
 
-  <!-- STEP 2: Calibrate -->
+  <!-- STEP 2: Score (card-based) -->
   <div class="step-panel" id="step2">
-    <div class="calibration-intro">
-      <strong>Score guide:</strong> 90+ = an all-time favorite · 85+ = really quite exceptional · 80+ = excellent · 75+ = well above average · 70+ = great · 65+ = very good · 60+ = a cut above · 55+ = good · 50+ = solid · below 50 = sub-par or worse. Don't overthink the number — you'll calibrate against your other films over time.
-    </div>
-    <div id="calibrationCategories"></div>
-    <div class="btn-row">
-      <button class="btn btn-outline" onclick="goToStep(1)">← Back</button>
-      <button class="btn btn-primary" onclick="goToStep3()">Continue to Refinement →</button>
+    <div id="scoreCardContainer" class="score-card-container"></div>
+    <!-- Fallback: all-at-once mode (hidden by default) -->
+    <div id="calibrationAllAtOnce" style="display:none">
+      <div class="calibration-intro">
+        <strong>Score guide:</strong> 90+ = an all-time favorite · 85+ = really quite exceptional · 80+ = excellent · 75+ = well above average · 70+ = great · 65+ = very good · 60+ = a cut above · 55+ = good · 50+ = solid · below 50 = sub-par or worse.
+      </div>
+      <div id="calibrationCategories"></div>
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="goToStep(1)">← Back</button>
+        <button class="btn btn-primary" onclick="goToStep3()">Continue to Refinement →</button>
+      </div>
     </div>
   </div>
 
@@ -342,13 +329,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </div>
 
-  <!-- STEP 4: Confirm -->
+  <!-- STEP 4: Result Reveal -->
   <div class="step-panel" id="step4">
-    <div class="result-card" id="resultCard"></div>
-    <div class="btn-row">
-      <button class="btn btn-outline" onclick="goToStep(2)">← Adjust Scores</button>
-      <button class="btn btn-action" onclick="saveFilm()">Save to Rankings ✓</button>
-    </div>
+    <div id="resultCard"></div>
   </div>
 </div>
 </div>
@@ -363,13 +346,25 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- Progress nudge -->
   <div id="foryou-nudge" style="display:none"></div>
 
+  <!-- Editorial header -->
+  <div id="foryou-header" class="foryou-header"></div>
+
   <!-- Section A: Hero recommendation -->
   <div id="foryou-hero-section">
-    <div id="foryou-eyebrow" class="foryou-eyebrow"></div>
     <div id="foryou-hero" class="foryou-hero" style="display:none"></div>
   </div>
 
-  <!-- Section B: Secondary picks -->
+  <!-- Section B: Entity-constrained ("I'm in the mood for…") — promoted -->
+  <div id="foryou-constrained" class="foryou-constrained">
+    <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:22px;color:var(--ink);letter-spacing:-0.5px;margin-bottom:14px">I'm in the mood for…</div>
+    <div style="max-width:600px">
+      <input class="field-input foryou-constrained-input" id="constrained-search" type="text" placeholder="an actor, director, or studio…" style="width:100%;box-sizing:border-box;font-style:italic;padding:14px 20px;border-radius:6px" oninput="constrainedSearchDebounce()">
+      <div id="constrained-search-results"></div>
+    </div>
+    <div id="constrained-results" style="display:none"></div>
+  </div>
+
+  <!-- Section C: Secondary picks (poster strip) -->
   <div id="foryou-secondary-section" style="display:none">
     <div class="foryou-section-header">
       <span class="foryou-section-label">More picks for you</span>
@@ -378,7 +373,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div id="foryou-secondary-grid" class="foryou-secondary-grid"></div>
   </div>
 
-  <!-- Section C: Discovery picks -->
+  <!-- Section D: Discovery picks -->
   <div id="foryou-discovery-section" style="display:none">
     <div class="foryou-discovery-header">
       <div class="foryou-discovery-header-left">
@@ -390,25 +385,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div id="foryou-discovery-grid" class="foryou-discovery-grid"></div>
   </div>
 
-  <!-- Section D: Entity-constrained recommendations -->
-  <div id="foryou-constrained" class="foryou-constrained">
-    <div class="foryou-constrained-label">I'm in the mood for…</div>
-    <div style="max-width:600px">
-      <input class="field-input foryou-constrained-input" id="constrained-search" type="text" placeholder="an actor, director, or studio…" style="width:100%;box-sizing:border-box;font-style:italic" oninput="constrainedSearchDebounce()">
-      <div id="constrained-search-results"></div>
-    </div>
-    <div id="constrained-results" style="display:none"></div>
-  </div>
-
-  <!-- Section C: Manual predict (demoted) -->
+  <!-- Section E: Manual predict (collapsed, power-user) -->
   <div id="foryou-manual" class="foryou-manual">
-    <div class="foryou-manual-label">Or predict any film →</div>
-    <div style="max-width:800px">
-      <div style="margin-bottom:8px">
-        <input class="field-input" id="predict-search" type="text" placeholder="Search for a film…" style="width:100%;box-sizing:border-box" oninput="predictSearchDebounce()">
+    <div class="foryou-manual-toggle" onclick="this.parentElement.classList.toggle('expanded')">Predict a specific film ▸</div>
+    <div class="foryou-manual-content">
+      <div style="max-width:800px">
+        <div style="margin-bottom:8px">
+          <input class="field-input" id="predict-search" type="text" placeholder="Search for a film…" style="width:100%;box-sizing:border-box" oninput="predictSearchDebounce()">
+        </div>
+        <div id="predict-search-results" style="margin-bottom:24px"></div>
+        <div id="predict-result"></div>
       </div>
-      <div id="predict-search-results" style="margin-bottom:24px"></div>
-      <div id="predict-result"></div>
     </div>
   </div>
 </div>

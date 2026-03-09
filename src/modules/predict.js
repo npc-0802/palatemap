@@ -141,21 +141,23 @@ function timeAgo(date) {
   return `Updated ${diff} days ago`;
 }
 
-function renderForYouEyebrow(updatedAt) {
-  const el = document.getElementById('foryou-eyebrow');
+function renderForYouHeader(updatedAt) {
+  const el = document.getElementById('foryou-header');
   if (!el) return;
   const archetype = currentUser?.archetype || '';
   const paletteColor = (archetype && ARCHETYPES[archetype])
     ? ARCHETYPES[archetype].palette : 'var(--blue)';
-  const ago = updatedAt ? timeAgo(new Date(updatedAt)) : '';
+  const ago = updatedAt ? `Updated ${timeAgo(new Date(updatedAt))}` : '';
+  const headline = MOVIES.length < 50 ? 'Getting to know your taste.' : 'What to watch tonight.';
   el.innerHTML = `
-    <span>Top pick for you</span>
-    <span class="foryou-eyebrow-archetype">
-      <span class="foryou-eyebrow-accent" style="background:${paletteColor}"></span>
-      <span style="color:${paletteColor}">${archetype}</span>
-    </span>
-    <span>${ago}</span>`;
+    <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);margin-bottom:10px">for you · based on ${MOVIES.length} films</div>
+    <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(28px,5vw,40px);line-height:1;color:var(--ink);letter-spacing:-1px;margin-bottom:12px">${headline}</div>
+    <div style="width:40px;height:3px;background:${paletteColor};margin-bottom:12px"></div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">${ago}${ago && archetype ? ' · ' : ''}${archetype ? `<span style="color:${paletteColor}">${archetype}</span> ●` : ''}</div>`;
 }
+
+// Legacy alias
+function renderForYouEyebrow(updatedAt) { renderForYouHeader(updatedAt); }
 
 function getSourceLabel(r) {
   if (r.source === 'watchlist') return 'On your watch list';
@@ -215,20 +217,21 @@ function renderSecondaryCards(results) {
   sectionEl.style.display = '';
 
   gridEl.innerHTML = results.map((r, i) => {
-    const poster = r.poster
-      ? `<img class="foryou-sec-poster" src="https://image.tmdb.org/t/p/w92${r.poster}" alt="${r.title}">`
-      : `<div class="foryou-sec-poster-none"></div>`;
-    const total = (Math.round(r.predTotal * 10) / 10).toFixed(1);
+    const posterImg = r.poster
+      ? `<img class="foryou-sec-poster" src="https://image.tmdb.org/t/p/w342${r.poster}" alt="${r.title}" loading="lazy">`
+      : `<div class="foryou-sec-poster" style="width:100%;height:100%;background:var(--rule);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">${r.title}</div>`;
+    const total = Math.round(r.predTotal);
     const safeTmdbId = parseInt(r.tmdbId);
     return `
       <div class="foryou-sec-card" onclick="openRecommendedDetail(${safeTmdbId})" style="opacity:0;animation:heroReveal 0.3s ease ${i * 80}ms both">
         <button class="foryou-sec-dismiss" onclick="event.stopPropagation();forYouDismissSecondary(${i})" title="Dismiss">✕</button>
-        ${poster}
+        <div class="foryou-sec-poster-wrap">
+          ${posterImg}
+          <div class="foryou-sec-score-badge">~${total}</div>
+        </div>
         <div class="foryou-sec-body">
-          <div class="foryou-sec-source">${getSourceLabel(r)}</div>
           <div class="foryou-sec-title">${r.title}</div>
-          <div class="foryou-sec-meta">${r.year || ''}${r.director ? ' · ' + r.director.split(',')[0] : ''}</div>
-          <div class="foryou-sec-score">~${total}</div>
+          <div class="foryou-sec-meta">${r.year || ''}</div>
         </div>
       </div>`;
   }).join('');
