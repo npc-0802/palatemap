@@ -853,16 +853,16 @@ window.starterShowMoreFilms = function() {
 };
 
 window.starterSkipToSearch = function() {
-  starterFinishAndExit();
+  starterFinishAndExit({ goToAdd: true });
 };
 
 window.starterFinish = function() {
   starterFinishAndExit();
 };
 
-function starterFinishAndExit() {
+function starterFinishAndExit(opts = {}) {
   const arch = ARCHETYPES[obRevealResult.primary];
-  obFinish(obRevealResult.primary, obRevealResult.secondary || '', arch.weights, obRevealResult.harmonySensitivity);
+  obFinish(obRevealResult.primary, obRevealResult.secondary || '', arch.weights, obRevealResult.harmonySensitivity, opts);
 }
 
 // ── ARCHETYPE DERIVATION ──
@@ -928,7 +928,7 @@ function deriveArchetype(answers) {
   };
 }
 
-async function obFinish(primary, secondary, weights, harmonySensitivity) {
+async function obFinish(primary, secondary, weights, harmonySensitivity, opts = {}) {
   const id = crypto.randomUUID();
   const slug = obRevealResult._slug || (obDisplayName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'user');
   const session = window._pendingAuthSession || null;
@@ -958,10 +958,14 @@ async function obFinish(primary, secondary, weights, harmonySensitivity) {
   if (overlay.classList.contains('exiting')) return; // guard against double-tap
   document.body.classList.add('app-entering');
   overlay.classList.add('exiting');
-  overlay.addEventListener('animationend', () => {
+  overlay.addEventListener('animationend', async () => {
     overlay.style.display = 'none';
     overlay.classList.remove('exiting');
     document.body.classList.remove('app-entering');
+    if (opts.goToAdd) {
+      const { showScreen } = await import('../main.js');
+      showScreen('add');
+    }
   }, { once: true });
 
   // Mark welcome modal as shown — starter films already teach through doing
