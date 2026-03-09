@@ -482,8 +482,7 @@ window.obFinishFromReveal = function() {
   if (!obRevealResult) return;
   // Skip starters if user imported films from Letterboxd
   if (obImportedMovies?.length > 0) {
-    const arch = ARCHETYPES[obRevealResult.primary];
-    obFinish(obRevealResult.primary, obRevealResult.secondary || '', arch.weights, obRevealResult.harmonySensitivity);
+    obFinish(obRevealResult.primary, obRevealResult.secondary || '', obRevealResult.weights, obRevealResult.harmonySensitivity);
     return;
   }
   // Transition: fade out ob-card, shift overlay to dark, render starters
@@ -501,8 +500,8 @@ window.obFinishFromReveal = function() {
 // ── STARTER FILMS ──
 
 function getStarterDefaults() {
-  // Archetype-weighted default slider values
-  const weights = ARCHETYPES[obRevealResult.primary]?.weights || {};
+  // Use user's quiz-derived weights, falling back to archetype preset
+  const weights = obRevealResult?.weights || ARCHETYPES[obRevealResult.primary]?.weights || {};
   const maxWeight = Math.max(...Object.values(weights), 1);
   const defaults = {};
   CATEGORIES.forEach(cat => {
@@ -513,7 +512,7 @@ function getStarterDefaults() {
 }
 
 function singleSliderToScores(overallScore) {
-  const weights = ARCHETYPES[obRevealResult.primary]?.weights || {};
+  const weights = obRevealResult?.weights || ARCHETYPES[obRevealResult.primary]?.weights || {};
   const maxW = Math.max(...Object.values(weights), 1);
   const scores = {};
   CATEGORIES.forEach(cat => {
@@ -533,9 +532,8 @@ function groupFilmsByGenre(films) {
     if (dramaTypes.has(f.genre)) group1.push(f);
     else group2.push(f);
   });
-  // Balance: if one group is empty, split evenly
-  if (group1.length === 0) return [{ label: 'Selected for you', films }];
-  if (group2.length === 0) return [{ label: 'Selected for you', films }];
+  // Balance: if either group has fewer than 2 films, don't split
+  if (group1.length < 2 || group2.length < 2) return [{ label: 'Selected for you', films }];
   return [
     { label: 'Dramas & thrillers', films: group1 },
     { label: 'Sci-fi, animation & more', films: group2 }
@@ -861,8 +859,7 @@ window.starterFinish = function() {
 };
 
 function starterFinishAndExit(opts = {}) {
-  const arch = ARCHETYPES[obRevealResult.primary];
-  obFinish(obRevealResult.primary, obRevealResult.secondary || '', arch.weights, obRevealResult.harmonySensitivity, opts);
+  obFinish(obRevealResult.primary, obRevealResult.secondary || '', obRevealResult.weights, obRevealResult.harmonySensitivity, opts);
 }
 
 // ── ARCHETYPE DERIVATION ──
@@ -889,7 +886,7 @@ function deriveArchetype(answers) {
   if (answers[3] === 'A') { scores.Atmospherist+=2; scores.Revisionist+=2; }
   if (answers[3] === 'C') { scores.Completionist+=3; }
   if (answers[3] === 'D') { scores.Atmospherist+=1; }
-  if (answers[3] === 'B') { scores.Sensualist+=1; }
+  if (answers[3] === 'B') { scores.Sensualist+=1; scores.Atmospherist+=1; }
 
   if (answers[4] === 'A') { scores.Humanist+=3; scores.Visceralist+=1; }
   if (answers[4] === 'D') { scores.Sensualist+=3; }
@@ -897,9 +894,10 @@ function deriveArchetype(answers) {
   if (answers[4] === 'B') { scores.Narrativist+=1; scores.Absolutist+=1; }
 
   let harmonySensitivity = 0.3;
-  if (answers[5] === 'A') { scores.Visceralist+=1; harmonySensitivity = 0.0; }
-  if (answers[5] === 'C') { scores.Absolutist+=1; harmonySensitivity = 1.0; }
-  if (answers[5] === 'B') { harmonySensitivity = 0.4; }
+  if (answers[5] === 'A') { scores.Humanist+=2; scores.Visceralist+=1; harmonySensitivity = 0.0; }
+  if (answers[5] === 'B') { scores.Narrativist+=1; harmonySensitivity = 0.4; }
+  if (answers[5] === 'C') { scores.Absolutist+=2; scores.Formalist+=1; harmonySensitivity = 1.0; }
+  if (answers[5] === 'D') { scores.Atmospherist+=1; harmonySensitivity = 0.3; }
 
   // Build implied weight vector from quiz scores for cosine tiebreaker
   const keys = ['plot','execution','acting','production','enjoyability','rewatchability','ending','uniqueness'];
@@ -921,10 +919,24 @@ function deriveArchetype(answers) {
     if (b[1] !== a[1]) return b[1] - a[1];
     return cosineToImplied(b[0]) - cosineToImplied(a[0]);
   });
+
+  // Normalize implied weights to 1–4 scale for the user's personal weight profile
+  const maxIW = Math.max(...Object.values(impliedWeights), 1);
+  const minIW = Math.min(...Object.values(impliedWeights));
+  const normalizedWeights = {};
+  keys.forEach(k => {
+    const raw = impliedWeights[k] || 0;
+    // Map [minIW, maxIW] → [1, 4]
+    normalizedWeights[k] = maxIW > minIW
+      ? Math.round((((raw - minIW) / (maxIW - minIW)) * 3 + 1) * 10) / 10
+      : 2.5;
+  });
+
   return {
     primary: sorted[0][0],
     secondary: sorted[1][1] > 0 ? sorted[1][0] : null,
-    harmonySensitivity
+    harmonySensitivity,
+    weights: normalizedWeights
   };
 }
 
