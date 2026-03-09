@@ -91,6 +91,15 @@ export function initPredict() {
     renderForYouFromCache();
   }
 
+  // Discovery section: render from cache or load lazily
+  const cachedDiscovery = currentUser?.cachedDiscovery;
+  if (cachedDiscovery?.length) {
+    renderDiscoveryCards(cachedDiscovery);
+  } else if (MOVIES.length >= 10) {
+    // Load discovery after a short delay so main recs render first
+    setTimeout(() => loadDiscoveryRecommendations(), 2000);
+  }
+
   // Restore constrained results if cached
   const lastConstrained = currentUser?.lastConstrainedEntity;
   if (lastConstrained?.results?.length) {
@@ -159,6 +168,7 @@ function getSourceLabel(r) {
   if (r.source === 'actor') return `Actor match · ${r.sourceName || ''}`;
   if (r.source === 'company') return `From ${r.sourceName || ''}`;
   if (r.source === 'discover') return 'For your taste';
+  if (r.source === 'discovery') return 'New territory';
   return 'Recommended';
 }
 
@@ -460,7 +470,6 @@ function entityAffinityScore(candidateNames, movieField, ceiling) {
   });
   if (!matchedFilms.length) return 0;
   const avg = matchedFilms.reduce((s, m) => s + m.total, 0) / matchedFilms.length;
-  const overlap = Math.min(matchedFilms.length, 4);
   if (matchedFilms.length >= 2) {
     return avg >= 90 ? ceiling : avg >= 80 ? Math.round(ceiling * 0.7) : avg >= 70 ? Math.round(ceiling * 0.4) : Math.round(ceiling * 0.15);
   }
@@ -1166,6 +1175,226 @@ async function findMeAFilm() {
   }
 }
 
+// ── DISCOVERY MODE ──────────────────────────────────────────────────────────
+
+function buildKnownEntities() {
+  const known = { directors: new Set(), actors: new Set(), writers: new Set(), companies: new Set() };
+  MOVIES.forEach(m => {
+    mergeSplitNames((m.director || '').split(',').map(s => s.trim()).filter(Boolean)).forEach(n => known.directors.add(n));
+    mergeSplitNames((m.cast || '').split(',').map(s => s.trim()).filter(Boolean)).forEach(n => known.actors.add(n));
+    mergeSplitNames((m.writer || '').split(',').map(s => s.trim()).filter(Boolean)).forEach(n => known.writers.add(n));
+    mergeSplitNames((m.productionCompanies || '').split(',').map(s => s.trim()).filter(Boolean)).forEach(n => known.companies.add(n));
+  });
+  return known;
+}
+
+async function buildDiscoveryPool() {
+  const ratedIds = new Set(MOVIES.map(m => String(m.tmdbId)).filter(Boolean));
+  const ratedTitlesNorm = new Set(MOVIES.map(m => normTitle(m.title)));
+  const watchlistIds = new Set((currentUser?.watchlist || []).map(w => String(w.tmdbId)));
+  const watchlistTitlesNorm = new Set((currentUser?.watchlist || []).map(w => normTitle(w.title)));
+  const seen = new Set([...ratedIds, ...watchlistIds, ...dismissedTmdbIds]);
+  const isKnown = (id, title) =>
+    seen.has(String(id)) || ratedTitlesNorm.has(normTitle(title)) || watchlistTitlesNorm.has(normTitle(title));
+
+  const knownEntities = buildKnownEntities();
+
+  // Pick genres from the BOTTOM half of the user's genre ranking
+  const genreScores = {};
+  const genreCounts = {};
+  MOVIES.forEach(m => {
+    (m.genres || '').split(',').map(s => s.trim()).filter(Boolean).forEach(g => {
+      genreScores[g] = (genreScores[g] || 0) + m.total;
+      genreCounts[g] = (genreCounts[g] || 0) + 1;
+    });
+  });
+  const GENRE_ID_MAP = {
+    'Action': 28, 'Adventure': 12, 'Animation': 16, 'Comedy': 35,
+    'Crime': 80, 'Documentary': 99, 'Drama': 18, 'Family': 10751,
+    'Fantasy': 14, 'History': 36, 'Horror': 27, 'Music': 10402,
+    'Mystery': 9648, 'Romance': 10749, 'Science Fiction': 878,
+    'Thriller': 53, 'War': 10752, 'Western': 37
+  };
+  const rankedGenres = Object.entries(genreScores)
+    .filter(([g]) => genreCounts[g] >= 1 && GENRE_ID_MAP[g])
+    .map(([g, total]) => ({ name: g, id: GENRE_ID_MAP[g], avg: total / genreCounts[g] }))
+    .sort((a, b) => b.avg - a.avg);
+
+  // Bottom half of genres the user has rated (or genres they haven't explored much)
+  const bottomHalf = rankedGenres.slice(Math.floor(rankedGenres.length / 2));
+  const discoveryGenres = bottomHalf.length >= 2 ? bottomHalf.slice(0, 2) : rankedGenres.slice(-2);
+
+  // Fetch discover results — no era filter, broader pool
+  const candidates = [];
+  const discoverCalls = discoveryGenres.map(async (genre) => {
+    const params = new URLSearchParams({
+      api_key: TMDB_KEY,
+      with_genres: genre.id,
+      sort_by: 'vote_average.desc',
+      'vote_count.gte': 300,
+      'vote_average.gte': 7.0,
+      page: String(1 + Math.floor(Math.random() * 3)) // randomize page for variety
+    });
+    try {
+      const res = await fetch(`${TMDB}/discover/movie?${params}`);
+      const data = await res.json();
+      return data.results || [];
+    } catch { return []; }
+  });
+
+  const discoverResults = (await Promise.all(discoverCalls)).flat();
+
+  // Fetch credits for each to check against known entities
+  const potentials = discoverResults
+    .filter(f => f.poster_path && !isKnown(f.id, f.title))
+    .slice(0, 15); // limit TMDB detail calls
+
+  await Promise.allSettled(potentials.map(async (f) => {
+    try {
+      const [dRes, crRes] = await Promise.all([
+        fetch(`${TMDB}/movie/${f.id}?api_key=${TMDB_KEY}`),
+        fetch(`${TMDB}/movie/${f.id}/credits?api_key=${TMDB_KEY}`)
+      ]);
+      const detail = await dRes.json();
+      const credits = await crRes.json();
+      const directors = (credits.crew || []).filter(x => x.job === 'Director').map(x => x.name);
+      const cast = (credits.cast || []).slice(0, 3).map(x => x.name);
+      const companies = (detail.production_companies || []).slice(0, 1).map(x => x.name);
+
+      // Filter: skip if director, top-3 cast, or primary company is known
+      const hasKnownDirector = directors.some(d => knownEntities.directors.has(d));
+      const hasKnownCast = cast.some(a => knownEntities.actors.has(a));
+      const hasKnownCompany = companies.some(c => knownEntities.companies.has(c));
+      if (hasKnownDirector || hasKnownCast || hasKnownCompany) return;
+
+      if (seen.has(String(f.id))) return;
+      seen.add(String(f.id));
+
+      candidates.push({
+        tmdbId: f.id,
+        title: f.title,
+        year: (f.release_date || '').slice(0, 4),
+        poster: f.poster_path,
+        director: directors.join(', '),
+        writer: (credits.crew || []).filter(x => ['Screenplay', 'Writer', 'Story'].includes(x.job)).map(x => x.name).slice(0, 3).join(', '),
+        cast: (credits.cast || []).slice(0, 8).map(x => x.name).join(', '),
+        genres: (detail.genres || []).map(g => g.name).join(', '),
+        productionCompanies: (detail.production_companies || []).map(p => p.name).join(', '),
+        overview: f.overview || detail.overview || '',
+        source: 'discovery'
+      });
+    } catch { /* skip */ }
+  }));
+
+  return candidates;
+}
+
+async function loadDiscoveryRecommendations() {
+  const sectionEl = document.getElementById('foryou-discovery-section');
+  const gridEl = document.getElementById('foryou-discovery-grid');
+  if (!sectionEl || !gridEl) return;
+
+  // Need 10+ films
+  if (MOVIES.length < 10) { sectionEl.style.display = 'none'; return; }
+
+  sectionEl.style.display = '';
+  gridEl.innerHTML = `<div class="discovery-loading">Scouting new territory…</div>`;
+
+  try {
+    const candidates = await buildDiscoveryPool();
+    if (!candidates.length) {
+      gridEl.innerHTML = `<div class="discovery-loading">No new territory found this time. <a style="color:var(--discover);cursor:pointer;text-decoration:underline" onclick="refreshDiscovery()">Try again</a></div>`;
+      return;
+    }
+
+    // Score using only genre + era affinity (entity affinity is intentionally zeroed since all entities are unknown)
+    const scored = candidates
+      .map(c => ({ ...c, compatScore: scoreCandidate(c) }))
+      .sort((a, b) => b.compatScore - a.compatScore);
+
+    // Predict top 4, render top 3
+    const top4 = scored.slice(0, 4);
+    const toPredict = top4.filter(c => !currentUser?.predictions?.[String(c.tmdbId)]);
+    await Promise.allSettled(toPredict.slice(0, 3).map(async (c) => {
+      const film = {
+        tmdbId: c.tmdbId, title: c.title, year: c.year,
+        director: c.director || '', writer: c.writer || '',
+        cast: c.cast || '', genres: c.genres || '',
+        overview: c.overview || '', poster: c.poster || null
+      };
+      try {
+        const { prediction } = await callClaudeForPrediction(film);
+        const predictedAt = new Date().toISOString();
+        const newPredictions = {
+          ...(currentUser?.predictions || {}),
+          [String(film.tmdbId)]: {
+            film, prediction, predictedAt,
+            archetype_at_time: currentUser?.archetype || null,
+            weights_at_time: currentUser?.weights ? { ...currentUser.weights } : null
+          }
+        };
+        setCurrentUser({ ...currentUser, predictions: trimPredictions(newPredictions) });
+        saveUserLocally();
+        syncToSupabase();
+      } catch { /* skip */ }
+    }));
+
+    // Collect results
+    const results = top4
+      .map(c => {
+        const cached = currentUser?.predictions?.[String(c.tmdbId)];
+        if (!cached?.prediction) return null;
+        return { ...c, prediction: cached.prediction, predTotal: calcPredictedTotal(cached.prediction) };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.predTotal - a.predTotal)
+      .slice(0, 3);
+
+    if (!results.length) {
+      gridEl.innerHTML = `<div class="discovery-loading">Couldn't chart this territory. <a style="color:var(--discover);cursor:pointer;text-decoration:underline" onclick="refreshDiscovery()">Try again</a></div>`;
+      return;
+    }
+
+    // Cache
+    setCurrentUser({ ...currentUser, cachedDiscovery: results });
+    saveUserLocally();
+
+    renderDiscoveryCards(results);
+
+  } catch(e) {
+    gridEl.innerHTML = `<div class="discovery-loading">Something went wrong. <a style="color:var(--discover);cursor:pointer;text-decoration:underline" onclick="refreshDiscovery()">Try again</a></div>`;
+  }
+}
+
+function renderDiscoveryCards(results) {
+  const gridEl = document.getElementById('foryou-discovery-grid');
+  const sectionEl = document.getElementById('foryou-discovery-section');
+  if (!gridEl || !sectionEl) return;
+  if (!results?.length) { sectionEl.style.display = 'none'; return; }
+  sectionEl.style.display = '';
+
+  gridEl.innerHTML = results.map(r => {
+    const poster = r.poster
+      ? `<img class="discovery-card-poster" src="https://image.tmdb.org/t/p/w92${r.poster}" alt="${r.title}">`
+      : `<div class="discovery-card-poster-none"></div>`;
+    const total = (Math.round(r.predTotal * 10) / 10).toFixed(1);
+    const safeTmdbId = parseInt(r.tmdbId);
+    const onWl = (currentUser?.watchlist || []).some(w => String(w.tmdbId) === String(r.tmdbId));
+    return `<div class="discovery-card" onclick="openRecommendedDetail(${safeTmdbId})">
+      ${poster}
+      <div class="discovery-card-body">
+        <div class="discovery-card-source">New territory</div>
+        <div class="discovery-card-title">${r.title}</div>
+        <div class="discovery-card-meta">${r.year || ''}${r.director ? ' · ' + r.director.split(',')[0] : ''}</div>
+        <div class="discovery-card-score">~${total}</div>
+      </div>
+      <div class="discovery-card-actions" onclick="event.stopPropagation()">
+        <button class="discovery-wl-btn${onWl ? ' on-list' : ''}" onclick="toggleRecommendWatchlist('${r.tmdbId}');this.classList.toggle('on-list');this.textContent=this.classList.contains('on-list')?'✓ List':'+ List'">${onWl ? '✓ List' : '+ List'}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // ── ENTITY-CONSTRAINED RECOMMENDATIONS ──────────────────────────────────────
 
 function constrainedSearchDebounce() {
@@ -1552,6 +1781,7 @@ function constrainedClear() {
 
 window.findMeAFilm = findMeAFilm;
 window.loadForYouRecommendations = loadForYouRecommendations;
+window.refreshDiscovery = loadDiscoveryRecommendations;
 window.constrainedSearchDebounce = constrainedSearchDebounce;
 window.constrainedSelectEntity = constrainedSelectEntity;
 window.constrainedClear = constrainedClear;

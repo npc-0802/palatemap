@@ -890,6 +890,147 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); 
 }
 .foryou-sec-card:hover .foryou-sec-dismiss { opacity: 1; }
 
+/* Discovery section */
+.foryou-discovery-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-top: 32px;
+  margin-top: 40px;
+  border-top: 1px dashed var(--discover);
+}
+.foryou-discovery-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.foryou-discovery-icon {
+  color: var(--discover);
+  flex-shrink: 0;
+}
+.foryou-discovery-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--discover);
+  font-weight: 500;
+}
+.foryou-discovery-refresh {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  background: none;
+  border: none;
+  color: var(--discover);
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 0.12s;
+}
+.foryou-discovery-refresh:hover { color: var(--discover-dark); }
+.foryou-discovery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.discovery-card {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  border: 1px dashed var(--rule-dark);
+  background: var(--card-bg);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  position: relative;
+}
+.discovery-card:hover {
+  border-color: var(--discover);
+  background: var(--discover-pale);
+}
+.discovery-card-poster {
+  width: 56px;
+  height: 84px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.discovery-card-poster-none {
+  width: 56px;
+  height: 84px;
+  background: var(--cream);
+  flex-shrink: 0;
+}
+.discovery-card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.discovery-card-source {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--discover);
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.discovery-card-title {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
+  margin-bottom: 3px;
+}
+.discovery-card-meta {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--dim);
+  margin-bottom: 6px;
+}
+.discovery-card-score {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--discover);
+  letter-spacing: -0.5px;
+}
+.discovery-card-actions {
+  display: flex;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+.discovery-wl-btn {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 6px 10px;
+  background: none;
+  border: 1px dashed var(--rule-dark);
+  color: var(--dim);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.12s;
+}
+.discovery-wl-btn:hover { border-color: var(--discover); color: var(--discover); }
+.discovery-wl-btn.on-list {
+  background: var(--green);
+  color: white;
+  border-color: var(--green);
+  border-style: solid;
+}
+.discovery-loading {
+  grid-column: 1 / -1;
+  padding: 32px 20px;
+  text-align: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--discover);
+  letter-spacing: 0.5px;
+}
+
 /* Entity-constrained recommendations */
 .foryou-constrained {
   margin-top: 40px;
@@ -1127,4 +1268,5 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); 
   .foryou-hero { padding: 20px; }
   .foryou-nudge { flex-wrap: wrap; }
   .constrained-results-grid { grid-template-columns: 1fr; }
+  .foryou-discovery-grid { grid-template-columns: 1fr; }
 }
