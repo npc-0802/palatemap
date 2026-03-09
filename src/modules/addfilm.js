@@ -497,7 +497,7 @@ function renderScoreCard() {
         <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Reference</div>
         <div class="anchor-row" style="display:grid;grid-template-columns:repeat(${Math.min(anchors.length, 3)}, 1fr);gap:8px;max-width:400px;margin:0 auto 20px">
           ${anchors.slice(0, 3).map(a => `
-            <div class="anchor-film" onclick="selectAnchorCard('${cat.key}', ${a.scores[cat.key]}, this)">
+            <div class="anchor-film" data-score="${a.scores[cat.key]}" onclick="selectAnchorCard('${cat.key}', ${a.scores[cat.key]}, this)">
               ${a.poster ? `<img class="anchor-film-poster" src="https://image.tmdb.org/t/p/w92${a.poster}" alt="">` : ''}
               <div>
                 <div class="anchor-film-title">${a.title}</div>
@@ -573,6 +573,14 @@ window.updateScoreCard = function(val) {
   const lblEl = document.getElementById('scoreCardLabel');
   if (numEl) { numEl.textContent = val; numEl.style.color = getTierColor(val); }
   if (lblEl) lblEl.textContent = getLabel(val);
+  // Deselect anchor if slider no longer matches
+  const row = document.querySelector('#activeScoreCard .anchor-row');
+  if (row) {
+    row.querySelectorAll('.anchor-film.selected').forEach(a => {
+      const score = parseInt(a.getAttribute('data-score'));
+      if (score !== val) a.classList.remove('selected');
+    });
+  }
 };
 
 window.selectAnchorCard = function(catKey, anchorScore, el) {
