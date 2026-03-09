@@ -417,4 +417,7 @@ body {
 
   /* Analysis/profile content */
   #analysisContent, #profileContent { max-width: 100%; }
+
+  /* Add Film steps bar: mirror left-side circle weight on the right */
+  .step-item:last-child { padding-right: 26px; }
 }
