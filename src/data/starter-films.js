@@ -38,12 +38,12 @@ export const STARTER_FILMS = {
       "genre": "Action"
     },
     {
-      "tmdbId": 122,
-      "title": "The Lord of the Rings: The Return of the King",
-      "year": 2003,
-      "director": "Peter Jackson",
-      "poster": "/rCzpDGLbOoPwLjy3OAm5NUPOTrC.jpg",
-      "genre": "Adventure"
+      "tmdbId": 98,
+      "title": "Gladiator",
+      "year": 2000,
+      "director": "Ridley Scott",
+      "poster": "/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg",
+      "genre": "Action"
     },
     {
       "tmdbId": 550,
@@ -398,12 +398,12 @@ export const STARTER_FILMS = {
       "genre": "Thriller"
     },
     {
-      "tmdbId": 569094,
-      "title": "Spider-Man: Across the Spider-Verse",
-      "year": 2023,
-      "director": "Kemp Powers, Justin K. Thompson, Joaquim Dos Santos",
-      "poster": "/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg",
-      "genre": "Animation"
+      "tmdbId": 545611,
+      "title": "Everything Everywhere All at Once",
+      "year": 2022,
+      "director": "Daniel Scheinert, Daniel Kwan",
+      "poster": "/u68AjlvlutfEIcpmbYpKcdi09ut.jpg",
+      "genre": "Action"
     },
     {
       "tmdbId": 37165,
@@ -448,12 +448,12 @@ export const STARTER_FILMS = {
       "genre": "Animation"
     },
     {
-      "tmdbId": 335984,
-      "title": "Blade Runner 2049",
-      "year": 2017,
-      "director": "Denis Villeneuve",
-      "poster": "/gajva2L0rPYkEWjzgFlBXCAVBE5.jpg",
-      "genre": "Science Fiction"
+      "tmdbId": 376867,
+      "title": "Moonlight",
+      "year": 2016,
+      "director": "Barry Jenkins",
+      "poster": "/qLnfEmPrDjJfPyyddLJPkXmshkp.jpg",
+      "genre": "Drama"
     },
     {
       "tmdbId": 597,
@@ -588,12 +588,12 @@ export const STARTER_FILMS = {
       "genre": "Drama"
     },
     {
-      "tmdbId": 240,
-      "title": "The Godfather Part II",
-      "year": 1974,
-      "director": "Francis Ford Coppola",
-      "poster": "/hek3koDUyRQk7FIhPXsa6mT2Zc3.jpg",
-      "genre": "Drama"
+      "tmdbId": 6977,
+      "title": "No Country for Old Men",
+      "year": 2007,
+      "director": "Joel Coen, Ethan Coen",
+      "poster": "/6d5XOczc226jECq0LIX0siKtgHR.jpg",
+      "genre": "Crime"
     },
     {
       "tmdbId": 629,
@@ -628,11 +628,11 @@ export const STARTER_FILMS = {
       "genre": "Animation"
     },
     {
-      "tmdbId": 1891,
-      "title": "The Empire Strikes Back",
-      "year": 1980,
-      "director": "Irvin Kershner",
-      "poster": "/nNAeTmF4CtdSgMDplXTDPOpYzsX.jpg",
+      "tmdbId": 157336,
+      "title": "Interstellar",
+      "year": 2014,
+      "director": "Christopher Nolan",
+      "poster": "/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
       "genre": "Adventure"
     },
     {

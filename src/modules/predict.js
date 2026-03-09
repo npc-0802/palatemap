@@ -576,6 +576,53 @@ function normTitle(t) {
     .trim();
 }
 
+// Collection cache to avoid redundant fetches
+const _collectionCache = {};
+
+async function filterSequels(candidates) {
+  // For candidates that belong to a TMDB collection, check if user has seen
+  // all preceding films. Remove sequels where predecessors are unseen.
+  const withCollection = candidates.filter(c => c._collectionId);
+  if (!withCollection.length) return;
+
+  // Fetch unique collections
+  const collectionIds = [...new Set(withCollection.map(c => c._collectionId))];
+  await Promise.allSettled(collectionIds.map(async (colId) => {
+    if (_collectionCache[colId]) return;
+    try {
+      const res = await fetch(`${TMDB}/collection/${colId}?api_key=${TMDB_KEY}`);
+      const data = await res.json();
+      _collectionCache[colId] = (data.parts || [])
+        .sort((a, b) => (a.release_date || '').localeCompare(b.release_date || ''));
+    } catch { _collectionCache[colId] = []; }
+  }));
+
+  const ratedIds = new Set(MOVIES.map(m => String(m.tmdbId)).filter(Boolean));
+
+  // Mark sequels for removal
+  const toRemove = new Set();
+  for (const c of withCollection) {
+    const parts = _collectionCache[c._collectionId];
+    if (!parts || parts.length <= 1) continue;
+
+    // Find this film's position in the collection
+    const idx = parts.findIndex(p => String(p.id) === String(c.tmdbId));
+    if (idx <= 0) continue; // first in collection or not found — keep it
+
+    // Check if user has seen all preceding films
+    const precedingParts = parts.slice(0, idx);
+    const hasSeenAll = precedingParts.every(p => ratedIds.has(String(p.id)));
+    if (!hasSeenAll) toRemove.add(String(c.tmdbId));
+  }
+
+  // Remove flagged sequels in-place
+  if (toRemove.size) {
+    for (let i = candidates.length - 1; i >= 0; i--) {
+      if (toRemove.has(String(candidates[i].tmdbId))) candidates.splice(i, 1);
+    }
+  }
+}
+
 async function buildCandidatePool() {
   // Builds a personalized candidate pool from 4 streams:
   // Stream A: Director affinity (top directors' other films via TMDB)
@@ -1076,8 +1123,16 @@ async function findMeAFilm() {
         c.productionCompanies = (detail.production_companies || []).map(p => p.name).join(', ');
         c.overview = c.overview || detail.overview || '';
         c.poster = c.poster || detail.poster_path;
+        // Track collection membership for sequel filtering
+        if (detail.belongs_to_collection) {
+          c._collectionId = detail.belongs_to_collection.id;
+          c._releaseDate = detail.release_date || '';
+        }
       } catch { /* candidate will score lower without cast data */ }
     }));
+
+    // ── Sequel filter: exclude sequels where user hasn't seen predecessors ───
+    await filterSequels(rawCandidates);
 
     // ── Phase 2: Pre-score all candidates locally (JS only, no Claude) ───────
     const scored = rawCandidates
@@ -1293,7 +1348,7 @@ async function buildDiscoveryPool() {
       if (seen.has(String(f.id))) return;
       seen.add(String(f.id));
 
-      candidates.push({
+      const cand = {
         tmdbId: f.id,
         title: f.title,
         year: (f.release_date || '').slice(0, 4),
@@ -1306,9 +1361,17 @@ async function buildDiscoveryPool() {
         overview: f.overview || detail.overview || '',
         source: 'discovery',
         familiarityScore
-      });
+      };
+      if (detail.belongs_to_collection) {
+        cand._collectionId = detail.belongs_to_collection.id;
+        cand._releaseDate = detail.release_date || '';
+      }
+      candidates.push(cand);
     } catch { /* skip */ }
   }));
+
+  // Filter sequels where user hasn't seen predecessors
+  await filterSequels(candidates);
 
   // Filter by shared threshold — same rule as isNewTerritory badge
   return candidates.filter(c => c.familiarityScore <= FAMILIARITY_THRESHOLD)
