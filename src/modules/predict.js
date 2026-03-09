@@ -5,6 +5,14 @@ const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 const TMDB = 'https://api.themoviedb.org/3';
 const PROXY_URL = 'https://palate-map-proxy.noahparikhcott.workers.dev';
 
+const GENRE_IDS = {
+  'Action': 28, 'Adventure': 12, 'Animation': 16, 'Comedy': 35,
+  'Crime': 80, 'Documentary': 99, 'Drama': 18, 'Family': 10751,
+  'Fantasy': 14, 'History': 36, 'Horror': 27, 'Music': 10402,
+  'Mystery': 9648, 'Romance': 10749, 'Science Fiction': 878,
+  'Thriller': 53, 'War': 10752, 'Western': 37
+};
+
 function trimPredictions(predictions, limit = 50) {
   const entries = Object.entries(predictions);
   if (entries.length <= limit) return predictions;
@@ -12,9 +20,24 @@ function trimPredictions(predictions, limit = 50) {
   return Object.fromEntries(entries.slice(0, limit));
 }
 
+function getTopGenreId() {
+  const counts = {};
+  MOVIES.forEach(m => {
+    if (!m.genres) return;
+    m.genres.split(',').forEach(g => {
+      const name = g.trim();
+      const id = GENRE_IDS[name];
+      if (id) counts[id] = (counts[id] || 0) + 1;
+    });
+  });
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  return top.length ? top[0][0] : null;
+}
+
 let predictDebounceTimer = null;
 let predictSelectedFilm = null;
 let lastPrediction = null;
+let recommendPage = 1;
 
 export function initPredict() {
   const MIN_FILMS = 10;
@@ -212,7 +235,7 @@ function findComparableFilms(film) {
   }).sort((a,b) => b.total - a.total).slice(0,8);
 }
 
-async function runPrediction(film) {
+async function callClaudeForPrediction(film) {
   const profile = buildTasteProfile();
   const comps = findComparableFilms(film);
 
@@ -224,7 +247,6 @@ async function runPrediction(film) {
     `${k}: mean=${v.mean}, std=${v.std}, range=${v.min}–${v.max}`
   ).join('\n');
 
-  // Build track record string — only inject if 2+ reconciled predictions (single data point is noise)
   const trackRecordStr = profile.reconciledPredictions.length >= 2
     ? profile.reconciledPredictions.map(e => {
         const sign = e.delta > 0 ? '+' : '';
@@ -284,24 +306,27 @@ Respond with this exact JSON structure:
   "key_comparables": ["<film title>", "<film title>"]
 }`;
 
+  const res = await fetch(PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }]
+    })
+  });
+
+  const data = await res.json();
+  const text = data.content?.[0]?.text || '';
+  const clean = text.replace(/```json|```/g, '').trim();
+  const prediction = JSON.parse(clean);
+  return { prediction, comps };
+}
+
+async function runPrediction(film) {
   try {
-    const res = await fetch(PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }]
-      })
-    });
-
-    const data = await res.json();
-    const text = data.content?.[0]?.text || '';
-    const clean = text.replace(/```json|```/g, '').trim();
-    const prediction = JSON.parse(clean);
-
+    const { prediction, comps } = await callClaudeForPrediction(film);
     lastPrediction = prediction;
     const predictedAt = new Date().toISOString();
-    // Store in prediction cache
     const rawPredictions = { ...(currentUser?.predictions || {}), [String(film.tmdbId)]: { film, prediction, predictedAt } };
     const predictions = trimPredictions(rawPredictions);
     setCurrentUser({ ...currentUser, predictions });
@@ -419,6 +444,188 @@ function renderPrediction(film, prediction, comps, predictedAt = null) {
     </div>
   `;
 }
+
+// ── FIND ME A FILM ─────────────────────────────────────────────────────────
+
+async function findMeAFilm() {
+  const resultEl = document.getElementById('predict-result');
+  document.getElementById('predict-search').value = '';
+  document.getElementById('predict-search-results').innerHTML = '';
+
+  resultEl.innerHTML = `
+    <div class="predict-loading">
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:22px;color:var(--dim)">Scouting films for you…</div>
+      <div class="predict-loading-label">Fetching candidates · running predictions · ranking results</div>
+    </div>`;
+
+  try {
+    const ratedIds = new Set(MOVIES.map(m => String(m.tmdbId)).filter(Boolean));
+    const ratedTitles = new Set(MOVIES.map(m => m.title.toLowerCase()));
+    const watchlistIds = new Set((currentUser?.watchlist || []).map(w => String(w.tmdbId)));
+    const page = recommendPage;
+
+    // Fetch popular + genre-seeded discover in parallel
+    const topGenreId = getTopGenreId();
+    const fetchTasks = [
+      fetch(`${TMDB}/movie/popular?api_key=${TMDB_KEY}&page=${page}`).then(r => r.json()),
+      fetch(`${TMDB}/movie/popular?api_key=${TMDB_KEY}&page=${page + 1}`).then(r => r.json()),
+    ];
+    if (topGenreId) {
+      fetchTasks.push(
+        fetch(`${TMDB}/discover/movie?api_key=${TMDB_KEY}&with_genres=${topGenreId}&sort_by=vote_average.desc&vote_count.gte=200&page=${page}`).then(r => r.json())
+      );
+    }
+    const pages = await Promise.all(fetchTasks);
+
+    // Deduplicate: genre results first (more tailored), then popular
+    const seen = new Set();
+    const allResults = [];
+    [...(pages[2]?.results || []), ...(pages[0]?.results || []), ...(pages[1]?.results || [])].forEach(m => {
+      if (!seen.has(m.id)) { seen.add(m.id); allResults.push(m); }
+    });
+
+    const candidates = allResults
+      .filter(m => !ratedIds.has(String(m.id)) && !ratedTitles.has(m.title.toLowerCase()) && !watchlistIds.has(String(m.id)) && m.poster_path)
+      .sort((a, b) => (b.vote_count > 500 ? b.vote_average : 0) - (a.vote_count > 500 ? a.vote_average : 0))
+      .slice(0, 6);
+
+    if (!candidates.length) {
+      resultEl.innerHTML = `<div class="tmdb-error">No new candidates found. Try refreshing.</div>`;
+      return;
+    }
+
+    // Fetch credits for each candidate in parallel
+    const bundles = await Promise.all(candidates.map(m =>
+      Promise.all([
+        fetch(`${TMDB}/movie/${m.id}?api_key=${TMDB_KEY}`).then(r => r.json()),
+        fetch(`${TMDB}/movie/${m.id}/credits?api_key=${TMDB_KEY}`).then(r => r.json())
+      ]).then(([detail, credits]) => ({ m, detail, credits }))
+    ));
+
+    const films = bundles.map(({ m, detail, credits }) => ({
+      tmdbId: m.id,
+      title: m.title,
+      year: m.release_date?.slice(0,4) || '',
+      director: (credits.crew||[]).filter(c=>c.job==='Director').map(c=>c.name).join(', '),
+      writer: (credits.crew||[]).filter(c=>['Screenplay','Writer','Story'].includes(c.job)).map(c=>c.name).slice(0,2).join(', '),
+      cast: (credits.cast||[]).slice(0,8).map(c=>c.name).join(', '),
+      genres: (detail.genres||[]).map(g=>g.name).join(', '),
+      overview: detail.overview || m.overview || '',
+      poster: m.poster_path
+    }));
+
+    // Predict uncached films in parallel, use cache for others
+    const existingPredictions = currentUser?.predictions || {};
+    const settled = await Promise.allSettled(films.map(async film => {
+      const cached = existingPredictions[String(film.tmdbId)];
+      if (cached?.prediction) {
+        return { film, prediction: cached.prediction, fromCache: true, predictedAt: cached.predictedAt };
+      }
+      const { prediction } = await callClaudeForPrediction(film);
+      return { film, prediction, fromCache: false, predictedAt: new Date().toISOString() };
+    }));
+
+    const results = settled.filter(r => r.status === 'fulfilled').map(r => r.value);
+    if (!results.length) {
+      resultEl.innerHTML = `<div class="tmdb-error">Predictions failed. Check connection and try again.</div>`;
+      return;
+    }
+
+    // Save new predictions to cache
+    const newPredictions = { ...existingPredictions };
+    results.forEach(({ film, prediction, fromCache, predictedAt }) => {
+      if (!fromCache) newPredictions[String(film.tmdbId)] = { film, prediction, predictedAt };
+    });
+    setCurrentUser({ ...currentUser, predictions: trimPredictions(newPredictions) });
+    saveUserLocally();
+    syncToSupabase();
+
+    // Sort by predicted total, show top 3
+    results.sort((a, b) => calcPredictedTotal(b.prediction) - calcPredictedTotal(a.prediction));
+    renderRecommendations(results.slice(0, 3));
+
+    // Advance page for next refresh
+    recommendPage = page + 2;
+
+  } catch(e) {
+    resultEl.innerHTML = `<div class="tmdb-error">Failed to find recommendations: ${e.message}</div>`;
+  }
+}
+
+function renderRecommendations(results) {
+  const resultEl = document.getElementById('predict-result');
+  resultEl.innerHTML = `
+    <div style="margin-top:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--ink)">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim)">Recommended for you</div>
+        <button onclick="findMeAFilm()" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Refresh →</button>
+      </div>
+      ${results.map((r, i) => renderRecommendationCard(r, i)).join('')}
+      <div style="margin-top:20px">
+        <button class="btn btn-outline" onclick="initPredict()">← Search a specific film</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderRecommendationCard({ film, prediction }, i) {
+  const total = Math.round(calcPredictedTotal(prediction));
+  const confClass = { high: 'conf-high', medium: 'conf-medium', low: 'conf-low' }[prediction.confidence] || 'conf-medium';
+  const onWl = (currentUser?.watchlist||[]).some(w => String(w.tmdbId) === String(film.tmdbId));
+  const safeTitle = (film.title||'').replace(/'/g,"\\'");
+  const posterUrl = film.poster ? `https://image.tmdb.org/t/p/w185${film.poster}` : null;
+
+  return `
+    <div style="display:flex;gap:16px;padding:20px 0;border-bottom:1px solid var(--rule);">
+      ${posterUrl
+        ? `<img src="${posterUrl}" style="width:56px;height:84px;object-fit:cover;flex-shrink:0">`
+        : `<div style="width:56px;height:84px;background:var(--cream);flex-shrink:0"></div>`
+      }
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:3px">
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:17px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${film.title}</div>
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:24px;color:var(--blue);flex-shrink:0;letter-spacing:-0.5px">${total}</div>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-bottom:8px">${film.year}${film.director ? ' · ' + film.director.split(',')[0] : ''}&ensp;<span class="predict-confidence ${confClass}" style="display:inline-block">${prediction.confidence}</span></div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.6;color:var(--dim);margin-bottom:12px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${prediction.reasoning}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button onclick="loadFullRecommendation(${film.tmdbId},'${safeTitle}','${film.year||''}')" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:var(--blue);color:white;border:none;padding:8px 14px;cursor:pointer">Full prediction →</button>
+          <button onclick="toggleRecommendWatchlist(${film.tmdbId})" id="rec-wl-${film.tmdbId}" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:${onWl?'var(--green)':'transparent'};color:${onWl?'white':'var(--dim)'};border:1px solid ${onWl?'var(--green)':'var(--rule-dark)'};padding:8px 14px;cursor:pointer">${onWl ? '✓ Watch List' : '+ Watch List'}</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ── GLOBALS ────────────────────────────────────────────────────────────────
+
+window.findMeAFilm = findMeAFilm;
+
+window.loadFullRecommendation = function(tmdbId, title, year) {
+  predictSelectedFilm = null;
+  predictSelectFilm(tmdbId, title, year);
+};
+
+window.toggleRecommendWatchlist = async function(tmdbId) {
+  const cached = currentUser?.predictions?.[String(tmdbId)];
+  const film = cached?.film;
+  if (!film) return;
+  const onWl = (currentUser?.watchlist||[]).some(w => String(w.tmdbId) === String(tmdbId));
+  const { addToWatchlist, removeFromWatchlist } = await import('./watchlist.js');
+  if (onWl) {
+    removeFromWatchlist(tmdbId);
+  } else {
+    addToWatchlist({ tmdbId: film.tmdbId, title: film.title, year: film.year, poster: film.poster, director: film.director, overview: film.overview });
+  }
+  const btn = document.getElementById(`rec-wl-${tmdbId}`);
+  if (btn) {
+    const now = !onWl;
+    btn.textContent = now ? '✓ Watch List' : '+ Watch List';
+    btn.style.background = now ? 'var(--green)' : 'transparent';
+    btn.style.color = now ? 'white' : 'var(--dim)';
+    btn.style.borderColor = now ? 'var(--green)' : 'var(--rule-dark)';
+  }
+};
 
 window.predictToggleWatchlist = async function() {
   if (!predictSelectedFilm) return;

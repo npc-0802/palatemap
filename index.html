@@ -355,6 +355,10 @@
     <div style="margin-bottom:8px">
       <input class="field-input" id="predict-search" type="text" placeholder="Search for a film…" style="width:100%;box-sizing:border-box" oninput="predictSearchDebounce()">
     </div>
+    <div style="margin-bottom:24px;display:flex;align-items:center;gap:10px">
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--rule-dark)">or</span>
+      <button onclick="findMeAFilm()" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--action);background:none;border:none;cursor:pointer;padding:0">Find me a film →</button>
+    </div>
     <div id="predict-search-results" style="margin-bottom:24px"></div>
     <div id="predict-result"></div>
   </div>
