@@ -1,5 +1,5 @@
 Palate Map
-Product Brief · Living Document · v3.15
+Product Brief · Living Document · v3.16
 Last updated: March 2026
 Confidential — do not distribute
 
@@ -497,4 +497,38 @@ IP protection posture
 
 Note for Claude Code sessions: when implementing any feature that involves intelligence, prediction, scoring, or user modeling, default to keeping the logic in JavaScript rather than delegating it to the API. Only use the API for natural language generation tasks (reasoning text, blurbs, explanations) that genuinely require it. If a feature can be computed deterministically from user data, compute it in code.
 
-Palate Map · private product brief · v3.15 · do not distribute
+Cross-user learning — architecture and timing
+
+Current state: predictions are isolated per user. Reconciled deltas (predicted vs actual) are stored on currentUser.predictions and synced to that user's Supabase row only. No aggregation across users occurs. This is correct at current scale — with fewer than ~200 users, cross-user signal would be noise.
+
+When cross-user learning becomes viable (target: ~200+ users with reconciled predictions), three tiers are planned:
+
+Tier A — Archetype-level bias correction
+Group reconciled predictions by user archetype. If Formalists consistently rate a category of film 8 points higher than predicted, inject that as a systematic correction into the prompt for all Formalists. Requires ~50–100 reconciled predictions per archetype to be reliable. Stored as a bias_correction object on the archetype definition in archetypes.js, updated periodically by an admin script rather than in real time.
+
+Tier B — Film-level ground truth
+If N users have all rated the same film and the average prediction delta is consistently positive or negative, that bias is a property of the film itself, not any individual user. Store a per-film bias correction keyed by TMDB ID. Apply it universally when that film appears in a prediction context. Requires a minimum of 5 reconciled predictions per film before the correction is trusted.
+
+Tier C — Weight-vector collaborative filtering
+Users with similar weight vectors (similar archetype fingerprints, computed via cosine similarity) tend to have correlated prediction errors. This is the foundation of a collaborative filtering layer — not "people like you watched" but "people with your taste formula have these specific model blind spots." Requires ~500+ users with reconciled predictions. Planned for Phase 4+ alongside the fine-tuned model work (Direction 5).
+
+Schema requirement (plan now, implement with Phase 4.2):
+Cross-user learning requires predictions in a normalized table, not a per-user JSONB blob. The target schema is:
+
+palatemap_predictions
+  id                  uuid primary key
+  user_id             uuid (references palatemap_users)
+  tmdb_id             integer
+  archetype_at_time   text (snapshot of user's archetype when predicted)
+  weights_at_time     jsonb (snapshot of user's weight vector when predicted)
+  predicted_scores    jsonb
+  actual_scores       jsonb (null until rated)
+  delta               integer (null until rated — actual_total minus predicted_total)
+  predicted_at        timestamp
+  rated_at            timestamp (null until rated)
+
+This migration should be planned alongside Phase 4.2 (community ratings) as they share the same normalization requirement. Do not build cross-user learning features against the JSONB blob — wait for the normalized table.
+
+Engineering rule: until the palatemap_predictions table exists, every prediction call must store the full predicted_scores, archetype_at_time, and weights_at_time on the prediction entry in currentUser.predictions. This ensures the data needed for future cross-user learning is captured now and will be migratable when the schema is ready. Do not store only the predicted total — always store the full score breakdown.
+
+Palate Map · private product brief · v3.16 · do not distribute

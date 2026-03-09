@@ -5,14 +5,6 @@ const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 const TMDB = 'https://api.themoviedb.org/3';
 const PROXY_URL = 'https://palate-map-proxy.noahparikhcott.workers.dev';
 
-const GENRE_IDS = {
-  'Action': 28, 'Adventure': 12, 'Animation': 16, 'Comedy': 35,
-  'Crime': 80, 'Documentary': 99, 'Drama': 18, 'Family': 10751,
-  'Fantasy': 14, 'History': 36, 'Horror': 27, 'Music': 10402,
-  'Mystery': 9648, 'Romance': 10749, 'Science Fiction': 878,
-  'Thriller': 53, 'War': 10752, 'Western': 37
-};
-
 function trimPredictions(predictions, limit = 50) {
   const entries = Object.entries(predictions);
   if (entries.length <= limit) return predictions;
@@ -20,24 +12,11 @@ function trimPredictions(predictions, limit = 50) {
   return Object.fromEntries(entries.slice(0, limit));
 }
 
-function getTopGenreId() {
-  const counts = {};
-  MOVIES.forEach(m => {
-    if (!m.genres) return;
-    m.genres.split(',').forEach(g => {
-      const name = g.trim();
-      const id = GENRE_IDS[name];
-      if (id) counts[id] = (counts[id] || 0) + 1;
-    });
-  });
-  const top = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  return top.length ? top[0][0] : null;
-}
-
 let predictDebounceTimer = null;
 let predictSelectedFilm = null;
 let lastPrediction = null;
 let recommendPage = 1;
+let dismissedTmdbIds = new Set(); // tracks films dismissed this session
 
 export function initPredict() {
   const MIN_FILMS = 10;
@@ -215,7 +194,6 @@ function buildTasteProfile() {
   const bottom5 = sorted.slice(-5).map(m => `${m.title} (${m.total})`).join(', ');
   const weightStr = CATEGORIES.map(c => `${c.label}×${(currentUser?.weights?.[c.key] ?? c.weight)}`).join(', ');
 
-  // Build prediction track record from reconciled entries (those with actualTotal + delta)
   const predictions = currentUser?.predictions || {};
   const reconciledPredictions = Object.values(predictions)
     .filter(e => e?.film?.title && e?.delta != null && e?.predictedTotal != null && e?.actualTotal != null)
@@ -233,6 +211,280 @@ function findComparableFilms(film) {
     const mCast = mergeSplitNames((m.cast||'').split(',').map(s=>s.trim()).filter(Boolean));
     return directorNames.some(d => mDirectors.includes(d)) || castNames.some(c => mCast.includes(c));
   }).sort((a,b) => b.total - a.total).slice(0,8);
+}
+
+function scoreCandidate(film) {
+  // Scores a candidate film 0–100 based on user's taste data.
+  // Runs entirely in JS. No API calls. Higher = stronger recommendation signal.
+  // film must have: { title, year, director, cast, genres, tmdbId }
+  let score = 0;
+
+  // ── 1. Director affinity (0–35 pts) ────────────────────────────────────────
+  const candidateDirectors = mergeSplitNames(
+    (film.director || '').split(',').map(s => s.trim()).filter(Boolean)
+  );
+  if (candidateDirectors.length) {
+    const directorFilms = MOVIES.filter(m => {
+      const mDirs = mergeSplitNames((m.director || '').split(',').map(s => s.trim()).filter(Boolean));
+      return candidateDirectors.some(d => mDirs.includes(d));
+    });
+    if (directorFilms.length >= 2) {
+      const avg = directorFilms.reduce((s, m) => s + m.total, 0) / directorFilms.length;
+      score += avg >= 90 ? 35 : avg >= 80 ? 25 : avg >= 70 ? 15 : 5;
+    } else if (directorFilms.length === 1) {
+      const avg = directorFilms[0].total;
+      score += avg >= 85 ? 20 : avg >= 75 ? 12 : 4;
+    }
+  }
+
+  // ── 2. Cast affinity (0–20 pts) ────────────────────────────────────────────
+  const candidateCast = mergeSplitNames(
+    (film.cast || '').split(',').map(s => s.trim()).filter(Boolean)
+  );
+  if (candidateCast.length) {
+    const castFilms = MOVIES.filter(m => {
+      const mCast = mergeSplitNames((m.cast || '').split(',').map(s => s.trim()).filter(Boolean));
+      return candidateCast.some(c => mCast.includes(c));
+    });
+    if (castFilms.length) {
+      const avg = castFilms.reduce((s, m) => s + m.total, 0) / castFilms.length;
+      const overlap = Math.min(castFilms.length, 4);
+      score += Math.round((avg / 100) * 10 * (overlap / 4)) + (overlap >= 2 ? 10 : 5);
+    }
+  }
+
+  // ── 3. Genre affinity (0–25 pts) ───────────────────────────────────────────
+  const candidateGenres = (film.genres || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  if (candidateGenres.length) {
+    const genreScores = {};
+    const genreCounts = {};
+    MOVIES.forEach(m => {
+      const mGenres = (m.genres || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+      mGenres.forEach(g => {
+        genreScores[g] = (genreScores[g] || 0) + m.total;
+        genreCounts[g] = (genreCounts[g] || 0) + 1;
+      });
+    });
+    const genreAvgs = {};
+    Object.keys(genreScores).forEach(g => {
+      if (genreCounts[g] >= 2) genreAvgs[g] = genreScores[g] / genreCounts[g];
+    });
+
+    let genreScore = 0, matched = 0;
+    candidateGenres.forEach(g => {
+      if (genreAvgs[g]) { genreScore += genreAvgs[g]; matched++; }
+    });
+    if (matched > 0) score += Math.round((genreScore / matched / 100) * 25);
+  }
+
+  // ── 4. Era affinity (0–15 pts) ─────────────────────────────────────────────
+  const candidateYear = parseInt(film.year) || 0;
+  if (candidateYear > 0) {
+    const candidateDecade = Math.floor(candidateYear / 10) * 10;
+    const decadeScores = {};
+    const decadeCounts = {};
+    MOVIES.forEach(m => {
+      const y = parseInt(m.year) || 0;
+      if (!y) return;
+      const d = Math.floor(y / 10) * 10;
+      decadeScores[d] = (decadeScores[d] || 0) + m.total;
+      decadeCounts[d] = (decadeCounts[d] || 0) + 1;
+    });
+    let topDecade = null, topDecadeAvg = 0;
+    Object.keys(decadeScores).forEach(d => {
+      if (decadeCounts[d] >= 2) {
+        const avg = decadeScores[d] / decadeCounts[d];
+        if (avg > topDecadeAvg) { topDecadeAvg = avg; topDecade = parseInt(d); }
+      }
+    });
+    if (topDecade !== null) {
+      const decadeAvg = decadeScores[candidateDecade]
+        ? decadeScores[candidateDecade] / decadeCounts[candidateDecade]
+        : null;
+      if (candidateDecade === topDecade) score += 15;
+      else if (decadeAvg && decadeAvg >= topDecadeAvg - 5) score += 8;
+      else if (decadeAvg && decadeAvg >= topDecadeAvg - 15) score += 4;
+    }
+  }
+
+  // ── 5. Prediction history bonus (0–5 pts) ──────────────────────────────────
+  const cached = currentUser?.predictions?.[String(film.tmdbId)];
+  if (cached?.prediction) {
+    const predTotal = calcPredictedTotal(cached.prediction);
+    if (predTotal >= 85) score += 5;
+    else if (predTotal >= 75) score += 3;
+  }
+
+  return Math.min(score, 100);
+}
+
+async function buildCandidatePool() {
+  // Builds a personalized candidate pool from 3 streams, in priority order:
+  // Stream A: Watch list films (already expressed intent, highest priority)
+  // Stream B: Director affinity (top-rated directors' other films via TMDB)
+  // Stream C: TMDB discover (genre + era weighted, replaces generic popular)
+
+  const ratedIds = new Set(MOVIES.map(m => String(m.tmdbId)).filter(Boolean));
+  const ratedTitles = new Set(MOVIES.map(m => m.title.toLowerCase()));
+  const watchlistIds = new Set((currentUser?.watchlist || []).map(w => String(w.tmdbId)));
+
+  const seen = new Set([...ratedIds, ...dismissedTmdbIds]);
+  const candidates = [];
+
+  // ── Stream A: Watch list ────────────────────────────────────────────────────
+  const watchlist = currentUser?.watchlist || [];
+  for (const item of watchlist) {
+    if (!item.tmdbId) continue;
+    const id = String(item.tmdbId);
+    if (dismissedTmdbIds.has(id)) continue;
+    const cached = currentUser?.predictions?.[id];
+    const predTotal = cached?.prediction ? calcPredictedTotal(cached.prediction) : null;
+    if (!cached || predTotal >= 78) {
+      candidates.push({
+        tmdbId: item.tmdbId,
+        title: item.title,
+        year: item.year,
+        poster: item.poster,
+        director: item.director || '',
+        cast: '',
+        genres: '',
+        overview: item.overview || '',
+        source: 'watchlist'
+      });
+    }
+    seen.add(id);
+  }
+
+  // ── Stream B: Director affinity ─────────────────────────────────────────────
+  const directorMap = {};
+  MOVIES.forEach(m => {
+    const dirs = (m.director || '').split(',').map(s => s.trim()).filter(Boolean);
+    dirs.forEach(d => {
+      if (!directorMap[d]) directorMap[d] = { total: 0, count: 0 };
+      directorMap[d].total += m.total;
+      directorMap[d].count++;
+    });
+  });
+  const topDirectors = Object.entries(directorMap)
+    .filter(([, v]) => v.count >= 2)
+    .map(([name, v]) => ({ name, avg: v.total / v.count }))
+    .sort((a, b) => b.avg - a.avg)
+    .slice(0, 3);
+
+  await Promise.allSettled(topDirectors.map(async ({ name }) => {
+    try {
+      const searchRes = await fetch(
+        `${TMDB}/search/person?api_key=${TMDB_KEY}&query=${encodeURIComponent(name)}&language=en-US`
+      );
+      const searchData = await searchRes.json();
+      const person = (searchData.results || [])[0];
+      if (!person) return;
+
+      const credRes = await fetch(
+        `${TMDB}/person/${person.id}/movie_credits?api_key=${TMDB_KEY}`
+      );
+      const credData = await credRes.json();
+      const directed = (credData.crew || [])
+        .filter(c => c.job === 'Director' && c.vote_count > 100 && c.poster_path)
+        .filter(c => !seen.has(String(c.id)) && !ratedTitles.has((c.title || '').toLowerCase()))
+        .sort((a, b) => b.vote_average - a.vote_average)
+        .slice(0, 3);
+
+      directed.forEach(film => {
+        if (seen.has(String(film.id))) return;
+        seen.add(String(film.id));
+        candidates.push({
+          tmdbId: film.id,
+          title: film.title,
+          year: (film.release_date || '').slice(0, 4),
+          poster: film.poster_path,
+          director: name,
+          cast: '',
+          genres: '',
+          overview: film.overview || '',
+          source: 'director'
+        });
+      });
+    } catch { /* stream failure is acceptable */ }
+  }));
+
+  // ── Stream C: TMDB discover (genre + era weighted) ──────────────────────────
+  const genreScores = {};
+  const genreCounts = {};
+  MOVIES.forEach(m => {
+    (m.genres || '').split(',').map(s => s.trim()).filter(Boolean).forEach(g => {
+      genreScores[g] = (genreScores[g] || 0) + m.total;
+      genreCounts[g] = (genreCounts[g] || 0) + 1;
+    });
+  });
+  const GENRE_ID_MAP = {
+    'Action': 28, 'Adventure': 12, 'Animation': 16, 'Comedy': 35,
+    'Crime': 80, 'Documentary': 99, 'Drama': 18, 'Family': 10751,
+    'Fantasy': 14, 'History': 36, 'Horror': 27, 'Music': 10402,
+    'Mystery': 9648, 'Romance': 10749, 'Science Fiction': 878,
+    'Thriller': 53, 'War': 10752, 'Western': 37
+  };
+  const topGenres = Object.entries(genreScores)
+    .filter(([g]) => genreCounts[g] >= 2 && GENRE_ID_MAP[g])
+    .map(([g, total]) => ({ name: g, id: GENRE_ID_MAP[g], avg: total / genreCounts[g] }))
+    .sort((a, b) => b.avg - a.avg)
+    .slice(0, 2);
+
+  const decadeScores = {};
+  const decadeCounts = {};
+  MOVIES.forEach(m => {
+    const y = parseInt(m.year) || 0;
+    if (!y) return;
+    const d = Math.floor(y / 10) * 10;
+    decadeScores[d] = (decadeScores[d] || 0) + m.total;
+    decadeCounts[d] = (decadeCounts[d] || 0) + 1;
+  });
+  let topDecade = null, topDecadeAvg = 0;
+  Object.keys(decadeScores).forEach(d => {
+    if (decadeCounts[d] >= 2) {
+      const avg = decadeScores[d] / decadeCounts[d];
+      if (avg > topDecadeAvg) { topDecadeAvg = avg; topDecade = parseInt(d); }
+    }
+  });
+
+  const discoverCalls = topGenres.map(async (genre) => {
+    const params = new URLSearchParams({
+      api_key: TMDB_KEY,
+      with_genres: genre.id,
+      sort_by: 'vote_average.desc',
+      'vote_count.gte': 200,
+      page: Math.ceil(recommendPage / 2)
+    });
+    if (topDecade) {
+      params.set('primary_release_date.gte', `${topDecade}-01-01`);
+      params.set('primary_release_date.lte', `${topDecade + 9}-12-31`);
+    }
+    try {
+      const res = await fetch(`${TMDB}/discover/movie?${params}`);
+      const data = await res.json();
+      return data.results || [];
+    } catch { return []; }
+  });
+
+  const discoverResults = (await Promise.all(discoverCalls)).flat();
+  discoverResults.forEach(film => {
+    const id = String(film.id);
+    if (seen.has(id) || !film.poster_path) return;
+    seen.add(id);
+    candidates.push({
+      tmdbId: film.id,
+      title: film.title,
+      year: (film.release_date || '').slice(0, 4),
+      poster: film.poster_path,
+      director: '',
+      cast: '',
+      genres: '',
+      overview: film.overview || '',
+      source: 'discover'
+    });
+  });
+
+  return candidates;
 }
 
 async function callClaudeForPrediction(film) {
@@ -327,7 +579,16 @@ async function runPrediction(film) {
     const { prediction, comps } = await callClaudeForPrediction(film);
     lastPrediction = prediction;
     const predictedAt = new Date().toISOString();
-    const rawPredictions = { ...(currentUser?.predictions || {}), [String(film.tmdbId)]: { film, prediction, predictedAt } };
+    const rawPredictions = {
+      ...(currentUser?.predictions || {}),
+      [String(film.tmdbId)]: {
+        film,
+        prediction,
+        predictedAt,
+        archetype_at_time: currentUser?.archetype || null,
+        weights_at_time: currentUser?.weights ? { ...currentUser.weights } : null
+      }
+    };
     const predictions = trimPredictions(rawPredictions);
     setCurrentUser({ ...currentUser, predictions });
     saveUserLocally();
@@ -350,7 +611,7 @@ function calcPredictedTotal(prediction) {
 
 export async function runAutoPredict(item) {
   if (!currentUser || MOVIES.length < 10) return;
-  if (currentUser.predictions?.[String(item.tmdbId)]) return; // already predicted
+  if (currentUser.predictions?.[String(item.tmdbId)]) return;
   let detail = {}, credits = {};
   try {
     const [dRes, cRes] = await Promise.all([
@@ -445,161 +706,171 @@ function renderPrediction(film, prediction, comps, predictedAt = null) {
   `;
 }
 
-// ── FIND ME A FILM ─────────────────────────────────────────────────────────
+// ── FIND ME A FILM ──────────────────────────────────────────────────────────
 
 async function findMeAFilm() {
   const resultEl = document.getElementById('predict-result');
+  if (!resultEl) return;
+
   document.getElementById('predict-search').value = '';
   document.getElementById('predict-search-results').innerHTML = '';
 
   resultEl.innerHTML = `
     <div class="predict-loading">
-      <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:22px;color:var(--dim)">Scouting films for you…</div>
-      <div class="predict-loading-label">Fetching candidates · running predictions · ranking results</div>
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:20px;color:var(--dim)">Finding films for you…</div>
+      <div class="predict-loading-label">Reading your taste · scouting candidates · ranking by fit</div>
     </div>`;
 
+  recommendPage++;
+
   try {
-    const ratedIds = new Set(MOVIES.map(m => String(m.tmdbId)).filter(Boolean));
-    const ratedTitles = new Set(MOVIES.map(m => m.title.toLowerCase()));
-    const watchlistIds = new Set((currentUser?.watchlist || []).map(w => String(w.tmdbId)));
-    const page = recommendPage;
+    // ── Phase 1: Build candidate pool (JS only, no Claude) ───────────────────
+    const rawCandidates = await buildCandidatePool();
 
-    // Fetch popular + genre-seeded discover in parallel
-    const topGenreId = getTopGenreId();
-    const fetchTasks = [
-      fetch(`${TMDB}/movie/popular?api_key=${TMDB_KEY}&page=${page}`).then(r => r.json()),
-      fetch(`${TMDB}/movie/popular?api_key=${TMDB_KEY}&page=${page + 1}`).then(r => r.json()),
-    ];
-    if (topGenreId) {
-      fetchTasks.push(
-        fetch(`${TMDB}/discover/movie?api_key=${TMDB_KEY}&with_genres=${topGenreId}&sort_by=vote_average.desc&vote_count.gte=200&page=${page}`).then(r => r.json())
-      );
-    }
-    const pages = await Promise.all(fetchTasks);
+    // Fetch full details for director-stream and discover-stream candidates
+    const needsDetail = rawCandidates.filter(c => c.source !== 'watchlist' && !c.cast);
+    await Promise.allSettled(needsDetail.map(async (c) => {
+      try {
+        const [dRes, crRes] = await Promise.all([
+          fetch(`${TMDB}/movie/${c.tmdbId}?api_key=${TMDB_KEY}`),
+          fetch(`${TMDB}/movie/${c.tmdbId}/credits?api_key=${TMDB_KEY}`)
+        ]);
+        const detail = await dRes.json();
+        const credits = await crRes.json();
+        c.director = c.director || (credits.crew || []).filter(x => x.job === 'Director').map(x => x.name).join(', ');
+        c.cast = (credits.cast || []).slice(0, 8).map(x => x.name).join(', ');
+        c.genres = (detail.genres || []).map(g => g.name).join(', ');
+        c.overview = c.overview || detail.overview || '';
+        c.poster = c.poster || detail.poster_path;
+      } catch { /* candidate will score lower without cast data */ }
+    }));
 
-    // Deduplicate: genre results first (more tailored), then popular
-    const seen = new Set();
-    const allResults = [];
-    [...(pages[2]?.results || []), ...(pages[0]?.results || []), ...(pages[1]?.results || [])].forEach(m => {
-      if (!seen.has(m.id)) { seen.add(m.id); allResults.push(m); }
-    });
+    // ── Phase 2: Pre-score all candidates locally (JS only, no Claude) ───────
+    const scored = rawCandidates
+      .filter(c => !dismissedTmdbIds.has(String(c.tmdbId)))
+      .map(c => ({ ...c, compatScore: scoreCandidate(c) }))
+      .sort((a, b) => {
+        if (a.source === 'watchlist' && b.source !== 'watchlist') return -1;
+        if (b.source === 'watchlist' && a.source !== 'watchlist') return 1;
+        return b.compatScore - a.compatScore;
+      });
 
-    const candidates = allResults
-      .filter(m => !ratedIds.has(String(m.id)) && !ratedTitles.has(m.title.toLowerCase()) && !watchlistIds.has(String(m.id)) && m.poster_path)
-      .sort((a, b) => (b.vote_count > 500 ? b.vote_average : 0) - (a.vote_count > 500 ? a.vote_average : 0))
-      .slice(0, 6);
-
-    if (!candidates.length) {
-      resultEl.innerHTML = `<div class="tmdb-error">No new candidates found. Try refreshing.</div>`;
+    if (!scored.length) {
+      resultEl.innerHTML = `<div class="tmdb-error">Not enough data to generate recommendations yet. Rate more films and try again.</div>`;
       return;
     }
 
-    // Fetch credits for each candidate in parallel
-    const bundles = await Promise.all(candidates.map(m =>
-      Promise.all([
-        fetch(`${TMDB}/movie/${m.id}?api_key=${TMDB_KEY}`).then(r => r.json()),
-        fetch(`${TMDB}/movie/${m.id}/credits?api_key=${TMDB_KEY}`).then(r => r.json())
-      ]).then(([detail, credits]) => ({ m, detail, credits }))
-    ));
+    // ── Phase 3: Run predictions — max 3 new Claude calls, cache-first ───────
+    const top5 = scored.slice(0, 5);
+    const toPredict = top5.filter(c => !currentUser?.predictions?.[String(c.tmdbId)]);
+    const toCall = toPredict.slice(0, 3);
 
-    const films = bundles.map(({ m, detail, credits }) => ({
-      tmdbId: m.id,
-      title: m.title,
-      year: m.release_date?.slice(0,4) || '',
-      director: (credits.crew||[]).filter(c=>c.job==='Director').map(c=>c.name).join(', '),
-      writer: (credits.crew||[]).filter(c=>['Screenplay','Writer','Story'].includes(c.job)).map(c=>c.name).slice(0,2).join(', '),
-      cast: (credits.cast||[]).slice(0,8).map(c=>c.name).join(', '),
-      genres: (detail.genres||[]).map(g=>g.name).join(', '),
-      overview: detail.overview || m.overview || '',
-      poster: m.poster_path
+    await Promise.allSettled(toCall.map(async (c) => {
+      const film = {
+        tmdbId: c.tmdbId, title: c.title, year: c.year,
+        director: c.director || '', writer: '',
+        cast: c.cast || '', genres: c.genres || '',
+        overview: c.overview || '', poster: c.poster || null
+      };
+      try {
+        const { prediction } = await callClaudeForPrediction(film);
+        const predictedAt = new Date().toISOString();
+        const newPredictions = {
+          ...(currentUser?.predictions || {}),
+          [String(film.tmdbId)]: {
+            film, prediction, predictedAt,
+            archetype_at_time: currentUser?.archetype || null,
+            weights_at_time: currentUser?.weights ? { ...currentUser.weights } : null
+          }
+        };
+        setCurrentUser({ ...currentUser, predictions: trimPredictions(newPredictions) });
+        saveUserLocally();
+        syncToSupabase();
+      } catch { /* prediction failure — candidate excluded from results */ }
     }));
 
-    // Predict uncached films in parallel, use cache for others
-    const existingPredictions = currentUser?.predictions || {};
-    const settled = await Promise.allSettled(films.map(async film => {
-      const cached = existingPredictions[String(film.tmdbId)];
-      if (cached?.prediction) {
-        return { film, prediction: cached.prediction, fromCache: true, predictedAt: cached.predictedAt };
-      }
-      const { prediction } = await callClaudeForPrediction(film);
-      return { film, prediction, fromCache: false, predictedAt: new Date().toISOString() };
-    }));
+    // ── Phase 4: Collect results and render top 3 ────────────────────────────
+    const results = top5
+      .map(c => {
+        const cached = currentUser?.predictions?.[String(c.tmdbId)];
+        if (!cached?.prediction) return null;
+        return { ...c, prediction: cached.prediction, predTotal: calcPredictedTotal(cached.prediction) };
+      })
+      .filter(Boolean)
+      .sort((a, b) => {
+        if (a.source === 'watchlist' && b.source !== 'watchlist') return -1;
+        if (b.source === 'watchlist' && a.source !== 'watchlist') return 1;
+        return b.predTotal - a.predTotal;
+      })
+      .slice(0, 3);
 
-    const results = settled.filter(r => r.status === 'fulfilled').map(r => r.value);
     if (!results.length) {
-      resultEl.innerHTML = `<div class="tmdb-error">Predictions failed. Check connection and try again.</div>`;
+      resultEl.innerHTML = `<div class="tmdb-error">Couldn't generate predictions right now. Try again in a moment.</div>`;
       return;
     }
 
-    // Save new predictions to cache
-    const newPredictions = { ...existingPredictions };
-    results.forEach(({ film, prediction, fromCache, predictedAt }) => {
-      if (!fromCache) newPredictions[String(film.tmdbId)] = { film, prediction, predictedAt };
-    });
-    setCurrentUser({ ...currentUser, predictions: trimPredictions(newPredictions) });
-    saveUserLocally();
-    syncToSupabase();
+    // ── Phase 5: Render results ───────────────────────────────────────────────
+    const sourceLabel = {
+      watchlist: 'On your list',
+      director: 'Director match',
+      discover: 'For your taste'
+    };
 
-    // Sort by predicted total, show top 3
-    results.sort((a, b) => calcPredictedTotal(b.prediction) - calcPredictedTotal(a.prediction));
-    renderRecommendations(results.slice(0, 3));
-
-    // Advance page for next refresh
-    recommendPage = page + 2;
+    resultEl.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid var(--ink)">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim)">Recommended for you</div>
+        <button onclick="findMeAFilmRefresh()" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Refresh →</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        ${results.map(r => {
+          const confClass = { high: 'conf-high', medium: 'conf-medium', low: 'conf-low' }[r.prediction.confidence] || 'conf-medium';
+          const poster = r.poster
+            ? `<img src="https://image.tmdb.org/t/p/w92${r.poster}" style="width:44px;height:66px;object-fit:cover;flex-shrink:0;border-radius:2px">`
+            : `<div style="width:44px;height:66px;background:var(--rule);flex-shrink:0;border-radius:2px"></div>`;
+          const safeTmdbId = parseInt(r.tmdbId);
+          const safeTitle = (r.title || '').replace(/'/g, "\\'");
+          const safeYear = (r.year || '').replace(/'/g, "\\'");
+          return `
+            <div style="display:flex;gap:12px;padding:14px;background:var(--cream);border:1px solid var(--rule);border-radius:4px">
+              ${poster}
+              <div style="flex:1;min-width:0">
+                <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1.5px;color:var(--dim);text-transform:uppercase;margin-bottom:4px">${sourceLabel[r.source] || 'Recommended'}</div>
+                <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:16px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.title}</div>
+                <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-top:2px">${r.year}${r.director ? ' · ' + r.director.split(',')[0] : ''}</div>
+                <div style="margin-top:6px;font-family:'DM Sans',sans-serif;font-size:12px;line-height:1.5;color:var(--dim);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${r.prediction.reasoning || ''}</div>
+                <div style="margin-top:8px;display:flex;align-items:center;gap:10px">
+                  <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:22px;color:var(--blue)">${(Math.round(r.predTotal * 10) / 10).toFixed(1)}</div>
+                  <span class="predict-confidence ${confClass}" style="font-size:9px">${r.prediction.confidence}</span>
+                  <div style="margin-left:auto;display:flex;gap:8px">
+                    <button onclick="predictSelectFilm(${safeTmdbId},'${safeTitle}','${safeYear}')" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;background:none;border:1px solid var(--rule-dark);padding:5px 10px;cursor:pointer;color:var(--ink)">Full prediction →</button>
+                    <button onclick="findMeAFilmDismiss('${r.tmdbId}')" style="font-family:'DM Mono',monospace;font-size:9px;background:none;border:1px solid var(--rule);padding:5px 8px;cursor:pointer;color:var(--dim)" title="Not interested">✕</button>
+                  </div>
+                </div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+      <div style="margin-top:16px">
+        <button class="btn btn-outline" onclick="initPredict()">← Search a specific film</button>
+      </div>`;
 
   } catch(e) {
-    resultEl.innerHTML = `<div class="tmdb-error">Failed to find recommendations: ${e.message}</div>`;
+    resultEl.innerHTML = `<div class="tmdb-error">Something went wrong — ${e.message}. Try again.</div>`;
   }
 }
 
-function renderRecommendations(results) {
-  const resultEl = document.getElementById('predict-result');
-  resultEl.innerHTML = `
-    <div style="margin-top:8px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--ink)">
-        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim)">Recommended for you</div>
-        <button onclick="findMeAFilm()" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Refresh →</button>
-      </div>
-      ${results.map((r, i) => renderRecommendationCard(r, i)).join('')}
-      <div style="margin-top:20px">
-        <button class="btn btn-outline" onclick="initPredict()">← Search a specific film</button>
-      </div>
-    </div>
-  `;
-}
-
-function renderRecommendationCard({ film, prediction }, i) {
-  const total = Math.round(calcPredictedTotal(prediction));
-  const confClass = { high: 'conf-high', medium: 'conf-medium', low: 'conf-low' }[prediction.confidence] || 'conf-medium';
-  const onWl = (currentUser?.watchlist||[]).some(w => String(w.tmdbId) === String(film.tmdbId));
-  const safeTitle = (film.title||'').replace(/'/g,"\\'");
-  const posterUrl = film.poster ? `https://image.tmdb.org/t/p/w185${film.poster}` : null;
-
-  return `
-    <div style="display:flex;gap:16px;padding:20px 0;border-bottom:1px solid var(--rule);">
-      ${posterUrl
-        ? `<img src="${posterUrl}" style="width:56px;height:84px;object-fit:cover;flex-shrink:0">`
-        : `<div style="width:56px;height:84px;background:var(--cream);flex-shrink:0"></div>`
-      }
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:3px">
-          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:17px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${film.title}</div>
-          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:24px;color:var(--blue);flex-shrink:0;letter-spacing:-0.5px">${total}</div>
-        </div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-bottom:8px">${film.year}${film.director ? ' · ' + film.director.split(',')[0] : ''}&ensp;<span class="predict-confidence ${confClass}" style="display:inline-block">${prediction.confidence}</span></div>
-        <div style="font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.6;color:var(--dim);margin-bottom:12px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${prediction.reasoning}</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button onclick="loadFullRecommendation(${film.tmdbId},'${safeTitle}','${film.year||''}')" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:var(--blue);color:white;border:none;padding:8px 14px;cursor:pointer">Full prediction →</button>
-          <button onclick="toggleRecommendWatchlist(${film.tmdbId})" id="rec-wl-${film.tmdbId}" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:${onWl?'var(--green)':'transparent'};color:${onWl?'white':'var(--dim)'};border:1px solid ${onWl?'var(--green)':'var(--rule-dark)'};padding:8px 14px;cursor:pointer">${onWl ? '✓ Watch List' : '+ Watch List'}</button>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-// ── GLOBALS ────────────────────────────────────────────────────────────────
+// ── GLOBALS ─────────────────────────────────────────────────────────────────
 
 window.findMeAFilm = findMeAFilm;
+
+window.findMeAFilmRefresh = function() {
+  findMeAFilm();
+};
+
+window.findMeAFilmDismiss = function(tmdbId) {
+  dismissedTmdbIds.add(String(tmdbId));
+  findMeAFilm();
+};
 
 window.loadFullRecommendation = function(tmdbId, title, year) {
   predictSelectedFilm = null;
@@ -650,7 +921,6 @@ window.predictToggleWatchlist = async function() {
 
 export function predictFresh() {
   if (!predictSelectedFilm) return;
-  // Remove from cache so runPrediction stores a fresh result
   if (currentUser?.predictions) {
     const predictions = { ...currentUser.predictions };
     delete predictions[String(predictSelectedFilm.tmdbId)];
