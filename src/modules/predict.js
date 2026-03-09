@@ -1,12 +1,13 @@
 import { MOVIES, CATEGORIES, currentUser, setCurrentUser, scoreClass, getLabel, calcTotal, mergeSplitNames } from '../state.js';
 import { syncToSupabase, saveUserLocally } from './supabase.js';
 import { ARCHETYPES } from '../data/archetypes.js';
+import { track } from '../analytics.js';
 
 const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 const TMDB = 'https://api.themoviedb.org/3';
 const PROXY_URL = 'https://palate-map-proxy.noahparikhcott.workers.dev';
 
-function trimPredictions(predictions, limit = 50) {
+function trimPredictions(predictions, limit = 200) {
   const entries = Object.entries(predictions);
   if (entries.length <= limit) return predictions;
   entries.sort((a, b) => new Date(b[1].predictedAt) - new Date(a[1].predictedAt));
@@ -1021,9 +1022,26 @@ Respond with this exact JSON structure:
 }
 
 async function runPrediction(film) {
+  const _predStart = Date.now();
+  track('prediction_requested', {
+    tmdb_id: film.tmdbId,
+    title: film.title,
+    predictions_this_month: Object.values(currentUser?.predictions || {}).filter(p => {
+      if (!p.predictedAt) return false;
+      const d = new Date(p.predictedAt);
+      const now = new Date();
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).length,
+  });
   try {
     const { prediction, comps } = await callClaudeForPrediction(film);
     lastPrediction = prediction;
+    track('prediction_completed', {
+      tmdb_id: film.tmdbId,
+      predicted_total: calcPredictedTotal(prediction),
+      confidence: prediction.confidence || null,
+      duration_ms: Date.now() - _predStart,
+    });
     const predictedAt = new Date().toISOString();
     const rawPredictions = {
       ...(currentUser?.predictions || {}),
@@ -1804,6 +1822,12 @@ function renderConstrainedResults(name, type, _tmdbId, results) {
 async function openRecommendedDetail(tmdbId) {
   const cached = currentUser?.predictions?.[String(tmdbId)];
   if (!cached?.film) return;
+  // Determine if hero or secondary
+  const heroTmdbId = currentUser?.cachedRecommendations?.[0]?.tmdbId;
+  track('foryou_recommendation_clicked', {
+    tmdb_id: tmdbId,
+    position: String(tmdbId) === String(heroTmdbId) ? 'hero' : 'secondary',
+  });
   const film = cached.film;
   const prediction = cached.prediction;
   const predTotal = calcPredictedTotal(prediction);

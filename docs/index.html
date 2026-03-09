@@ -24,11 +24,21 @@
 <!-- General -->
 <meta name="description" content="Everyone has a palate. Rate the films you love, discover your taste archetype, and compare with friends.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230c0b09'/%3E%3Crect x='0' y='28' width='32' height='4' fill='%23D4A84B'/%3E%3Ctext x='16' y='21' text-anchor='middle' font-family='Georgia,serif' font-style='italic' font-weight='900' font-size='14' fill='white'%3EPM%3C/text%3E%3C/svg%3E">
+<!-- Preconnects: fonts, Supabase auth, TMDB posters -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://gzuuhjjedrzeqbgxhfip.supabase.co">
+<link rel="preconnect" href="https://image.tmdb.org">
+
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-DT-wS3gU.js"></script>
+  <script type="module" crossorigin src="/assets/index-DCbxkQlk.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/index-Ba3pGoxx.css">
 </head>
 <body>
+<!-- GTM noscript fallback -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WTMS7K2G"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <!-- ══════════════ COLD LANDING ══════════════ -->
 <div id="cold-landing" style="display:none;position:fixed;inset:0;background:var(--paper);z-index:200;overflow-y:auto">
@@ -493,6 +503,23 @@
   <div class="modal" id="modalContent"></div>
 </div>
 
+
+<!-- Analytics: dataLayer init + deferred GTM load (after LCP) -->
+<script>
+window.dataLayer = window.dataLayer || [];
+if ('requestIdleCallback' in window) {
+  requestIdleCallback(function() { loadGTM(); });
+} else {
+  setTimeout(loadGTM, 2500);
+}
+function loadGTM() {
+  (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-WTMS7K2G');
+}
+</script>
 <script>
 window.backfillProductionCompanies = async function() {
   const KEY = 'filmRankings_v1';

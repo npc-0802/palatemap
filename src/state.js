@@ -1,5 +1,6 @@
 import { OWNER_MOVIES } from './data/movies.js';
 import { CATEGORIES } from './data/categories.js';
+import { emit } from './events.js';
 
 export { CATEGORIES };
 
@@ -10,11 +11,13 @@ export let currentUser = null; // { id, username, display_name, archetype, arche
 
 export function setCurrentUser(user) {
   currentUser = user;
+  emit('user:changed', user);
 }
 
 export function setMovies(arr) {
   MOVIES.length = 0;
   arr.forEach(m => MOVIES.push(m));
+  emit('movies:changed', MOVIES);
 }
 
 export const LABELS = [

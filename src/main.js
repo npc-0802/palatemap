@@ -1,4 +1,6 @@
 import { MOVIES, currentUser, setCurrentUser, setMovies, CATEGORIES, recalcAllTotals, applyUserWeights } from './state.js';
+import { track, identifyUser, trackPageview } from './analytics.js';
+import './vitals.js';
 import { registerUICallbacks } from './ui-callbacks.js';
 import { renderRankings, sortBy, setViewMode, updateTasteBanner } from './modules/rankings.js';
 import { openModal, closeModal } from './modules/modal.js';
@@ -40,6 +42,7 @@ export function showScreen(id) {
   if (id === 'friends') renderFriends();
   if (id === 'watchlist') renderWatchlist();
   localStorage.setItem('palatemap_last_screen', id);
+  trackPageview(id);
 }
 
 export function updateStorageStatus() {
@@ -83,6 +86,7 @@ export function showColdLanding() {
   const el = document.getElementById('cold-landing');
   if (el) {
     el.style.display = 'flex';
+    track('landing_view', { referrer: document.referrer });
     // Staggered reveal animation
     const children = el.querySelector(':scope > div')?.children;
     if (children) {
@@ -204,6 +208,9 @@ async function init() {
   renderRankings();
   updateStorageStatus();
 
+  // Analytics: identify user session
+  if (currentUser) identifyUser(currentUser, MOVIES.length);
+
   // Check for pending friend requests and show notification dot
   // Also background-load all friends' film data for modal context
   if (currentUser) {
@@ -234,7 +241,16 @@ async function init() {
 
   // Handle sign-out events
   sb.auth.onAuthStateChange((event) => {
-    if (event === 'SIGNED_OUT') { localStorage.clear(); location.reload(); }
+    if (event === 'SIGNED_OUT') {
+      // Targeted removal — don't nuke other apps' localStorage
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('palatemap_') || key.startsWith('palate_') ||
+            key === 'filmRankings_v1' || key === 'ledger_user' ||
+            key.startsWith('sb-'))) localStorage.removeItem(key);
+      }
+      location.reload();
+    }
   });
 
   // Restore last screen

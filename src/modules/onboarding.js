@@ -5,6 +5,7 @@ import { saveToStorage } from './storage.js';
 import { renderRankings } from './rankings.js';
 import { sb, syncToSupabase, saveUserLocally, signInWithGoogle, sendMagicLink } from './supabase.js';
 import { fetchTmdbMovieBundle } from './tmdb-movie.js';
+import { track } from '../analytics.js';
 
 let obStep = 'name';
 let obAnswers = {};
@@ -17,13 +18,17 @@ let starterScores = {};       // { tmdbId: { scores, total } }
 let starterShowMore = false;  // whether "show me more" has been tapped
 let starterExpandedId = null; // tmdbId of currently expanded rating card
 
+let _obStartTime = null;
+
 export function launchOnboarding(opts = {}) {
   const overlay = document.getElementById('onboarding-overlay');
   overlay.style.display = 'flex';
   obAnswers = {};
+  _obStartTime = Date.now();
   if (opts.skipToQuiz) {
     obDisplayName = opts.name || '';
     obStep = 0;
+    track('onboarding_start', { method: 'google' });
   } else {
     obStep = 'name';
   }
@@ -183,6 +188,13 @@ function renderObStep() {
     if (!obRevealResult._slug) {
       obRevealResult._slug = obDisplayName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'user';
     }
+    track('quiz_completed', {
+      duration_seconds: _obStartTime ? Math.round((Date.now() - _obStartTime) / 1000) : null,
+    });
+    track('archetype_revealed', {
+      archetype: result.primary,
+      archetype_secondary: result.secondary || null,
+    });
     const arch = ARCHETYPES[result.primary];
     const palColor = arch.palette || '#3d5a80';
 
@@ -818,6 +830,12 @@ async function obFinish(primary, secondary, weights, harmonySensitivity) {
   saveUserLocally();
 
   syncToSupabase().catch(e => console.warn('Initial sync failed:', e));
+
+  track('onboarding_completed', {
+    films_rated_count: MOVIES.length,
+    archetype: primary,
+    time_in_onboarding_seconds: _obStartTime ? Math.round((Date.now() - _obStartTime) / 1000) : null,
+  });
 
   // Show welcome modal after settling
   if (!localStorage.getItem('palatemap_welcome_shown')) {

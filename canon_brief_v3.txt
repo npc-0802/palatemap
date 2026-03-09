@@ -1,5 +1,5 @@
 Palate Map
-Product Brief · Living Document · v3.18
+Product Brief · Living Document · v3.20
 Last updated: March 2026
 Confidential — do not distribute
 
@@ -54,19 +54,22 @@ Design Principles
 • High fashion / editorial energy — the platform should let your taste shine, not compete with it.
 • Dark surfaces for identity moments (archetype reveal in onboarding, palate block in profile).
 • No dark mode yet. Clean paper aesthetic is intentional and differentiating.
-• Animations: subtle fadeIn only. No bounces, no flashy transitions.
+• Animations: layered motion system. Cold landing: staggered reveal (wordmark → hero → rule → value props → auth card with glow). Modals: two-class system (open → display:flex, visible → opacity/transform transition). Screen transitions: per-screen (Rankings instant, For You slide-up, Profile slow fade). Quiz: cross-fade between steps, cinematic first-step intro with staggered card reveal, dramatic archetype reveal with scale animation. Film cards: lift + shadow on hover, score badge pop. Global search: fade-in overlay + slide-down content. Welcome modal: animated dismiss (fade + slide-down). No bounces.
 • Mobile: responsive bottom bar redesigned. Tab strip (5 items: Rankings, Analysis, Friends, Watch, Profile) sits above a full-width persimmon "Search" CTA bar (opens global search overlay). The .mobile-bottom wrapper handles fixed positioning; ::after pseudo-element matches action color to cover browser chrome gap transitions. Screen padding accounts for both rows.
 • Rankings nav icon is a medal (ribbon + circle), not a hamburger. Analysis uses bar chart. Icons are distinct across all 5 tabs.
 
 03  Current Architecture
-Status: Phase 1 complete, Phase 2 complete, Phase 3.1–3.8 complete, 3.11 complete, 3.13 complete, 3.15–3.19 complete. Vite multi-file vanilla JS.
+Status: Phase 1 complete, Phase 2 complete, Phase 3.1–3.8 complete, 3.11 complete, 3.13 complete, 3.15–3.21 complete. Vite multi-file vanilla JS.
 
 File Structure
 palatemap/
   index.html          shell only — loads main.js
   src/
     main.js            entry point, init, state bootstrap, cold landing
-    state.js           shared state: MOVIES, currentUser, CATEGORIES
+    state.js           shared state: MOVIES, currentUser, CATEGORIES (emits events on change)
+    events.js          lightweight pub/sub for state change propagation
+    analytics.js       GTM dataLayer event helpers (track, identifyUser, trackPageview)
+    vitals.js          Core Web Vitals reporting (LCP, INP, CLS → dataLayer)
     data/
       movies.js        94 baseline films (owner only, with TMDB posters/overviews)
       archetypes.js    9 archetypes + weights + descriptions + OB_QUESTIONS
@@ -92,21 +95,23 @@ palatemap/
       components.css   all reusable UI components, badge tiers, grid
   scripts/
     backfill-starters.mjs  one-time TMDB metadata backfill for starter films
+  netlify.toml             build config, SPA redirects, function routing, security headers
   netlify/
     functions/
       create-checkout.js   Stripe Checkout session creation
       stripe-webhook.js    Stripe webhook handler (subscription lifecycle → Supabase)
       manage-billing.js    Stripe billing portal session creation
   public/
-    tos.html               Terms of Service (static, standalone)
+    tos.html               Terms of Service (static, standalone, noindex until final)
 
 Hosting & Deploy
-• Host: GitHub Pages at palatemap.com (custom domain). Netlify migration deferred.
+• Host: GitHub Pages at palatemap.com (custom domain). Netlify migration planned (netlify.toml in repo, ready to switch).
 • Repo: github.com/npc-0802/palatemap (private). Push to main = live deploy.
 • Build: npm run build → rm -rf docs → mv dist docs → git push. GitHub Pages serves /docs. CNAME auto-written by build script.
-• vite.config.js sets base: '/' (root domain).
-• Static assets (og-image.png, og-image.svg, privacy.html) live in public/ — Vite copies them to dist/ on every build automatically. Do NOT put them only in docs/ or they will be wiped on next deploy.
-• Cloudflare Worker: ledger-proxy.noahparikhcott.workers.dev — proxies Anthropic API and Resend email API. Secrets: ANTHROPIC_KEY, RESEND_API_KEY.
+• Netlify (when migrated): push to main → Netlify runs npm run build → deploys dist/. SPA redirects, function routing, and security headers configured in netlify.toml. DNS cutover removes GitHub Pages A/CNAME records, adds Netlify's. /docs pattern removed.
+• vite.config.js sets base: '/' (root domain). No plugins (React plugin removed — add back when React migration happens).
+• Static assets (og-image.png, og-image.svg, privacy.html, tos.html) live in public/ — Vite copies them to dist/ on every build automatically. Do NOT put them only in docs/ or they will be wiped on next deploy.
+• Cloudflare Worker: palate-map-proxy.noahparikhcott.workers.dev — proxies Anthropic API and Resend email API. Secrets: ANTHROPIC_KEY, RESEND_API_KEY. Stays on Cloudflare even after Netlify migration (Stripe webhooks hit Netlify Functions directly, separate concern).
 
 Dev Workflow
 • npx vite — dev server at localhost:5173/
@@ -134,7 +139,7 @@ weights             jsonb  { plot, execution, acting, production,
 harmony_sensitivity numeric 0.0–1.0
 movies              jsonb  [ array of film objects ]
 watchlist           jsonb  [ array of watchlist objects ]
-predictions         jsonb  { [tmdbId]: { film, prediction, predictedAt } }  (cached predict results)
+predictions         jsonb  { [tmdbId]: { film, prediction, predictedAt } }  (cached predict results, trimmed to 200 most recent on sync)
 email               text   (populated on first auth; used for account linking)
 auth_id             text   (Supabase auth user id; populated on first Google/magic link sign-in)
 invite_token        text   (single-use UUID for friend invite links; cleared after use)
@@ -339,6 +344,11 @@ Wordmark ("palate map") is clickable — navigates to Rankings (home). Search ba
 • Prediction cache (currentUser.predictions) is per-user, client-side. No server-side invalidation. Re-predict available manually.
 • Friendship blurbs cached per friendship pair (localStorage). No auto-invalidation when either user's library changes significantly.
 • TMDB search can return an incorrect first-match poster/record for some titles. Users can now correct these manually during Add Film (curation step) and from the ranked-film modal ("Fix poster"). If a user picks the wrong replacement, they must correct it again manually.
+• JSONB blob scaling: entire user state (movies, predictions, watchlist) is a single Supabase row upserted on every sync. Works fine pre-launch but will hit row-size limits at 200+ films. Sync guard now prevents stale overwrites, but the real fix is the normalized palatemap_ratings table (planned for Netlify migration). See technical audit roadmap for full analysis.
+• Supabase RLS policies: user.id is client-generated UUID, not auth.uid(). RLS policies must join through auth_id column. Audit policies before public launch.
+• No database backup strategy on Supabase free tier. Upgrade to Pro before first paid user.
+• TMDB API key hardcoded in multiple client files (publishable, not a security issue, but rate limit sharing risk at scale).
+• No data export UI exists yet — only a console-level exportData() function. Must build visible export in Profile before charging for paid tier.
 
 08  Full Product Roadmap
 Phase 0 — Foundation [COMPLETE]
@@ -360,7 +370,7 @@ Phase 2 — Polish [COMPLETE]
 • 2.3 Error surfaces + sync reliability ✓ — generic showToast system (success/error/info, stacking, action button); syncToSupabase retries 2x with exponential backoff; error toast with Retry action on final failure; archetype shift uses generic toast.
 • 2.4 Palate color system ✓ — per-archetype palette on profile, entity details, share cards; cartographic grid texture on dark surfaces; topographic score bars.
 • 2.5 Rename ledger_ → palatemap_ ✓ — Supabase table renamed; all localStorage keys migrated; inline migration in loadFromStorage/loadUserLocally so existing users aren't logged out.
-• 2.6 Migrate hosting to Netlify for auto-deploy. [deferred]
+• 2.6 Migrate hosting to Netlify for auto-deploy. [deferred — netlify.toml committed and ready, DNS cutover remaining]
 • 2.7 Explore polish ✓ — TMDB portraits in rankings list (persons + company logos), Craft/Experience axis on entity pages, uncharted empty state.
 • 2.8 Letterboxd import ✓ — replaces JSON import in onboarding; also accessible from profile for existing users; dedup logic (Palate Map wins).
 • 2.9 Archetype auto-detection ✓ — cosine similarity on weight vectors; toast on shift; weight cap at 5.
@@ -420,9 +430,29 @@ Phase 3 — Growth Features [IN PROGRESS]
 
 • 3.19 Welcome Modal ✓ — post-onboarding modal introducing the platform. Shows palate type in archetype color, unlock thresholds (Predict & For You at 10 films), Friends & Overlap features, lay of the land (Rankings/Taste/Predict/Friends). Contextual CTA adapts to rated count. Fires after starter films or skip-to-search.
 
+• 3.20 Technical Hardening ✓ — audit-driven pre-launch fixes:
+  - Prediction trim limit increased from 50 → 200 (preserves training data for future fine-tuning)
+  - localStorage.clear() replaced with targeted key removal on sign-out (no longer nukes other apps' storage)
+  - Sync safety guard: syncToSupabase checks server movie count before overwriting; aborts if server has more films than local (prevents stale-client data loss)
+  - Pub/sub event system (src/events.js): lightweight on/off/emit. state.js emits 'movies:changed' and 'user:changed' on mutations. Eliminates "forgot to re-render" class of bugs. Foundation for future React migration boundaries.
+  - netlify.toml committed: build config, SPA redirects, Stripe function routing (/api/* → /.netlify/functions/*), security headers (X-Frame-Options, X-Content-Type-Options, Referrer-Policy). Ready for DNS cutover.
+  - Technical audit roadmap document completed (10 sections: JSONB blob scaling, sync race conditions, Stripe architecture, state management, prediction counting, Netlify migration, security, data integrity, performance, group overlap). Prioritized implementation checklist through 500 users and cross-user learning phases.
+
+• 3.21 Analytics & Core Web Vitals ✓ — measurement infrastructure:
+  - CWV fixes: font preconnect + preload (Google Fonts, gstatic), Supabase preconnect, TMDB image preconnect. Eliminates ~100-200ms connection setup per domain.
+  - Removed unused React deps (@vitejs/plugin-react, react, react-dom) from bundle. Build time improved ~30%.
+  - GTM deferred loading via requestIdleCallback (zero LCP impact). dataLayer initialized immediately so events queue before GTM loads. GTM container ID placeholder (GTM-XXXXXXX) — replace after setup.
+  - GA4 via GTM. Cookieless mode (consent denied by default). Custom dimensions: archetype, films_rated, subscription_status.
+  - Analytics module (src/analytics.js): track(), identifyUser(), trackPageview(). All events push to window.dataLayer.
+  - SPA virtual pageviews on every showScreen() call.
+  - Priority events wired: landing_view, onboarding_start, quiz_completed, archetype_revealed, onboarding_completed, film_rated, prediction_requested, prediction_completed, prediction_reconciled, foryou_recommendation_clicked.
+  - web-vitals library (src/vitals.js): reports LCP, INP, CLS to dataLayer for real-user monitoring.
+  - Remaining events (social, monetization, calibration, account management) to be wired after GTM container is live and validated.
+  - Privacy policy update required before GTM goes live.
+
 Phase 4 — Platform
 • 4.1 Universal entity search — global search surfacing any director/actor/writer/company (entity-level, not film-level — film search is covered by 3.8 Global Search). Entity page shows: TMDB data, user's own rankings (if any), community avg score (requires 4.2). Requires schema change: separate palatemap_ratings table (see below).
-• 4.2 Community ratings layer — requires migrating films from per-user JSON blob to a normalized palatemap_ratings table (user_id, film_tmdb_id, scores jsonb, total). Enables: community avg score on any film or entity, "popular with users like you" discovery. Major schema change — plan carefully.
+• 4.2 Community ratings layer — requires migrating films from per-user JSON blob to a normalized palatemap_ratings table (user_id, tmdb_id, scores jsonb, total, metadata). Migration strategy: dual-write first (sync to both blob and table), validate counts match, then switch reads. See technical audit roadmap Section 1 for full schema + migration plan. Enables: community avg score on any film or entity, "popular with users like you" discovery, per-rating sync (eliminates row-size limits and full-row overwrite).
 • 4.3 Cross-genre v1: Restaurants — same framework, new categories.
 • 4.4 Public launch prep — landing page, pricing.
 • 4.5 Mobile — native app or PWA wrapper.
@@ -505,21 +535,25 @@ Infrastructure costs (monthly estimates)
 Break-even: approximately 20–25 paid subscribers (mix of monthly and annual). Gross margin is 50–65% at modest scale, compressing toward 50% at 1,000+ paid users primarily due to Anthropic API scaling.
 
 Scaling thresholds
-• ~500 users: upgrade Supabase to Pro ($25/mo); monitor Netlify function limits
-• ~1,000 paid: contact Anthropic for volume pricing; tighten prediction caching rules
-• Phase 4 expansion: raise pricing; migrate schema from JSONB blob to normalized tables; evaluate cheaper model for auto-predict
+• Before first paid user: upgrade Supabase to Pro ($25/mo, includes daily backups); set up weekly DB export to separate storage
+• ~500 users: monitor Netlify function limits; implement lazy friends data loading (modal-triggered, not app-init); add request queuing for TMDB API calls if rate limiting observed
+• ~1,000 paid: contact Anthropic for volume pricing; tighten prediction caching rules; evaluate virtual scrolling for 200+ film poster grids
+• Phase 4 expansion: raise pricing; complete migration from JSONB blob to normalized tables; evaluate cheaper model for auto-predict
 • ~10,000 paid: evaluate fine-tuned smaller model for predictions; negotiate Stripe interchange-plus; evaluate Supabase alternatives
 
 Launch sequence (ordered by dependency)
-1. Google OAuth verification — publish app, removes unverified warning for new users
-2. Terms of Service page — required before taking money
-3. Migrate hosting to Netlify — required for Stripe webhook serverless functions
-4. Stripe integration — products, webhook handler, subscription status on user object
-5. Upgrade flow UI — paywall modal, Stripe checkout, success state
-6. Feature gating — prediction counter, watch list lock, prediction history
-7. Account management — Stripe billing portal in Profile screen
-8. Build group overlap (3+ friends) — listed in paid tier, not yet built
-9. Pre-launch smoke test — full flow on mobile and desktop
+1. Google OAuth verification ✓ — app verified by Google
+2. Terms of Service page — static page built (public/tos.html, noindex), placeholders to fill: [EFFECTIVE DATE], [LAST UPDATED DATE], [LEGAL ENTITY NAME], [CONTACT EMAIL], [STATE], [STATE/COUNTY]. Link from cold landing + footer once final.
+3. Pre-Netlify technical hardening ✓ — prediction trim 200, localStorage fix, sync guard, pub/sub events, netlify.toml
+4. Audit Supabase RLS policies — verify auth_id join, test read/write isolation. [DO NOW — before public launch]
+5. Migrate hosting to Netlify — DNS cutover, remove /docs pattern. netlify.toml ready.
+6. Stripe integration — products, webhook handler, subscription status on user object
+7. Upgrade flow UI — paywall modal, Stripe checkout, success state
+8. Feature gating — prediction counter, watch list lock, prediction history
+9. Account management — Stripe billing portal in Profile screen
+10. Build group overlap (3+ friends) — listed in paid tier, not yet built
+11. Data export UI — visible export button in Profile (required before charging)
+12. Pre-launch smoke test — full flow on mobile and desktop
 
 12  Ownable Intelligence — Strategic Principle
 
@@ -542,6 +576,7 @@ Engineering rules that follow from this principle
 4. As prediction volume grows, the reconciled prediction dataset (predicted scores + actual scores + deltas) is a first-class asset to be preserved and structured for eventual fine-tuning use.
 5. Bias correction vectors, confidence calibration data, and per-category accuracy metrics should be stored on the user object and updated over time — not recomputed from scratch on each call.
 6. Avoid using any external service for logic that could reasonably be computed locally. Examples: archetype detection (cosine similarity, already in JS), compatibility scoring (already in JS), total score calculation (already in JS). These must never migrate into API calls.
+7. Use the pub/sub event system (src/events.js) for state change propagation. When mutating MOVIES or currentUser, emit the appropriate event so all listeners re-render. Do not manually call render functions from mutation sites — subscribe to events instead.
 
 The substitution path
 Phase 1 (current): Claude Sonnet via Anthropic API. Full reasoning capability, higher cost, external dependency.
@@ -591,4 +626,4 @@ This migration should be planned alongside Phase 4.2 (community ratings) as they
 
 Engineering rule: until the palatemap_predictions table exists, every prediction call must store the full predicted_scores, archetype_at_time, and weights_at_time on the prediction entry in currentUser.predictions. This ensures the data needed for future cross-user learning is captured now and will be migratable when the schema is ready. Do not store only the predicted total — always store the full score breakdown.
 
-Palate Map · private product brief · v3.16 · do not distribute
+Palate Map · private product brief · v3.20 · do not distribute

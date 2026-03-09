@@ -4,7 +4,10 @@
       "Bash(textutil -convert txt ~/ledger/canon_brief_v3.docx -output ~/ledger/canon_brief_v3.txt)",
       "Bash(sed:*)",
       "Bash(npm run:*)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(node:*)",
+      "Bash(git:*)",
+      "Bash(rm:*)"
     ]
   }
 }

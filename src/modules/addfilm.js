@@ -5,6 +5,7 @@ import { saveUserLocally } from './supabase.js';
 import { removeFromWatchlist } from './watchlist.js';
 import { openPosterPicker } from './posterpicker.js';
 import { fetchTmdbMovieBundle } from './tmdb-movie.js';
+import { track } from '../analytics.js';
 
 const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 const TMDB = 'https://api.themoviedb.org/3';
@@ -503,6 +504,25 @@ export function saveFilm() {
     setCurrentUser({ ...currentUser, predictions: updatedPredictions });
     saveUserLocally();
   }
+  // Analytics: film rated
+  track('film_rated', {
+    tmdb_id: savedTmdbId || null,
+    title: MOVIES[MOVIES.length - 1].title,
+    total_score: MOVIES[MOVIES.length - 1].total,
+    films_rated_count: MOVIES.length,
+    source: prefillScores ? 'watchlist' : 'search',
+  });
+  // Analytics: prediction reconciled (if this film was previously predicted)
+  if (savedTmdbId && currentUser?.predictions?.[String(savedTmdbId)]?.delta != null) {
+    const entry = currentUser.predictions[String(savedTmdbId)];
+    track('prediction_reconciled', {
+      tmdb_id: savedTmdbId,
+      predicted_total: entry.predictedTotal,
+      actual_total: entry.actualTotal,
+      delta: entry.delta,
+    });
+  }
+
   saveToStorage();
   // Auto-remove from watch list when a film is rated
   if (savedTmdbId) {

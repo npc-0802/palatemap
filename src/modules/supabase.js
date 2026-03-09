@@ -29,8 +29,22 @@ export async function sendMagicLink(email) {
 
 export async function signOutUser() {
   await sb.auth.signOut();
-  localStorage.clear();
+  clearPalateMapStorage();
   location.reload();
+}
+
+// Remove only Palate Map keys instead of nuking all localStorage
+function clearPalateMapStorage() {
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && (key.startsWith('palatemap_') || key.startsWith('palate_') ||
+        key === 'filmRankings_v1' || key === 'ledger_user' ||
+        key.startsWith('sb-'))) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach(k => localStorage.removeItem(k));
 }
 
 export async function getAuthSession() {
@@ -107,6 +121,17 @@ export async function syncToSupabase() {
   if (!user) return;
   const { setCloudStatus, showToast } = await import('../ui-callbacks.js');
   setCloudStatus('syncing');
+  // Sync guard: if the server has MORE films than local, don't overwrite with stale data
+  try {
+    const { data: serverRow } = await sb.from('palatemap_users')
+      .select('movies').eq('id', user.id).single();
+    if (serverRow?.movies?.length > MOVIES.length) {
+      console.warn(`Sync guard: server has ${serverRow.movies.length} films, local has ${MOVIES.length}. Skipping full-row sync to prevent data loss.`);
+      setCloudStatus('synced');
+      return;
+    }
+  } catch(_) { /* proceed with sync if guard check fails */ }
+
   const payload = {
     id: user.id, username: user.username, display_name: user.display_name,
     archetype: user.archetype, archetype_secondary: user.archetype_secondary,
@@ -117,9 +142,9 @@ export async function syncToSupabase() {
     ...(user.predictions !== undefined ? { predictions: (() => {
       if (!user.predictions) return {};
       const entries = Object.entries(user.predictions);
-      if (entries.length <= 50) return user.predictions;
+      if (entries.length <= 200) return user.predictions;
       entries.sort((a, b) => new Date(b[1].predictedAt) - new Date(a[1].predictedAt));
-      return Object.fromEntries(entries.slice(0, 50));
+      return Object.fromEntries(entries.slice(0, 200));
     })() } : {})
   };
   const MAX_RETRIES = 2;
