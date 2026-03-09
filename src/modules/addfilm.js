@@ -345,8 +345,11 @@ function renderAllAtOnce() {
       <div class="anchor-row">
         ${anchors.map(a => `
           <div class="anchor-film" onclick="selectAnchor('${cat.key}', ${a.scores[cat.key]}, this)">
-            <div class="anchor-film-title">${a.title}</div>
-            <div class="anchor-film-score">${cat.label}: ${a.scores[cat.key]}</div>
+            ${a.poster ? `<img class="anchor-film-poster" src="https://image.tmdb.org/t/p/w92${a.poster}" alt="">` : ''}
+            <div>
+              <div class="anchor-film-title">${a.title}</div>
+              <div class="anchor-film-score">${cat.label}: ${a.scores[cat.key]}</div>
+            </div>
           </div>`).join('')}
       </div>` : ''}
       <div class="slider-section">
@@ -406,8 +409,11 @@ function renderScoreCard() {
         <div class="anchor-row" style="display:grid;grid-template-columns:repeat(${Math.min(anchors.length, 3)}, 1fr);gap:8px;max-width:400px;margin:0 auto 20px">
           ${anchors.slice(0, 3).map(a => `
             <div class="anchor-film" onclick="selectAnchorCard('${cat.key}', ${a.scores[cat.key]}, this)">
-              <div class="anchor-film-title">${a.title}</div>
-              <div class="anchor-film-score">${a.scores[cat.key]}</div>
+              ${a.poster ? `<img class="anchor-film-poster" src="https://image.tmdb.org/t/p/w92${a.poster}" alt="">` : ''}
+              <div>
+                <div class="anchor-film-title">${a.title}</div>
+                <div class="anchor-film-score">${a.scores[cat.key]}</div>
+              </div>
             </div>`).join('')}
         </div>` : ''}
       <div class="score-card-value" id="scoreCardValue" style="color:${getTierColor(val)}">${val}</div>

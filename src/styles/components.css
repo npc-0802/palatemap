@@ -244,11 +244,15 @@
 /* Anchor selector */
 .anchor-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
 .anchor-film {
-  padding: 12px 14px; border: 1px solid var(--rule); border-radius: 2px;
+  padding: 10px 12px; border: 1px solid var(--rule); border-radius: 2px;
   cursor: pointer; transition: all 0.15s; background: white;
+  display: flex; align-items: center; gap: 10px;
 }
 .anchor-film:hover { border-color: var(--blue); }
 .anchor-film.selected { border-color: var(--blue); background: var(--blue-pale); }
+.anchor-film-poster {
+  width: 32px; height: 48px; object-fit: cover; border-radius: 2px; flex-shrink: 0;
+}
 .anchor-film-title { font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 700; line-height: 1.2; margin-bottom: 3px; }
 .anchor-film-score { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim); }
 
