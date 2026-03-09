@@ -360,12 +360,48 @@ function buildTasteProfile() {
   const weightStr = CATEGORIES.map(c => `${c.label}×${(currentUser?.weights?.[c.key] ?? c.weight)}`).join(', ');
 
   const predictions = currentUser?.predictions || {};
-  const reconciledPredictions = Object.values(predictions)
-    .filter(e => e?.film?.title && e?.delta != null && e?.predictedTotal != null && e?.actualTotal != null)
+  const allReconciled = Object.entries(predictions)
+    .filter(([, e]) => e?.film?.title && e?.delta != null && e?.predictedTotal != null && e?.actualTotal != null);
+  const reconciledPredictions = allReconciled
+    .map(([, e]) => e)
     .sort((a, b) => new Date(b.ratedAt || b.predictedAt) - new Date(a.ratedAt || a.predictedAt))
     .slice(0, 10);
 
-  return { stats, top10, bottom5, weightStr, archetype: currentUser?.archetype, archetypeSecondary: currentUser?.archetype_secondary, totalFilms: MOVIES.length, reconciledPredictions };
+  // Direction 2: per-category bias correction
+  // Compute average delta per category across all reconciled predictions
+  // delta = actual - predicted (positive = model predicts too low)
+  let categoryBias = null;
+  if (allReconciled.length >= 10) {
+    const catDeltas = {};
+    cats.forEach(cat => { catDeltas[cat] = []; });
+    allReconciled.forEach(([tmdbId, entry]) => {
+      const predictedScores = entry.prediction?.predicted_scores;
+      if (!predictedScores) return;
+      // Find the actual film scores from MOVIES
+      const film = MOVIES.find(m => String(m.tmdbId || m._tmdbId) === String(tmdbId));
+      if (!film?.scores) return;
+      cats.forEach(cat => {
+        const predicted = predictedScores[cat];
+        const actual = film.scores[cat];
+        if (predicted != null && actual != null) {
+          catDeltas[cat].push(actual - predicted);
+        }
+      });
+    });
+    categoryBias = {};
+    cats.forEach(cat => {
+      const deltas = catDeltas[cat];
+      if (deltas.length >= 5) {
+        categoryBias[cat] = Math.round((deltas.reduce((s, v) => s + v, 0) / deltas.length) * 10) / 10;
+      }
+    });
+    // Only include if at least one category has meaningful bias (|avg delta| >= 2)
+    if (!Object.values(categoryBias).some(v => Math.abs(v) >= 2)) {
+      categoryBias = null;
+    }
+  }
+
+  return { stats, top10, bottom5, weightStr, archetype: currentUser?.archetype, archetypeSecondary: currentUser?.archetype_secondary, totalFilms: MOVIES.length, reconciledPredictions, categoryBias, reconciledCount: allReconciled.length };
 }
 
 function findComparableFilms(film) {
@@ -900,6 +936,16 @@ async function callClaudeForPrediction(film, entityConstraint = null) {
       }).join('\n')
     : null;
 
+  // Direction 2: per-category bias correction string
+  const biasStr = profile.categoryBias
+    ? Object.entries(profile.categoryBias)
+        .filter(([, v]) => Math.abs(v) >= 2)
+        .map(([cat, avg]) => {
+          const dir = avg > 0 ? 'low' : 'high';
+          return `- ${cat}: your predictions run ${Math.abs(avg).toFixed(1)} points too ${dir} on average`;
+        }).join('\n')
+    : null;
+
   const systemPrompt = `You are a precise film taste prediction engine. Your job is to predict how a specific user would score an unrated film, based on their detailed rating history and taste profile. When a prediction track record is provided, use it to calibrate your predictions — correct for any systematic bias in your past estimates. You must respond ONLY with valid JSON — no preamble, no markdown, no explanation outside the JSON.`;
 
   const userPrompt = `USER TASTE PROFILE:
@@ -917,6 +963,11 @@ PREDICTION TRACK RECORD (your recent predictions vs what they actually gave):
 ${trackRecordStr}
 
 Use this track record to self-correct. If you have been consistently over- or under-predicting, adjust accordingly. A positive delta means you predicted too low. A negative delta means you predicted too high.
+` : ''}${biasStr ? `
+PER-CATEGORY BIAS CORRECTION (computed from ${profile.reconciledCount} reconciled predictions):
+${biasStr}
+
+Apply these corrections to your category predictions. If a category runs too low, nudge your prediction upward by roughly that amount. If too high, nudge downward. These are averaged across many predictions — treat them as reliable systematic corrections, not suggestions.
 ` : ''}
 FILMS WITH SHARED DIRECTOR/CAST (most relevant comparisons):
 ${compStr}
