@@ -320,7 +320,10 @@ function scoreCandidate(film) {
 
 // Strip leading articles for fuzzy title matching (handles "Lord of the Rings" vs "The Lord of the Rings")
 function normTitle(t) {
-  return (t || '').toLowerCase().replace(/^(the|a|an)\s+/, '').trim();
+  return (t || '').toLowerCase()
+    .replace(/\b(the|a|an)\b\s*/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 async function buildCandidatePool() {
