@@ -1,5 +1,6 @@
 import { currentUser, setCurrentUser, MOVIES, CATEGORIES, getLabel } from '../state.js';
 import { syncToSupabase, saveUserLocally } from './supabase.js';
+import { isNewTerritory, DISCOVERY_ICON_SVG } from './predict.js';
 
 const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 let wlSearchDebounce = null;
@@ -100,11 +101,15 @@ function watchlistRow(item, i) {
   const prediction = item.tmdbId ? currentUser?.predictions?.[String(item.tmdbId)] : null;
   const predTotal = prediction ? calcWlPredictedTotal(prediction.prediction) : null;
   const isPending = predTotal == null && item.tmdbId && MOVIES.length >= 10;
+  const filmData = prediction?.film || item;
+  const newTerr = isNewTerritory(filmData);
+  const discoveryBadge = newTerr ? `<span class="discovery-badge">${DISCOVERY_ICON_SVG}new territory</span>` : '';
   const predLine = predTotal != null
     ? `<div style="display:flex;align-items:baseline;gap:5px;margin-top:6px">
         <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.5px">you'd give</span>
         <span style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:16px;color:var(--blue);letter-spacing:-0.5px">~${(Math.round(predTotal*10)/10).toFixed(1)}</span>
         <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.5px">· ${getLabel(Math.round(predTotal))}</span>
+        ${discoveryBadge ? `<span style="margin-left:4px">${discoveryBadge}</span>` : ''}
       </div>`
     : isPending
       ? `<div class="wl-pred-pending">
@@ -253,20 +258,25 @@ window.openWatchlistDetail = function(index) {
   if (!item) return;
   const prediction = item.tmdbId ? currentUser?.predictions?.[String(item.tmdbId)] : null;
   const predTotal = prediction ? calcWlPredictedTotal(prediction.prediction) : null;
+  const filmData = prediction?.film || item;
+  const newTerr = isNewTerritory(filmData);
+  const wlHeaderLabel = newTerr
+    ? `<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;color:var(--discover)">${DISCOVERY_ICON_SVG}<span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--discover);text-transform:uppercase;letter-spacing:1.5px">New Territory · Watch List</span></div>`
+    : `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px">Watch List</div>`;
 
   const headerHtml = item.poster
     ? `<div style="position:relative;display:flex;align-items:stretch;background:var(--surface-dark);margin:-40px -40px 28px;padding:28px 32px">
          <button onclick="closeModal()" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--on-dark-dim);line-height:1;padding:4px 8px">×</button>
          <img style="width:100px;height:150px;object-fit:cover;flex-shrink:0;display:block" src="https://image.tmdb.org/t/p/w342${item.poster}" alt="">
          <div style="flex:1;padding:0 40px 0 20px;display:flex;flex-direction:column;justify-content:flex-end">
-           <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px">Watch List</div>
+           ${wlHeaderLabel}
            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(20px,3.5vw,30px);line-height:1.1;color:var(--on-dark);letter-spacing:-0.5px;margin-bottom:8px">${item.title}</div>
            <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--on-dark-dim)">${item.year||''}</div>
          </div>
        </div>`
     : `<div style="position:relative;background:var(--surface-dark);margin:-40px -40px 28px;padding:32px 40px 28px">
          <button onclick="closeModal()" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--on-dark-dim);line-height:1;padding:4px 8px">×</button>
-         <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px">Watch List</div>
+         ${wlHeaderLabel}
          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(20px,3.5vw,30px);line-height:1.1;color:var(--on-dark);letter-spacing:-0.5px;margin-bottom:8px">${item.title}</div>
          <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--on-dark-dim)">${item.year||''}</div>
        </div>`;

@@ -1021,6 +1021,22 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); 
   border-color: var(--green);
   border-style: solid;
 }
+.discovery-compass-icon {
+  color: var(--discover);
+  flex-shrink: 0;
+  vertical-align: middle;
+  margin-right: 2px;
+}
+.discovery-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  color: var(--discover);
+}
+
 .discovery-loading {
   grid-column: 1 / -1;
   padding: 32px 20px;

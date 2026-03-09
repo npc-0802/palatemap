@@ -1187,6 +1187,18 @@ function buildKnownEntities() {
   });
   return known;
 }
+export const DISCOVERY_ICON_SVG = '<svg class="discovery-compass-icon" width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M7 1.5L8.2 5.8 12.5 7 8.2 8.2 7 12.5 5.8 8.2 1.5 7 5.8 5.8z" fill="currentColor" opacity="0.7"/></svg>';
+
+export function isNewTerritory(film) {
+  // A film is "new territory" if its director and top-3 cast are all unknown to the user
+  if (!film || MOVIES.length < 10) return false;
+  const known = buildKnownEntities();
+  const directors = mergeSplitNames((film.director || '').split(',').map(s => s.trim()).filter(Boolean));
+  const cast = mergeSplitNames((film.cast || '').split(',').map(s => s.trim()).filter(Boolean)).slice(0, 3);
+  const hasKnownDir = directors.some(d => known.directors.has(d));
+  const hasKnownCast = cast.some(a => known.actors.has(a));
+  return !hasKnownDir && !hasKnownCast && (directors.length > 0 || cast.length > 0);
+}
 
 async function buildDiscoveryPool() {
   const ratedIds = new Set(MOVIES.map(m => String(m.tmdbId)).filter(Boolean));
@@ -1674,20 +1686,24 @@ async function openRecommendedDetail(tmdbId) {
   const prediction = cached.prediction;
   const predTotal = calcPredictedTotal(prediction);
   const onWl = (currentUser?.watchlist || []).some(w => String(w.tmdbId) === String(tmdbId));
+  const newTerr = isNewTerritory(film);
+  const headerLabel = newTerr
+    ? `<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;color:var(--discover)">${DISCOVERY_ICON_SVG}<span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--discover);text-transform:uppercase;letter-spacing:1.5px">New Territory</span></div>`
+    : `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px">Recommendation</div>`;
 
   const headerHtml = film.poster
     ? `<div style="position:relative;display:flex;align-items:stretch;background:var(--surface-dark);margin:-40px -40px 28px;padding:28px 32px">
          <button onclick="closeModal()" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--on-dark-dim);line-height:1;padding:4px 8px">×</button>
          <img style="width:100px;height:150px;object-fit:cover;flex-shrink:0;display:block" src="https://image.tmdb.org/t/p/w342${film.poster}" alt="">
          <div style="flex:1;padding:0 40px 0 20px;display:flex;flex-direction:column;justify-content:flex-end">
-           <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px">Recommendation</div>
+           ${headerLabel}
            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(20px,3.5vw,30px);line-height:1.1;color:var(--on-dark);letter-spacing:-0.5px;margin-bottom:8px">${film.title}</div>
            <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--on-dark-dim)">${film.year || ''}</div>
          </div>
        </div>`
     : `<div style="position:relative;background:var(--surface-dark);margin:-40px -40px 28px;padding:32px 40px 28px">
          <button onclick="closeModal()" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--on-dark-dim);line-height:1;padding:4px 8px">×</button>
-         <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px">Recommendation</div>
+         ${headerLabel}
          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(20px,3.5vw,30px);line-height:1.1;color:var(--on-dark);letter-spacing:-0.5px;margin-bottom:8px">${film.title}</div>
          <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--on-dark-dim)">${film.year || ''}</div>
        </div>`;
