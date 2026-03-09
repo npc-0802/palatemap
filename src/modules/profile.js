@@ -291,34 +291,36 @@ export function renderProfile() {
         <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.5px">${user.username} &nbsp;·&nbsp; ${user.archetype}${user.archetype_secondary ? ' &nbsp;+&nbsp; ' + user.archetype_secondary : ''}</div>
       </div>
 
-      <!-- ARCHETYPE -->
-      <div style="margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--rule)">
-        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">Palate</div>
-        <div class="dark-grid" style="background:var(--surface-dark);padding:28px 32px;margin-bottom:20px;border-top:3px solid ${arch.palette || '#3d5a80'}">
-          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:10px">primary</div>
-          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:40px;color:${arch.palette || 'var(--on-dark)'};line-height:1;margin-bottom:14px">${user.archetype}</div>
-          ${user.archetype_secondary ? `
-          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:6px;margin-top:16px">secondary</div>
-          <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:22px;color:var(--on-dark);opacity:0.75">${user.archetype_secondary}</div>` : ''}
+      <!-- PALATE + FINGERPRINT (side by side) -->
+      <div class="profile-palate-row" style="display:flex;gap:40px;align-items:flex-start;margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--rule)">
+
+        <!-- Left: Archetype -->
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">Palate</div>
+          <div class="dark-grid" style="background:var(--surface-dark);padding:28px 32px;margin-bottom:20px;border-top:3px solid ${arch.palette || '#3d5a80'}">
+            <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:10px">primary</div>
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:40px;color:${arch.palette || 'var(--on-dark)'};line-height:1;margin-bottom:14px">${user.archetype}</div>
+            ${user.archetype_secondary ? `
+            <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:6px;margin-top:16px">secondary</div>
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:22px;color:var(--on-dark);opacity:0.75">${user.archetype_secondary}</div>` : ''}
+          </div>
+          <p style="font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.75;color:var(--ink);margin:0 0 10px">${arch.description || ''}</p>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.5px;margin-bottom:16px">${arch.quote || ''}</div>
+          <span onclick="openArchetypeModal()" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--blue);cursor:pointer;text-decoration:underline">Edit weights →</span>
         </div>
-        <p style="font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.75;color:var(--ink);margin:0 0 10px;max-width:520px">${arch.description || ''}</p>
-        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.5px;margin-bottom:16px">${arch.quote || ''}</div>
-        <span onclick="openArchetypeModal()" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--blue);cursor:pointer;text-decoration:underline">Edit weights →</span>
+
+        <!-- Right: Fingerprint -->
+        <div style="flex-shrink:0">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">Taste Fingerprint</div>
+          ${radarChart(weights, archWeights)}
+          ${radarLegend(user.archetype)}
+        </div>
       </div>
 
-      <!-- TASTE FINGERPRINT -->
+      <!-- AVG SCORES + STATS -->
       <div style="margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--rule)">
-        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:24px">Taste Fingerprint</div>
-        <div style="display:flex;gap:48px;align-items:flex-start;flex-wrap:wrap">
-          <div style="flex-shrink:0">
-            ${radarChart(weights, archWeights)}
-            ${radarLegend(user.archetype)}
-          </div>
-          <div style="flex:1;min-width:200px;padding-top:12px">
-            <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">avg score by category</div>
-            ${scoreBars(movies)}
-          </div>
-        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">avg score by category</div>
+        ${scoreBars(movies)}
         ${movies.length > 0 ? `
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:24px;border-top:2px solid var(--ink)">
           <div style="padding:16px 20px 16px 0;border-right:1px solid var(--rule)">
