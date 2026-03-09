@@ -688,7 +688,6 @@ window.starterFinish = function() {
 };
 
 function starterFinishAndExit() {
-  localStorage.setItem('palatemap_welcome_shown', '1');
   const arch = ARCHETYPES[obRevealResult.primary];
   obFinish(obRevealResult.primary, obRevealResult.secondary || '', arch.weights, obRevealResult.harmonySensitivity);
 }
@@ -782,5 +781,73 @@ async function obFinish(primary, secondary, weights, harmonySensitivity) {
   saveUserLocally();
 
   syncToSupabase().catch(e => console.warn('Initial sync failed:', e));
+
+  // Show welcome modal after settling
+  if (!localStorage.getItem('palatemap_welcome_shown')) {
+    setTimeout(() => showWelcomeModal(obDisplayName, primary), 500);
+  }
+}
+
+function showWelcomeModal(name, archetype) {
+  localStorage.setItem('palatemap_welcome_shown', '1');
+  const ratedCount = MOVIES.length;
+  const remaining = Math.max(0, 10 - ratedCount);
+  const arch = ARCHETYPES[archetype];
+  const palColor = arch?.palette || '#3d5a80';
+
+  const predictStatus = ratedCount >= 10
+    ? `<div style="display:flex;align-items:center;gap:8px"><div style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0"></div><span style="color:var(--ink)">Predict is unlocked.</span> Search any film to see how you'd score it.</div>`
+    : `<div style="display:flex;align-items:center;gap:8px"><div style="width:8px;height:8px;border-radius:50%;background:var(--rule-dark);flex-shrink:0"></div><span>${remaining} more film${remaining !== 1 ? 's' : ''} to unlock <strong style="color:var(--ink)">Predict</strong> — personalized score predictions for any film.</span></div>`;
+
+  const forYouStatus = ratedCount >= 10
+    ? `<div style="display:flex;align-items:center;gap:8px"><div style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0"></div><span style="color:var(--ink)">For You is unlocked.</span> AI-picked films based on your taste fingerprint.</div>`
+    : `<div style="display:flex;align-items:center;gap:8px"><div style="width:8px;height:8px;border-radius:50%;background:var(--rule-dark);flex-shrink:0"></div><span>${remaining} more film${remaining !== 1 ? 's' : ''} to unlock <strong style="color:var(--ink)">For You</strong> — personalized film recommendations.</span></div>`;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'welcome-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(12,11,9,0.75);z-index:5000;display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn 0.3s ease';
+  overlay.innerHTML = `
+    <div style="background:var(--paper);max-width:520px;width:100%;padding:44px 40px;position:relative;max-height:90vh;overflow-y:auto">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);margin-bottom:14px">welcome to palate map</div>
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(24px,5vw,32px);color:var(--ink);line-height:1.1;letter-spacing:-0.5px;margin-bottom:6px">You're in, ${name}.</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dim);line-height:1.6;margin-bottom:28px">Your palate type is <strong style="color:${palColor}">${archetype}</strong>. Here's how to make the most of it.</div>
+
+      <div style="border-top:1px solid var(--rule);padding-top:24px;margin-bottom:24px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">What you can unlock</div>
+        <div style="display:flex;flex-direction:column;gap:12px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);line-height:1.6">
+          ${predictStatus}
+          ${forYouStatus}
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0"></div>
+            <span style="color:var(--ink)">Friends & Overlap</span> — compare taste profiles and get joint recommendations.
+          </div>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--rule);padding-top:24px;margin-bottom:24px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:14px">The lay of the land</div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px 14px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);line-height:1.55">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--rule-dark);padding-top:2px">01</div>
+          <div><strong style="color:var(--ink)">Rankings</strong> — your rated films, sorted by your weighted score. This is your taste fingerprint in action.</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--rule-dark);padding-top:2px">02</div>
+          <div><strong style="color:var(--ink)">Taste</strong> — your archetype breakdown, category weights, and how your palate has evolved.</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--rule-dark);padding-top:2px">03</div>
+          <div><strong style="color:var(--ink)">Predict</strong> — pick any film and the AI predicts your 8-category score breakdown, with reasoning drawn from your actual ratings.</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--rule-dark);padding-top:2px">04</div>
+          <div><strong style="color:var(--ink)">Friends</strong> — add friends by username to compare palate types, see where you agree and disagree, and get shared recommendations.</div>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--rule);padding-top:20px;margin-bottom:28px">
+        <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);line-height:1.6">
+          ${ratedCount > 0
+            ? `You've rated <strong style="color:var(--ink)">${ratedCount} film${ratedCount !== 1 ? 's' : ''}</strong> so far. ${ratedCount >= 10 ? 'Predict and For You are already live — explore them from the tabs above.' : `Rate ${remaining} more to unlock predictions. The more you rate, the sharper everything gets.`}`
+            : `Start by rating films you know well. Each one sharpens your taste fingerprint — and ${remaining} films unlocks AI predictions.`}
+        </div>
+      </div>
+
+      <button onclick="document.getElementById('welcome-modal-overlay').remove()" style="width:100%;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;background:${palColor};color:white;border:none;padding:14px 24px;cursor:pointer;transition:opacity 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Let's go →</button>
+    </div>`;
+  document.body.appendChild(overlay);
 }
 
