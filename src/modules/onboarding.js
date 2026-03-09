@@ -552,8 +552,8 @@ function renderStarterCard(film, idx, palColor) {
       <div class="starter-card ${isRated || alreadyInMovies ? 'rated' : ''}"
            onclick="${!alreadyInMovies && !isRated ? `starterTapFilm(${film.tmdbId})` : ''}"
            style="${isExpanded ? `border-color:${palColor}` : ''}">
-        <div style="position:relative;overflow:hidden">
-          ${posterUrl ? `<img src="${posterUrl}" alt="${film.title}" style="width:100%;display:block;${isRated || alreadyInMovies ? 'opacity:0.6' : ''}">` : `<div style="width:100%;aspect-ratio:2/3;background:var(--surface-dark);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">No poster</div>`}
+        <div style="position:relative;overflow:hidden;aspect-ratio:2/3">
+          ${posterUrl ? `<img src="${posterUrl}" alt="${film.title}" style="width:100%;height:100%;object-fit:cover;display:block;${isRated || alreadyInMovies ? 'opacity:0.6' : ''}">` : `<div style="width:100%;height:100%;background:var(--surface-dark);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">No poster</div>`}
           ${badgeHtml}
         </div>
         <div style="padding:8px 4px 4px">
