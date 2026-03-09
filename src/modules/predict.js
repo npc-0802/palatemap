@@ -1565,7 +1565,7 @@ function renderDiscoveryCards(results) {
     return `<div class="discovery-card" onclick="openRecommendedDetail(${safeTmdbId})">
       ${poster}
       <div class="discovery-card-body">
-        <div class="discovery-card-source">New territory</div>
+        <div class="discovery-card-source">${DISCOVERY_ICON_SVG} New territory</div>
         <div class="discovery-card-title">${r.title}</div>
         <div class="discovery-card-meta">${r.year || ''}${r.director ? ' · ' + r.director.split(',')[0] : ''}</div>
         <div class="discovery-card-score">~${total}</div>
