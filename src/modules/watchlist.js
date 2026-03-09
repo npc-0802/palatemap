@@ -5,6 +5,7 @@ const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 let wlSearchDebounce = null;
 let gsDebounceTimer = null;
 const autoPredictTimers = {};
+let wlSortMode = 'added'; // 'added' | 'score'
 
 function calcWlPredictedTotal(prediction) {
   let sum = 0, wsum = 0;
@@ -40,7 +41,7 @@ export function renderWatchlist() {
         if (screen?.classList.contains('active')) {
           const wlList = document.getElementById('wl-list');
           const wlItems = currentUser?.watchlist || [];
-          if (wlList) wlList.innerHTML = wlItems.map((w, idx) => watchlistRow(w, idx)).join('');
+          if (wlList) wlList.innerHTML = wlGetSortedList(wlItems).map(({ item, originalIndex }) => watchlistRow(item, originalIndex)).join('');
         }
       }, (i + 1) * 1500);
     });
@@ -57,10 +58,39 @@ function emptyState() {
     </div>`;
 }
 
+function wlGetSortedList(list) {
+  const indexed = list.map((item, originalIndex) => ({ item, originalIndex }));
+  if (wlSortMode === 'score') {
+    indexed.sort((a, b) => {
+      const predA = a.item.tmdbId ? currentUser?.predictions?.[String(a.item.tmdbId)] : null;
+      const predB = b.item.tmdbId ? currentUser?.predictions?.[String(b.item.tmdbId)] : null;
+      const scoreA = predA ? calcWlPredictedTotal(predA.prediction) : null;
+      const scoreB = predB ? calcWlPredictedTotal(predB.prediction) : null;
+      if (scoreA == null && scoreB == null) return 0;
+      if (scoreA == null) return 1;
+      if (scoreB == null) return -1;
+      return scoreB - scoreA;
+    });
+  }
+  return indexed;
+}
+
+function sortPill(mode, label) {
+  const active = wlSortMode === mode;
+  return `<button onclick="wlSetSort('${mode}')" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:5px 10px;border:1px solid ${active ? 'var(--ink)' : 'var(--rule-dark)'};background:${active ? 'var(--ink)' : 'transparent'};color:${active ? 'white' : 'var(--dim)'};cursor:pointer;transition:all 0.12s">${label}</button>`;
+}
+
 function listHTML(list) {
+  const sorted = wlGetSortedList(list);
   return `
-    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">${list.length} film${list.length !== 1 ? 's' : ''} queued</div>
-    <div id="wl-list">${list.map((item, i) => watchlistRow(item, i)).join('')}</div>`;
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim)">${list.length} film${list.length !== 1 ? 's' : ''} queued</div>
+      <div style="display:flex;gap:4px;align-items:center">
+        ${sortPill('added', 'Added')}
+        ${sortPill('score', 'Score ↓')}
+      </div>
+    </div>
+    <div id="wl-list">${sorted.map(({ item, originalIndex }) => watchlistRow(item, originalIndex)).join('')}</div>`;
 }
 
 function watchlistRow(item, i) {
@@ -134,6 +164,11 @@ export function removeFromWatchlist(tmdbId) {
   import('../ui-callbacks.js').then(({ showToast }) => showToast('Removed from watch list.'));
 }
 window.removeFromWatchlist = removeFromWatchlist;
+
+window.wlSetSort = function(mode) {
+  wlSortMode = mode;
+  renderWatchlist();
+};
 
 window.wlSearchDebounce = function() {
   clearTimeout(wlSearchDebounce);
