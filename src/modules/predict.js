@@ -71,6 +71,9 @@ export function initPredict() {
   if (searchResults) searchResults.innerHTML = '';
   predictSelectedFilm = null;
 
+  // Compute dynamic entity weights
+  computeEntityWeights();
+
   // Set archetype palette color on pulsing dots
   setForYouDotColor();
 
@@ -153,6 +156,8 @@ function renderForYouEyebrow(updatedAt) {
 function getSourceLabel(r) {
   if (r.source === 'watchlist') return 'On your watch list';
   if (r.source === 'director') return `Director match · ${(r.director || '').split(',')[0]}`;
+  if (r.source === 'actor') return `Actor match · ${r.sourceName || ''}`;
+  if (r.source === 'company') return `From ${r.sourceName || ''}`;
   if (r.source === 'discover') return 'For your taste';
   return 'Recommended';
 }
@@ -364,47 +369,137 @@ function findComparableFilms(film) {
   }).sort((a,b) => b.total - a.total).slice(0,8);
 }
 
+// ── DYNAMIC ENTITY WEIGHTING ────────────────────────────────────────────────
+// Computes how predictive each entity type (director, actor, writer, company)
+// is for this user's scores. Runs entirely in JS — no API calls.
+// Stored on currentUser.entityWeights and recomputed when film count changes.
+
+const DEFAULT_CEILINGS = { director: 30, actor: 15, company: 5, genre: 25, era: 15, writer: 5 };
+
+function computeEntityWeights() {
+  // Need 20+ films for meaningful variance analysis
+  if (MOVIES.length < 20) {
+    currentUser.entityWeights = DEFAULT_CEILINGS;
+    return;
+  }
+
+  // Build entity → [totals] map for each type
+  const typeMap = { director: {}, actor: {}, writer: {}, company: {} };
+  MOVIES.forEach(m => {
+    const add = (type, field) => {
+      mergeSplitNames((m[field] || '').split(',').map(s => s.trim()).filter(Boolean)).forEach(name => {
+        if (!typeMap[type][name]) typeMap[type][name] = [];
+        typeMap[type][name].push(m.total);
+      });
+    };
+    add('director', 'director');
+    add('actor', 'cast');
+    add('writer', 'writer');
+    add('company', 'productionCompanies');
+  });
+
+  // For each type, compute weighted avg stddev across entities with 2+ films
+  const typePower = {};
+  for (const [type, entities] of Object.entries(typeMap)) {
+    let totalWeight = 0, weightedStdSum = 0;
+    for (const totals of Object.values(entities)) {
+      if (totals.length < 2) continue;
+      const mean = totals.reduce((s, v) => s + v, 0) / totals.length;
+      const std = Math.sqrt(totals.reduce((s, v) => s + (v - mean) ** 2, 0) / totals.length);
+      weightedStdSum += std * totals.length;
+      totalWeight += totals.length;
+    }
+    // Predictive power = inverse of weighted avg stddev; fallback for no data
+    const avgStd = totalWeight > 0 ? weightedStdSum / totalWeight : 20;
+    typePower[type] = 1 / Math.max(avgStd, 1);
+  }
+
+  // Normalize so entity types + genre + era sum to 95 (history bonus is always 5)
+  // Genre and era get a fixed baseline share, entity types split the rest proportionally
+  const GENRE_ERA_FLOOR = 30; // genre (20) + era (10) minimum
+  const entityBudget = 95 - GENRE_ERA_FLOOR;
+  const entityTotal = Object.values(typePower).reduce((s, v) => s + v, 0) || 1;
+
+  const rawEntityCeilings = {};
+  for (const [type, power] of Object.entries(typePower)) {
+    rawEntityCeilings[type] = Math.round((power / entityTotal) * entityBudget);
+  }
+
+  // Ensure minimums: each entity type gets at least 3 pts
+  for (const type of Object.keys(rawEntityCeilings)) {
+    rawEntityCeilings[type] = Math.max(rawEntityCeilings[type], 3);
+  }
+
+  // Redistribute genre/era from remaining budget
+  const entitySum = Object.values(rawEntityCeilings).reduce((s, v) => s + v, 0);
+  const remaining = 95 - entitySum;
+  const genreCeiling = Math.round(remaining * 0.6);
+  const eraCeiling = remaining - genreCeiling;
+
+  currentUser.entityWeights = {
+    director: rawEntityCeilings.director,
+    actor: rawEntityCeilings.actor,
+    writer: rawEntityCeilings.writer,
+    company: rawEntityCeilings.company,
+    genre: genreCeiling,
+    era: eraCeiling
+  };
+}
+
+function getCeilings() {
+  return currentUser?.entityWeights || DEFAULT_CEILINGS;
+}
+
+function entityAffinityScore(candidateNames, movieField, ceiling) {
+  // Generic entity affinity scorer: given candidate entity names and the field
+  // on MOVIES to compare against, return a score 0–ceiling.
+  if (!candidateNames.length) return 0;
+  const matchedFilms = MOVIES.filter(m => {
+    const mNames = mergeSplitNames((m[movieField] || '').split(',').map(s => s.trim()).filter(Boolean));
+    return candidateNames.some(n => mNames.includes(n));
+  });
+  if (!matchedFilms.length) return 0;
+  const avg = matchedFilms.reduce((s, m) => s + m.total, 0) / matchedFilms.length;
+  const overlap = Math.min(matchedFilms.length, 4);
+  if (matchedFilms.length >= 2) {
+    return avg >= 90 ? ceiling : avg >= 80 ? Math.round(ceiling * 0.7) : avg >= 70 ? Math.round(ceiling * 0.4) : Math.round(ceiling * 0.15);
+  }
+  // Single film match: reduced ceiling
+  return avg >= 85 ? Math.round(ceiling * 0.6) : avg >= 75 ? Math.round(ceiling * 0.35) : Math.round(ceiling * 0.12);
+}
+
 function scoreCandidate(film) {
   // Scores a candidate film 0–100 based on user's taste data.
   // Runs entirely in JS. No API calls. Higher = stronger recommendation signal.
-  // film must have: { title, year, director, cast, genres, tmdbId }
+  // Ceilings are dynamically allocated based on entity predictive power.
+  const c = getCeilings();
   let score = 0;
 
-  // ── 1. Director affinity (0–35 pts) ────────────────────────────────────────
+  // ── 1. Director affinity (0–c.director pts) ────────────────────────────────
   const candidateDirectors = mergeSplitNames(
     (film.director || '').split(',').map(s => s.trim()).filter(Boolean)
   );
-  if (candidateDirectors.length) {
-    const directorFilms = MOVIES.filter(m => {
-      const mDirs = mergeSplitNames((m.director || '').split(',').map(s => s.trim()).filter(Boolean));
-      return candidateDirectors.some(d => mDirs.includes(d));
-    });
-    if (directorFilms.length >= 2) {
-      const avg = directorFilms.reduce((s, m) => s + m.total, 0) / directorFilms.length;
-      score += avg >= 90 ? 35 : avg >= 80 ? 25 : avg >= 70 ? 15 : 5;
-    } else if (directorFilms.length === 1) {
-      const avg = directorFilms[0].total;
-      score += avg >= 85 ? 20 : avg >= 75 ? 12 : 4;
-    }
-  }
+  score += entityAffinityScore(candidateDirectors, 'director', c.director);
 
-  // ── 2. Cast affinity (0–20 pts) ────────────────────────────────────────────
+  // ── 2. Actor affinity (0–c.actor pts) ──────────────────────────────────────
   const candidateCast = mergeSplitNames(
     (film.cast || '').split(',').map(s => s.trim()).filter(Boolean)
   );
-  if (candidateCast.length) {
-    const castFilms = MOVIES.filter(m => {
-      const mCast = mergeSplitNames((m.cast || '').split(',').map(s => s.trim()).filter(Boolean));
-      return candidateCast.some(c => mCast.includes(c));
-    });
-    if (castFilms.length) {
-      const avg = castFilms.reduce((s, m) => s + m.total, 0) / castFilms.length;
-      const overlap = Math.min(castFilms.length, 4);
-      score += Math.round((avg / 100) * 10 * (overlap / 4)) + (overlap >= 2 ? 10 : 5);
-    }
-  }
+  score += entityAffinityScore(candidateCast, 'cast', c.actor);
 
-  // ── 3. Genre affinity (0–25 pts) ───────────────────────────────────────────
+  // ── 3. Writer affinity (0–c.writer pts) ────────────────────────────────────
+  const candidateWriters = mergeSplitNames(
+    (film.writer || '').split(',').map(s => s.trim()).filter(Boolean)
+  );
+  score += entityAffinityScore(candidateWriters, 'writer', c.writer);
+
+  // ── 4. Company affinity (0–c.company pts) ──────────────────────────────────
+  const candidateCompanies = mergeSplitNames(
+    (film.productionCompanies || '').split(',').map(s => s.trim()).filter(Boolean)
+  );
+  score += entityAffinityScore(candidateCompanies, 'productionCompanies', c.company);
+
+  // ── 5. Genre affinity (0–c.genre pts) ──────────────────────────────────────
   const candidateGenres = (film.genres || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
   if (candidateGenres.length) {
     const genreScores = {};
@@ -420,15 +515,14 @@ function scoreCandidate(film) {
     Object.keys(genreScores).forEach(g => {
       if (genreCounts[g] >= 2) genreAvgs[g] = genreScores[g] / genreCounts[g];
     });
-
     let genreScore = 0, matched = 0;
     candidateGenres.forEach(g => {
       if (genreAvgs[g]) { genreScore += genreAvgs[g]; matched++; }
     });
-    if (matched > 0) score += Math.round((genreScore / matched / 100) * 25);
+    if (matched > 0) score += Math.round((genreScore / matched / 100) * c.genre);
   }
 
-  // ── 4. Era affinity (0–15 pts) ─────────────────────────────────────────────
+  // ── 6. Era affinity (0–c.era pts) ─────────────────────────────────────────
   const candidateYear = parseInt(film.year) || 0;
   if (candidateYear > 0) {
     const candidateDecade = Math.floor(candidateYear / 10) * 10;
@@ -452,13 +546,13 @@ function scoreCandidate(film) {
       const decadeAvg = decadeScores[candidateDecade]
         ? decadeScores[candidateDecade] / decadeCounts[candidateDecade]
         : null;
-      if (candidateDecade === topDecade) score += 15;
-      else if (decadeAvg && decadeAvg >= topDecadeAvg - 5) score += 8;
-      else if (decadeAvg && decadeAvg >= topDecadeAvg - 15) score += 4;
+      if (candidateDecade === topDecade) score += c.era;
+      else if (decadeAvg && decadeAvg >= topDecadeAvg - 5) score += Math.round(c.era * 0.53);
+      else if (decadeAvg && decadeAvg >= topDecadeAvg - 15) score += Math.round(c.era * 0.27);
     }
   }
 
-  // ── 5. Prediction history bonus (0–5 pts) ──────────────────────────────────
+  // ── 7. Prediction history bonus (0–5 pts, always fixed) ───────────────────
   const cached = currentUser?.predictions?.[String(film.tmdbId)];
   if (cached?.prediction) {
     const predTotal = calcPredictedTotal(cached.prediction);
@@ -478,9 +572,11 @@ function normTitle(t) {
 }
 
 async function buildCandidatePool() {
-  // Builds a personalized candidate pool from 2 streams:
-  // Stream A: Director affinity (top-rated directors' other films via TMDB)
-  // Stream B: TMDB discover (genre + era weighted)
+  // Builds a personalized candidate pool from 4 streams:
+  // Stream A: Director affinity (top directors' other films via TMDB)
+  // Stream B: Actor affinity (top actors' other films via TMDB)
+  // Stream C: Company affinity (top companies' other films via TMDB discover)
+  // Stream D: TMDB discover (genre + era weighted)
 
   const ratedIds = new Set(MOVIES.map(m => String(m.tmdbId)).filter(Boolean));
   const ratedTitlesNorm = new Set(MOVIES.map(m => normTitle(m.title)));
@@ -548,7 +644,111 @@ async function buildCandidatePool() {
     } catch { /* stream failure is acceptable */ }
   }));
 
-  // ── Stream C: TMDB discover (genre + era weighted) ──────────────────────────
+  // ── Stream B: Actor affinity ──────────────────────────────────────────────
+  const actorMap = {};
+  MOVIES.forEach(m => {
+    mergeSplitNames((m.cast || '').split(',').map(s => s.trim()).filter(Boolean)).forEach(a => {
+      if (!actorMap[a]) actorMap[a] = { total: 0, count: 0 };
+      actorMap[a].total += m.total;
+      actorMap[a].count++;
+    });
+  });
+  const topActors = Object.entries(actorMap)
+    .filter(([, v]) => v.count >= 2)
+    .map(([name, v]) => ({ name, avg: v.total / v.count }))
+    .sort((a, b) => b.avg - a.avg)
+    .slice(0, 3);
+
+  await Promise.allSettled(topActors.map(async ({ name }) => {
+    try {
+      const searchRes = await fetch(
+        `${TMDB}/search/person?api_key=${TMDB_KEY}&query=${encodeURIComponent(name)}&language=en-US`
+      );
+      const searchData = await searchRes.json();
+      const person = (searchData.results || [])[0];
+      if (!person) return;
+
+      const credRes = await fetch(
+        `${TMDB}/person/${person.id}/movie_credits?api_key=${TMDB_KEY}`
+      );
+      const credData = await credRes.json();
+      const acted = (credData.cast || [])
+        .filter(c => c.vote_count > 100 && c.poster_path)
+        .filter(c => !isKnown(c.id, c.title))
+        .sort((a, b) => b.vote_average - a.vote_average)
+        .slice(0, 3);
+
+      acted.forEach(film => {
+        if (isKnown(film.id, film.title)) return;
+        seen.add(String(film.id));
+        candidates.push({
+          tmdbId: film.id,
+          title: film.title,
+          year: (film.release_date || '').slice(0, 4),
+          poster: film.poster_path,
+          director: '',
+          cast: name,
+          genres: '',
+          overview: film.overview || '',
+          source: 'actor',
+          sourceName: name
+        });
+      });
+    } catch { /* stream failure is acceptable */ }
+  }));
+
+  // ── Stream C: Company affinity ──────────────────────────────────────────────
+  const companyMap = {};
+  MOVIES.forEach(m => {
+    mergeSplitNames((m.productionCompanies || '').split(',').map(s => s.trim()).filter(Boolean)).forEach(c => {
+      if (!companyMap[c]) companyMap[c] = { total: 0, count: 0 };
+      companyMap[c].total += m.total;
+      companyMap[c].count++;
+    });
+  });
+  const topCompanies = Object.entries(companyMap)
+    .filter(([, v]) => v.count >= 2)
+    .map(([name, v]) => ({ name, avg: v.total / v.count }))
+    .sort((a, b) => b.avg - a.avg)
+    .slice(0, 2);
+
+  await Promise.allSettled(topCompanies.map(async ({ name }) => {
+    try {
+      const searchRes = await fetch(
+        `${TMDB}/search/company?api_key=${TMDB_KEY}&query=${encodeURIComponent(name)}`
+      );
+      const searchData = await searchRes.json();
+      const company = (searchData.results || [])[0];
+      if (!company) return;
+
+      const discRes = await fetch(
+        `${TMDB}/discover/movie?api_key=${TMDB_KEY}&with_companies=${company.id}&sort_by=vote_average.desc&vote_count.gte=100&page=1`
+      );
+      const discData = await discRes.json();
+      const films = (discData.results || [])
+        .filter(f => f.poster_path && !isKnown(f.id, f.title))
+        .slice(0, 3);
+
+      films.forEach(film => {
+        if (isKnown(film.id, film.title)) return;
+        seen.add(String(film.id));
+        candidates.push({
+          tmdbId: film.id,
+          title: film.title,
+          year: (film.release_date || '').slice(0, 4),
+          poster: film.poster_path,
+          director: '',
+          cast: '',
+          genres: '',
+          overview: film.overview || '',
+          source: 'company',
+          sourceName: name
+        });
+      });
+    } catch { /* stream failure is acceptable */ }
+  }));
+
+  // ── Stream D: TMDB discover (genre + era weighted) ──────────────────────────
   const genreScores = {};
   const genreCounts = {};
   MOVIES.forEach(m => {
@@ -865,8 +1065,10 @@ async function findMeAFilm() {
         const detail = await dRes.json();
         const credits = await crRes.json();
         c.director = c.director || (credits.crew || []).filter(x => x.job === 'Director').map(x => x.name).join(', ');
+        c.writer = (credits.crew || []).filter(x => ['Screenplay', 'Writer', 'Story'].includes(x.job)).map(x => x.name).slice(0, 3).join(', ');
         c.cast = (credits.cast || []).slice(0, 8).map(x => x.name).join(', ');
         c.genres = (detail.genres || []).map(g => g.name).join(', ');
+        c.productionCompanies = (detail.production_companies || []).map(p => p.name).join(', ');
         c.overview = c.overview || detail.overview || '';
         c.poster = c.poster || detail.poster_path;
       } catch { /* candidate will score lower without cast data */ }
@@ -1104,8 +1306,10 @@ async function constrainedSelectEntity(type, tmdbId, name) {
         const detail = await dRes.json();
         const credits = await crRes.json();
         c.director = (credits.crew || []).filter(x => x.job === 'Director').map(x => x.name).join(', ');
+        c.writer = (credits.crew || []).filter(x => ['Screenplay', 'Writer', 'Story'].includes(x.job)).map(x => x.name).slice(0, 3).join(', ');
         c.cast = (credits.cast || []).slice(0, 8).map(x => x.name).join(', ');
         c.genres = (detail.genres || []).map(g => g.name).join(', ');
+        c.productionCompanies = (detail.production_companies || []).map(p => p.name).join(', ');
         c.overview = c.overview || detail.overview || '';
       } catch { /* candidate will score lower */ }
     }));
