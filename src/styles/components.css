@@ -1285,4 +1285,82 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); 
   .foryou-nudge { flex-wrap: wrap; }
   .constrained-results-grid { grid-template-columns: 1fr; }
   .foryou-discovery-grid { grid-template-columns: 1fr; }
+  .starter-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* ── STARTER FILMS ── */
+@keyframes obSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes obFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes badgePop {
+  0%   { transform: scale(0); opacity: 0; }
+  70%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.ob-starters-enter { animation: obSlideUp 0.4s ease both; }
+.ob-reveal-exit    { animation: obFadeOut 0.3s ease both; }
+
+.starter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.starter-card-wrap {
+  opacity: 0;
+  animation: obSlideUp 0.35s ease both;
+}
+.starter-card {
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.2s, transform 0.15s;
+  overflow: hidden;
+}
+.starter-card:hover:not(.rated) {
+  transform: scale(1.02);
+}
+.starter-card.rated {
+  cursor: default;
+}
+.starter-badge-enter {
+  animation: badgePop 0.25s ease both;
+}
+.starter-rate-card {
+  margin-top: 8px;
+  background: var(--surface-dark);
+  padding: 16px;
+  overflow: hidden;
+  animation: obSlideUp 0.3s ease both;
+}
+.starter-progress-fill {
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.starter-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: rgba(244,239,230,0.15);
+  outline: none;
+  border-radius: 2px;
+}
+.starter-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--on-dark);
+  cursor: pointer;
+}
+.starter-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--on-dark);
+  cursor: pointer;
+  border: none;
 }

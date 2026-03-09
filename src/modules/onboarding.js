@@ -1,8 +1,10 @@
-import { MOVIES, setMovies, setCurrentUser, currentUser, applyUserWeights, recalcAllTotals } from '../state.js';
+import { MOVIES, setMovies, setCurrentUser, currentUser, applyUserWeights, recalcAllTotals, CATEGORIES, calcTotal } from '../state.js';
 import { ARCHETYPES, OB_QUESTIONS } from '../data/archetypes.js';
+import { STARTER_FILMS } from '../data/starter-films.js';
 import { saveToStorage } from './storage.js';
 import { renderRankings } from './rankings.js';
 import { sb, syncToSupabase, saveUserLocally, signInWithGoogle, sendMagicLink } from './supabase.js';
+import { fetchTmdbMovieBundle } from './tmdb-movie.js';
 
 let obStep = 'name';
 let obAnswers = {};
@@ -10,6 +12,10 @@ let obDisplayName = '';
 let obRevealResult = null;
 let obImportedMovies = null;
 let obMagicLinkEmail = '';
+let starterRated = [];        // tmdbIds of films rated during starters
+let starterScores = {};       // { tmdbId: { scores, total } }
+let starterShowMore = false;  // whether "show me more" has been tapped
+let starterExpandedId = null; // tmdbId of currently expanded rating card
 
 export function launchOnboarding(opts = {}) {
   const overlay = document.getElementById('onboarding-overlay');
@@ -186,12 +192,15 @@ function renderObStep() {
         Your username: <strong style="color:var(--ink)" id="ob-reveal-username">—</strong><br>
         <span style="font-size:10px">Save this to restore your profile on any device.</span>
       </div>
-      <button class="ob-btn" onclick="obFinishFromReveal()">Enter Palate Map →</button>
+      <button class="ob-btn" onclick="obFinishFromReveal()">See what your palate says →</button>
     `;
     setTimeout(() => {
       const el = document.getElementById('ob-reveal-username');
       if (el) el.textContent = obRevealResult._slug;
     }, 0);
+
+  } else if (obStep === 'starters') {
+    renderStarterFilms();
   }
 }
 
@@ -421,9 +430,268 @@ window.obNext = function() {
 
 window.obFinishFromReveal = function() {
   if (!obRevealResult) return;
+  // Skip starters if user imported films from Letterboxd
+  if (obImportedMovies?.length > 0) {
+    const arch = ARCHETYPES[obRevealResult.primary];
+    obFinish(obRevealResult.primary, obRevealResult.secondary || '', arch.weights, obRevealResult.harmonySensitivity);
+    return;
+  }
+  // Cross-fade to starters
+  const card = document.getElementById('ob-card-content');
+  card.classList.add('ob-reveal-exit');
+  setTimeout(() => {
+    card.classList.remove('ob-reveal-exit');
+    obStep = 'starters';
+    renderObStep();
+  }, 300);
+};
+
+// ── STARTER FILMS ──
+
+function getStarterDefaults() {
+  // Archetype-weighted default slider values
+  const weights = ARCHETYPES[obRevealResult.primary]?.weights || {};
+  const maxWeight = Math.max(...Object.values(weights), 1);
+  const defaults = {};
+  CATEGORIES.forEach(cat => {
+    const w = weights[cat.key] || 1;
+    defaults[cat.key] = Math.round(Math.min(95, 72 + (w / maxWeight) * 12));
+  });
+  return defaults;
+}
+
+function getStarterFilms() {
+  const archetype = obRevealResult?.primary || 'Visceralist';
+  const primary = STARTER_FILMS[archetype] || STARTER_FILMS.Visceralist;
+  if (starterShowMore) {
+    // Show remaining archetype films + universal fallbacks, deduped
+    const shown = new Set(primary.slice(0, 8).map(f => f.tmdbId));
+    const extra = [...primary.slice(8)];
+    for (const f of (STARTER_FILMS.universal || [])) {
+      if (!shown.has(f.tmdbId) && !extra.some(e => e.tmdbId === f.tmdbId)) {
+        extra.push(f);
+      }
+    }
+    return { initial: primary.slice(0, 8), extra };
+  }
+  return { initial: primary.slice(0, 8), extra: [] };
+}
+
+function getNudgeMessage() {
+  const n = starterRated.length;
+  if (n >= 10) return 'Predict is unlocked. You\'re ready.';
+  if (n >= 8) return 'Two more and Predict unlocks.';
+  if (n >= 5) return 'Halfway to unlocking predictions. Keep going?';
+  if (n >= 3) return 'Your taste is starting to take shape.';
+  if (n >= 1) return 'Nice. That tells us something already.';
+  return '';
+}
+
+function renderStarterFilms() {
+  const card = document.getElementById('ob-card-content');
+  const arch = ARCHETYPES[obRevealResult.primary];
+  const palColor = arch?.palette || '#3d5a80';
+  const { initial, extra } = getStarterFilms();
+  const allFilms = [...initial, ...extra];
+  const pct = Math.min(100, Math.round((starterRated.length / 10) * 100));
+  const nudge = getNudgeMessage();
+
+  card.innerHTML = `
+    <div class="ob-starters-enter">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:12px">your palate · starter films</div>
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(22px,5vw,28px);line-height:1.15;color:${palColor};letter-spacing:-0.5px;margin-bottom:12px">Films ${obRevealResult.primary}s tend to love.</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--on-dark);opacity:0.75;line-height:1.6;margin-bottom:20px">Have you seen any of these? Tap to rate — it only takes a minute.</div>
+
+      ${starterRated.length > 0 ? `
+        <div style="margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);letter-spacing:1px">${starterRated.length} of 10 rated</span>
+            <span style="font-family:'DM Mono',monospace;font-size:10px;color:${palColor};letter-spacing:0.5px">${nudge}</span>
+          </div>
+          <div style="height:3px;background:rgba(244,239,230,0.1);overflow:hidden">
+            <div class="starter-progress-fill" style="height:100%;background:${palColor};width:${pct}%"></div>
+          </div>
+        </div>
+      ` : ''}
+
+      <div class="starter-grid">
+        ${allFilms.map((film, i) => renderStarterCard(film, i, palColor)).join('')}
+      </div>
+
+      ${!starterShowMore ? `
+        <div style="text-align:center;margin-top:20px">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:${palColor};cursor:pointer;letter-spacing:1px" onclick="starterShowMoreFilms()">Show me more →</span>
+        </div>
+      ` : ''}
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding-top:16px;border-top:1px solid rgba(244,239,230,0.1)">
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);cursor:pointer;letter-spacing:0.5px" onclick="starterSkipToSearch()">Skip to search →</span>
+        ${starterRated.length >= 10 ? `
+          <button class="ob-btn" style="margin:0;background:${palColor}" onclick="starterFinish()">Enter Palate Map →</button>
+        ` : starterRated.length > 0 ? `
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);cursor:pointer;letter-spacing:0.5px" onclick="starterFinish()">Done for now →</span>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderStarterCard(film, idx, palColor) {
+  const isRated = starterRated.includes(film.tmdbId);
+  const isExpanded = starterExpandedId === film.tmdbId;
+  const alreadyInMovies = MOVIES.some(m => String(m.tmdbId) === String(film.tmdbId));
+  const posterUrl = film.poster ? `https://image.tmdb.org/t/p/w185${film.poster}` : null;
+  const ratedData = starterScores[film.tmdbId];
+  const badgeHtml = (isRated || alreadyInMovies) && ratedData ? `
+    <div class="starter-badge-enter" style="position:absolute;top:6px;right:6px;background:var(--surface-dark);border:1px solid ${palColor};padding:2px 6px;font-family:'DM Mono',monospace;font-size:10px;color:${palColor};letter-spacing:0.5px">${Math.round(ratedData.total)}</div>
+  ` : '';
+
+  return `
+    <div class="starter-card-wrap" style="animation-delay:${idx * 60}ms">
+      <div class="starter-card ${isRated || alreadyInMovies ? 'rated' : ''} ${isExpanded ? 'expanded' : ''}"
+           onclick="${!isExpanded && !alreadyInMovies ? `starterTapFilm(${film.tmdbId})` : ''}"
+           style="${isExpanded ? `border-color:${palColor}` : ''}">
+        <div style="position:relative;overflow:hidden">
+          ${posterUrl ? `<img src="${posterUrl}" alt="${film.title}" style="width:100%;display:block;${isRated || alreadyInMovies ? 'opacity:0.6' : ''}">` : `<div style="width:100%;aspect-ratio:2/3;background:var(--surface-dark);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">No poster</div>`}
+          ${badgeHtml}
+        </div>
+        <div style="padding:8px 4px 4px">
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:13px;color:var(--on-dark);line-height:1.2;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${film.title}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim)">${film.year} · ${(film.director || '').split(',')[0]}</div>
+        </div>
+      </div>
+      ${isExpanded ? renderStarterRateCard(film, palColor) : ''}
+    </div>
+  `;
+}
+
+function renderStarterRateCard(film, palColor) {
+  const defaults = getStarterDefaults();
+  const existing = starterScores[film.tmdbId]?.scores || {};
+  const posterUrl = film.poster ? `https://image.tmdb.org/t/p/w92${film.poster}` : null;
+
+  return `
+    <div class="starter-rate-card open" style="border-left:3px solid ${palColor}">
+      <div style="display:flex;gap:12px;margin-bottom:16px;align-items:center">
+        ${posterUrl ? `<img src="${posterUrl}" style="width:46px;flex-shrink:0">` : ''}
+        <div>
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:15px;color:var(--on-dark)">${film.title}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim)">${film.year} · ${film.director || ''}</div>
+        </div>
+      </div>
+      ${CATEGORIES.map(cat => {
+        const val = existing[cat.key] ?? defaults[cat.key];
+        return `
+        <div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+            <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);text-transform:uppercase;letter-spacing:1px">${cat.label}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark)" id="starter-sv-${film.tmdbId}-${cat.key}">${val}</span>
+          </div>
+          <input type="range" min="1" max="100" value="${val}" class="starter-slider"
+            style="width:100%;accent-color:${palColor}"
+            oninput="starterSliderChange(${film.tmdbId}, '${cat.key}', this.value)">
+        </div>`;
+      }).join('')}
+      <div id="starter-score-guide-${film.tmdbId}" style="display:none;margin-bottom:12px;font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);line-height:1.8">
+        90+ An all-time favorite · 80 Excellent · 70 Great · 60 A cut above · 50 Solid · 40 Sub-par · 30 Poor · 20 Wouldn't watch by choice
+      </div>
+      <div style="text-align:right;margin-bottom:8px">
+        <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);cursor:pointer;text-decoration:underline" onclick="document.getElementById('starter-score-guide-${film.tmdbId}').style.display=document.getElementById('starter-score-guide-${film.tmdbId}').style.display==='none'?'block':'none'">What do the numbers mean?</span>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end">
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);cursor:pointer;letter-spacing:0.5px;padding:8px 0" onclick="starterCollapseCard()">← Back to list</span>
+        <button class="ob-btn" style="margin:0;padding:10px 20px;background:${palColor}" onclick="starterRateFilm(${film.tmdbId})">Rate this film →</button>
+      </div>
+    </div>
+  `;
+}
+
+window.starterTapFilm = function(tmdbId) {
+  if (starterRated.includes(tmdbId)) return;
+  starterExpandedId = tmdbId;
+  // Initialize scores with defaults
+  if (!starterScores[tmdbId]) {
+    const defaults = getStarterDefaults();
+    starterScores[tmdbId] = { scores: { ...defaults }, total: calcTotal(defaults) };
+  }
+  renderStarterFilms();
+  // Scroll the expanded card into view
+  setTimeout(() => {
+    const card = document.querySelector('.starter-rate-card.open');
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 50);
+};
+
+window.starterCollapseCard = function() {
+  starterExpandedId = null;
+  renderStarterFilms();
+};
+
+window.starterSliderChange = function(tmdbId, catKey, val) {
+  val = parseInt(val);
+  if (!starterScores[tmdbId]) starterScores[tmdbId] = { scores: { ...getStarterDefaults() }, total: 0 };
+  starterScores[tmdbId].scores[catKey] = val;
+  starterScores[tmdbId].total = calcTotal(starterScores[tmdbId].scores);
+  const el = document.getElementById(`starter-sv-${tmdbId}-${catKey}`);
+  if (el) el.textContent = val;
+};
+
+window.starterRateFilm = async function(tmdbId) {
+  const filmData = [...(STARTER_FILMS[obRevealResult.primary] || []), ...(STARTER_FILMS.universal || [])].find(f => f.tmdbId === tmdbId);
+  if (!filmData || starterRated.includes(tmdbId)) return;
+  const scores = starterScores[tmdbId]?.scores || getStarterDefaults();
+  const total = calcTotal(scores);
+
+  // Build the film object with pre-baked metadata
+  const film = {
+    title: filmData.title, year: filmData.year,
+    director: filmData.director || '', writer: '', cast: '',
+    productionCompanies: '', poster: filmData.poster,
+    overview: '', tmdbId: filmData.tmdbId,
+    scores: { ...scores }, total
+  };
+
+  // Push to MOVIES immediately
+  MOVIES.push(film);
+  starterRated.push(tmdbId);
+  starterScores[tmdbId] = { scores: { ...scores }, total };
+  starterExpandedId = null;
+  renderStarterFilms();
+
+  // Lazy-load full TMDB metadata in background
+  try {
+    const bundle = await fetchTmdbMovieBundle(tmdbId);
+    const existing = MOVIES.find(m => String(m.tmdbId) === String(tmdbId));
+    if (existing && bundle) {
+      existing.writer = bundle.writers?.join(', ') || '';
+      existing.cast = bundle.top8Cast?.map(c => c.name).join(', ') || '';
+      existing.productionCompanies = bundle.companies?.map(c => c.name).join(', ') || '';
+      existing.overview = bundle.detail?.overview || '';
+      if (bundle.detail?.poster_path) existing.poster = bundle.detail.poster_path;
+    }
+  } catch (e) {
+    console.warn('Starter film TMDB fetch failed:', e);
+  }
+};
+
+window.starterShowMoreFilms = function() {
+  starterShowMore = true;
+  renderStarterFilms();
+};
+
+window.starterSkipToSearch = function() {
+  starterFinishAndExit();
+};
+
+window.starterFinish = function() {
+  starterFinishAndExit();
+};
+
+function starterFinishAndExit() {
+  localStorage.setItem('palatemap_welcome_shown', '1');
   const arch = ARCHETYPES[obRevealResult.primary];
   obFinish(obRevealResult.primary, obRevealResult.secondary || '', arch.weights, obRevealResult.harmonySensitivity);
-};
+}
 
 // ── ARCHETYPE DERIVATION ──
 
@@ -514,49 +782,5 @@ async function obFinish(primary, secondary, weights, harmonySensitivity) {
   saveUserLocally();
 
   syncToSupabase().catch(e => console.warn('Initial sync failed:', e));
-
-  // Show welcome modal once, after a brief settle
-  if (!localStorage.getItem('palatemap_welcome_shown')) {
-    setTimeout(() => showWelcomeModal(obDisplayName, primary), 600);
-  }
 }
 
-function showWelcomeModal(name, archetype) {
-  localStorage.setItem('palatemap_welcome_shown', '1');
-  const overlay = document.createElement('div');
-  overlay.id = 'welcome-modal-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(12,11,9,0.7);z-index:5000;display:flex;align-items:center;justify-content:center;padding:24px';
-  overlay.innerHTML = `
-    <div style="background:var(--paper);max-width:520px;width:100%;padding:48px 44px;position:relative;animation:fadeIn 0.3s ease">
-      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">welcome to palate map</div>
-      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(24px,4vw,32px);color:var(--ink);line-height:1.1;letter-spacing:-0.5px;margin-bottom:8px">Welcome, ${name}.</div>
-      <div style="font-family:'DM Sans',sans-serif;font-size:15px;color:var(--dim);line-height:1.6;margin-bottom:32px">Your palate type is <strong style="color:var(--ink)">${archetype}</strong>. Here's how to get the most out of it.</div>
-
-      <div style="border-top:1px solid var(--rule);padding-top:28px;margin-bottom:32px">
-        <div style="display:flex;gap:16px;margin-bottom:22px">
-          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--rule-dark);padding-top:2px;flex-shrink:0">01</div>
-          <div>
-            <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:3px">Rate films you know well.</div>
-            <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);line-height:1.65">The more you rate, the sharper your fingerprint — and the more accurate your predictions become. Aim for at least 10 to unlock Predict.</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:16px;margin-bottom:22px">
-          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--rule-dark);padding-top:2px;flex-shrink:0">02</div>
-          <div>
-            <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:3px">Try Predict on something you're considering.</div>
-            <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);line-height:1.65">Once you have 10+ films rated, the AI reads your taste fingerprint and tells you how you'd score any film — with reasoning drawn from your actual ratings.</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:16px">
-          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--rule-dark);padding-top:2px;flex-shrink:0">03</div>
-          <div>
-            <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:3px">Invite a friend and compare palates.</div>
-            <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);line-height:1.65">The Overlap tab compares your taste profiles side-by-side and runs joint predictions for films you're both considering.</div>
-          </div>
-        </div>
-      </div>
-
-      <button onclick="document.getElementById('welcome-modal-overlay').remove()" style="width:100%;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:14px 24px;cursor:pointer;transition:opacity 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Let's go →</button>
-    </div>`;
-  document.body.appendChild(overlay);
-}
