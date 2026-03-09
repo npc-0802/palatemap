@@ -1686,7 +1686,8 @@ async function openRecommendedDetail(tmdbId) {
   const prediction = cached.prediction;
   const predTotal = calcPredictedTotal(prediction);
   const onWl = (currentUser?.watchlist || []).some(w => String(w.tmdbId) === String(tmdbId));
-  const newTerr = isNewTerritory(film);
+  const isDiscoveryCached = (currentUser?.cachedDiscovery || []).some(d => String(d.tmdbId) === String(tmdbId));
+  const newTerr = isDiscoveryCached || isNewTerritory(film);
   const headerLabel = newTerr
     ? `<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;color:var(--discover)">${DISCOVERY_ICON_SVG}<span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--discover);text-transform:uppercase;letter-spacing:1.5px">New Territory</span></div>`
     : `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px">Recommendation</div>`;
