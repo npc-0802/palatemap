@@ -99,7 +99,9 @@ export function renderExploreIndex(tab) {
 }
 
 export function exploreEntity(type, name) {
-  document.getElementById('filmModal').classList.remove('open');
+  const fmEl = document.getElementById('filmModal');
+  fmEl.classList.remove('visible');
+  fmEl.classList.remove('open');
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('analysis').classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));

@@ -175,29 +175,36 @@ function renderObStep() {
     }
     const arch = ARCHETYPES[result.primary];
     const palColor = arch.palette || '#3d5a80';
-    card.innerHTML = `
-      <div class="ob-eyebrow">your palate</div>
-      <div style="background:var(--surface-dark);padding:28px 32px;margin:16px -4px 20px">
-        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:10px">you are —</div>
-        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(36px,8vw,56px);line-height:1;letter-spacing:-1px;color:${palColor};margin-bottom:16px">${result.primary}</div>
-        <div style="font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.75;color:var(--on-dark);margin-bottom:12px;opacity:0.85">${arch.description}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--on-dark-dim);letter-spacing:0.5px">${arch.quote}</div>
-        ${result.secondary ? `
-        <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(244,239,230,0.1)">
-          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:6px">secondary</div>
-          <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:22px;color:var(--on-dark);opacity:0.75">${result.secondary}</div>
-        </div>` : ''}
-      </div>
-      <div style="background:var(--card-bg);border:1px solid var(--rule);padding:12px 16px;margin-bottom:24px;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim)">
-        Your username: <strong style="color:var(--ink)" id="ob-reveal-username">—</strong><br>
-        <span style="font-size:10px">Save this to restore your profile on any device.</span>
-      </div>
-      <button class="ob-btn" onclick="obFinishFromReveal()">See what your palate says →</button>
-    `;
+
+    // Fade out quiz, pause, then reveal
+    card.style.transition = 'opacity 0.3s ease';
+    card.style.opacity = '0';
     setTimeout(() => {
-      const el = document.getElementById('ob-reveal-username');
-      if (el) el.textContent = obRevealResult._slug;
-    }, 0);
+      card.innerHTML = `
+        <div class="ob-eyebrow" style="opacity:0;animation:fadeIn 0.4s ease 0.3s both">your palate</div>
+        <div class="ob-reveal-card" style="background:var(--surface-dark);padding:28px 32px;margin:16px -4px 20px;opacity:0;transform:scale(0.96);animation:obRevealCard 0.5s cubic-bezier(0.22,1,0.36,1) both">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:10px">you are —</div>
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(36px,8vw,56px);line-height:1;letter-spacing:-1px;color:${palColor};margin-bottom:16px;opacity:0;animation:fadeIn 0.4s ease 0.3s both">${result.primary}</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.75;color:var(--on-dark);margin-bottom:12px;opacity:0.85">${arch.description}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--on-dark-dim);letter-spacing:0.5px">${arch.quote}</div>
+          ${result.secondary ? `
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(244,239,230,0.1)">
+            <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:6px">secondary</div>
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:22px;color:var(--on-dark);opacity:0.75">${result.secondary}</div>
+          </div>` : ''}
+        </div>
+        <div style="background:var(--card-bg);border:1px solid var(--rule);padding:12px 16px;margin-bottom:24px;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);opacity:0;animation:fadeIn 0.4s ease 0.5s both">
+          Your username: <strong style="color:var(--ink)" id="ob-reveal-username">—</strong><br>
+          <span style="font-size:10px">Save this to restore your profile on any device.</span>
+        </div>
+        <button class="ob-btn" onclick="obFinishFromReveal()" style="opacity:0;animation:fadeIn 0.4s ease 0.6s both">See what your palate says →</button>
+      `;
+      card.style.opacity = '1';
+      setTimeout(() => {
+        const el = document.getElementById('ob-reveal-username');
+        if (el) el.textContent = obRevealResult._slug;
+      }, 0);
+    }, 500); // 300ms fade + 200ms pause
 
   } else if (obStep === 'starters') {
     renderStarterFilms();
@@ -417,14 +424,34 @@ window.obSelectAnswer = function(qIdx, key, el) {
   if (nextBtn) nextBtn.disabled = false;
 };
 
+function transitionQuizStep(nextStep) {
+  const card = document.getElementById('ob-card-content');
+  if (!card || typeof nextStep !== 'number') {
+    obStep = nextStep;
+    renderObStep();
+    return;
+  }
+  card.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+  card.style.opacity = '0';
+  card.style.transform = 'translateY(-6px)';
+  setTimeout(() => {
+    obStep = nextStep;
+    renderObStep();
+    card.style.transform = 'translateY(6px)';
+    card.offsetHeight; // force reflow
+    card.style.opacity = '1';
+    card.style.transform = 'translateY(0)';
+  }, 160);
+}
+
 window.obBack = function() {
-  if (typeof obStep === 'number' && obStep > 0) { obStep--; renderObStep(); }
+  if (typeof obStep === 'number' && obStep > 0) { transitionQuizStep(obStep - 1); }
   else { obStep = 'name'; renderObStep(); }
 };
 
 window.obNext = function() {
   if (!obAnswers[obStep]) return;
-  if (obStep < 5) { obStep++; renderObStep(); }
+  if (obStep < 5) { transitionQuizStep(obStep + 1); }
   else { obStep = 'reveal'; renderObStep(); }
 };
 

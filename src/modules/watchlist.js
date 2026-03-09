@@ -317,7 +317,9 @@ window.openWatchlistDetail = function(index) {
       <button onclick="watchlistRate(${index})" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:10px 20px;cursor:pointer;flex:2">Rank it →</button>
     </div>
   `;
-  document.getElementById('filmModal').classList.add('open');
+  const fmEl = document.getElementById('filmModal');
+  fmEl.classList.add('open');
+  requestAnimationFrame(() => fmEl.classList.add('visible'));
 
   if (item.tmdbId) _loadWlTmdbDetails(item);
 };
@@ -368,9 +370,9 @@ export function openGlobalSearch() {
   document.getElementById('global-search-overlay')?.remove();
   const overlay = document.createElement('div');
   overlay.id = 'global-search-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(12,11,9,0.88);z-index:10000;display:flex;flex-direction:column;align-items:center;padding:56px 20px 20px;overflow-y:auto';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(12,11,9,0.88);z-index:10000;display:flex;flex-direction:column;align-items:center;padding:56px 20px 20px;overflow-y:auto;opacity:0;transition:opacity 0.25s ease';
   overlay.innerHTML = `
-    <div style="width:100%;max-width:560px">
+    <div style="width:100%;max-width:560px;opacity:0;transform:translateY(-12px);transition:opacity 0.3s ease 0.1s,transform 0.3s cubic-bezier(0.22,1,0.36,1) 0.1s" id="gs-content-wrap">
       <div style="position:relative;margin-bottom:2px">
         <input id="gs-input" type="text" placeholder="Search films, directors, actors…" oninput="gsDebounce()"
           style="width:100%;box-sizing:border-box;padding:16px 52px 16px 18px;border:none;background:white;font-family:'DM Sans',sans-serif;font-size:16px;outline:none;color:var(--ink)">
@@ -380,11 +382,19 @@ export function openGlobalSearch() {
     </div>`;
   overlay.addEventListener('click', e => { if (e.target === overlay) closeGlobalSearch(); });
   document.body.appendChild(overlay);
+  requestAnimationFrame(() => {
+    overlay.style.opacity = '1';
+    const wrap = document.getElementById('gs-content-wrap');
+    if (wrap) { wrap.style.opacity = '1'; wrap.style.transform = 'translateY(0)'; }
+  });
   setTimeout(() => document.getElementById('gs-input')?.focus(), 60);
 }
 
 window.closeGlobalSearch = function() {
-  document.getElementById('global-search-overlay')?.remove();
+  const overlay = document.getElementById('global-search-overlay');
+  if (!overlay) return;
+  overlay.style.opacity = '0';
+  setTimeout(() => overlay.remove(), 250);
 };
 
 window.gsDebounce = function() {

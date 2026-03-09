@@ -83,6 +83,42 @@ export function showColdLanding() {
   const el = document.getElementById('cold-landing');
   if (el) {
     el.style.display = 'flex';
+    // Staggered reveal animation
+    const children = el.querySelector(':scope > div')?.children;
+    if (children) {
+      const delays = [0, 150, 300, 450, 600]; // wordmark, hero, rule, grid(props), grid continued
+      Array.from(children).forEach((child, i) => {
+        const d = delays[Math.min(i, delays.length - 1)];
+        // Rule gets a different animation
+        if (child.style.borderTop) {
+          child.classList.add('cold-rule-reveal');
+          child.style.animationDelay = '450ms';
+        } else {
+          child.classList.add('cold-reveal');
+          child.style.animationDelay = `${d}ms`;
+        }
+      });
+      // Stagger value props within the grid
+      const propCol = el.querySelector('.cold-landing-grid > div:first-child');
+      if (propCol) {
+        Array.from(propCol.children).forEach((prop, i) => {
+          prop.classList.add('cold-reveal');
+          prop.style.animationDelay = `${600 + i * 100}ms`;
+        });
+      }
+      // Auth card
+      const authCard = el.querySelector('.cold-landing-sticky');
+      if (authCard) {
+        authCard.classList.add('cold-reveal');
+        authCard.style.animationDelay = '800ms';
+        authCard.style.animationDuration = '0.5s';
+        // Add glow after entrance completes
+        const darkCard = authCard.querySelector('[style*="surface-dark"]');
+        if (darkCard) {
+          setTimeout(() => darkCard.classList.add('cold-auth-glow'), 1400);
+        }
+      }
+    }
   } else {
     launchOnboarding();
   }

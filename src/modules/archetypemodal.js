@@ -49,7 +49,9 @@ export function openArchetypeModal() {
       <span onclick="logOutUser()" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--dim);cursor:pointer;text-decoration:underline">Sign out</span>
     </div>
   `;
-  document.getElementById('archetypeModal').classList.add('open');
+  const amEl = document.getElementById('archetypeModal');
+  amEl.classList.add('open');
+  requestAnimationFrame(() => amEl.classList.add('visible'));
 }
 
 export function previewWeight(key, val) {
@@ -130,7 +132,11 @@ window.logOutUser = async function() {
 };
 
 export function closeArchetypeModal(e) {
-  if (!e || e.target === document.getElementById('archetypeModal')) {
-    document.getElementById('archetypeModal').classList.remove('open');
+  const el = document.getElementById('archetypeModal');
+  if (!e || e.target === el) {
+    el.classList.remove('visible');
+    const onEnd = () => { el.classList.remove('open'); el.removeEventListener('transitionend', onEnd); };
+    el.addEventListener('transitionend', onEnd);
+    setTimeout(() => el.classList.remove('open'), 350);
   }
 }

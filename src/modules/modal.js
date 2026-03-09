@@ -185,7 +185,7 @@ function renderModal() {
           }
           const diff = (x.total - m.total).toFixed(1);
           const diffColor = diff > 0 ? 'var(--green)' : 'var(--red)';
-          return `<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid var(--rule);cursor:pointer" onclick="closeModal();openModal(${MOVIES.indexOf(x)})">
+          return `<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid var(--rule);cursor:pointer" onclick="openModal(${MOVIES.indexOf(x)})">
             <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);min-width:20px;text-align:right">${slotRank}</span>
             <span style="font-family:'Playfair Display',serif;font-weight:700;flex:1;color:var(--ink);font-size:14px">${x.title} <span style="font-size:11px;font-weight:400;color:var(--dim)">${x.year||''}</span></span>
             <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--dim)">${displayTotal}</span>
@@ -195,7 +195,9 @@ function renderModal() {
       </div>`;
     })() : ''}
   `;
-  document.getElementById('filmModal').classList.add('open');
+  const filmModalEl = document.getElementById('filmModal');
+  filmModalEl.classList.add('open');
+  requestAnimationFrame(() => filmModalEl.classList.add('visible'));
   localStorage.setItem('palatemap_last_modal', idx);
 
   if (!editMode) { loadModalInsight(m); loadChipImages(m); loadFriendContext(m); loadStreamingProviders(m.tmdbId, m.title, m.year, 'modal-streaming'); }
@@ -287,7 +289,9 @@ window.modalRemoveFilm = function() {
   if (!confirm(`Remove "${m.title}" from your rankings? This cannot be undone.`)) return;
   MOVIES.splice(currentModalIdx, 1);
   currentModalIdx = null;
-  document.getElementById('filmModal').classList.remove('open');
+  const fmEl = document.getElementById('filmModal');
+  fmEl.classList.remove('visible');
+  setTimeout(() => fmEl.classList.remove('open'), 300);
   saveToStorage();
   renderRankings();
   syncToSupabase().catch(e => console.warn('sync failed', e));
@@ -424,7 +428,12 @@ export async function loadStreamingProviders(tmdbId, title, year, containerId) {
 }
 
 export function closeModal(e) {
-  if (!e || e.target === document.getElementById('filmModal')) {
-    document.getElementById('filmModal').classList.remove('open');
+  const el = document.getElementById('filmModal');
+  if (!e || e.target === el) {
+    el.classList.remove('visible');
+    const onEnd = () => { el.classList.remove('open'); el.removeEventListener('transitionend', onEnd); };
+    el.addEventListener('transitionend', onEnd);
+    // Fallback in case transitionend doesn't fire
+    setTimeout(() => { el.classList.remove('open'); }, 350);
   }
 }

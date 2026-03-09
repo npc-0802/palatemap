@@ -170,6 +170,7 @@ function renderHeroCard(result) {
   const heroEl = document.getElementById('foryou-hero');
   if (!heroEl || !result) return;
   heroEl.style.display = '';
+  heroEl.classList.add('dark-grid', 'foryou-hero-enter');
 
   const posterHtml = result.poster
     ? `<img class="foryou-hero-poster" src="https://image.tmdb.org/t/p/w185${result.poster}" alt="${result.title}">`
@@ -219,7 +220,7 @@ function renderSecondaryCards(results) {
     const total = (Math.round(r.predTotal * 10) / 10).toFixed(1);
     const safeTmdbId = parseInt(r.tmdbId);
     return `
-      <div class="foryou-sec-card" onclick="openRecommendedDetail(${safeTmdbId})">
+      <div class="foryou-sec-card" onclick="openRecommendedDetail(${safeTmdbId})" style="opacity:0;animation:heroReveal 0.3s ease ${i * 80}ms both">
         <button class="foryou-sec-dismiss" onclick="event.stopPropagation();forYouDismissSecondary(${i})" title="Dismiss">✕</button>
         ${poster}
         <div class="foryou-sec-body">
@@ -1865,7 +1866,9 @@ async function openRecommendedDetail(tmdbId) {
       <button onclick="closeModal();predictSelectFilm(${parseInt(tmdbId)},'${(film.title||'').replace(/'/g,"\\'")}','${(film.year||'').replace(/'/g,"\\'")}');document.getElementById('predict-result').scrollIntoView({behavior:'smooth'})" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:10px 20px;cursor:pointer;flex:2">Full prediction →</button>
     </div>
   `;
-  document.getElementById('filmModal').classList.add('open');
+  const fmEl = document.getElementById('filmModal');
+  fmEl.classList.add('open');
+  requestAnimationFrame(() => fmEl.classList.add('visible'));
 
   // Load enriched TMDB details (cast, director, writer, companies, streaming)
   _loadRecDetailTmdb(tmdbId, film);
