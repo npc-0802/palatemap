@@ -1131,57 +1131,65 @@ function renderPrediction(film, prediction, comps, predictedAt = null) {
       </div>`
     : `<div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--dim);margin-bottom:16px">Prediction</div>`;
 
+  const onWl = (currentUser?.watchlist||[]).some(w=>String(w.tmdbId)===String(film.tmdbId));
+
   document.getElementById('predict-result').innerHTML = `
     ${cachedLabel}
 
-    <div class="predict-film-card">
-      ${posterHtml}
-      <div style="flex:1">
-        <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;letter-spacing:-0.5px;margin-bottom:2px">${film.title}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);margin-bottom:16px">${film.year}${film.director ? ' · ' + film.director : ''}</div>
-        <div style="display:flex;align-items:baseline;gap:8px">
-          <div class="predict-total-display">${predictedTotal}</div>
-          <div>
-            <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--dim)">${getLabel(predictedTotal)}</div>
-            <span class="predict-confidence ${confClass}">${confLabel}</span>
+    <div class="predict-dark-block dark-grid" style="background:var(--surface-dark);padding:32px 28px;margin-bottom:32px">
+      <div style="display:flex;gap:20px;margin-bottom:24px">
+        ${film.poster ? `<img style="width:80px;height:120px;object-fit:cover;flex-shrink:0;display:block" src="https://image.tmdb.org/t/p/w185${film.poster}" alt="${film.title}">` : ''}
+        <div style="flex:1">
+          <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;letter-spacing:-0.5px;margin-bottom:2px;color:var(--on-dark)">${film.title}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--on-dark-dim);margin-bottom:16px">${film.year}${film.director ? ' · ' + film.director : ''}</div>
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:48px;color:var(--blue);letter-spacing:-2px;line-height:1">${predictedTotal}</div>
+            <div>
+              <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--on-dark-dim)">${getLabel(predictedTotal)}</div>
+              <span class="predict-confidence ${confClass}" style="color:var(--on-dark-dim)">${confLabel}</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div style="padding:18px 20px;background:var(--surface-dark);border-radius:8px;margin-bottom:24px">
-      <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--on-dark-dim);margin-bottom:10px">Why this score</div>
-      <div style="font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.7;color:var(--on-dark)">${prediction.reasoning}</div>
-    </div>
+      <div style="padding-top:18px;border-top:1px solid rgba(255,255,255,0.08);margin-bottom:20px">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--on-dark-dim);margin-bottom:10px">Why this score</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.7;color:var(--on-dark)">${prediction.reasoning}</div>
+      </div>
 
-    <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:12px">Predicted category scores</div>
-    <div class="predict-score-grid">
-      ${CATEGORIES.map(cat => {
-        const v = prediction.predicted_scores[cat.key];
-        return `<div class="predict-score-cell">
-          <div class="predict-score-cell-label">${cat.label}</div>
-          <div class="predict-score-cell-val ${v ? scoreClass(v) : ''}">${v ?? '—'}</div>
-        </div>`;
-      }).join('')}
-    </div>
+      <div style="padding-top:18px;border-top:1px solid rgba(255,255,255,0.08)">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--on-dark-dim);margin-bottom:12px">Predicted category scores</div>
+        <div class="predict-dark-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+          ${CATEGORIES.map(cat => {
+            const v = prediction.predicted_scores[cat.key];
+            return `<div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);padding:10px 8px;text-align:center">
+              <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:6px">${cat.label}</div>
+              <div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:600;color:white">${v ?? '—'}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
 
-    ${comps.length > 0 ? `
-      <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin:24px 0 10px">Comparisons from your list</div>
-      ${comps.slice(0,5).map(m => {
-        const diff = (predictedTotal - m.total).toFixed(1);
-        const sign = diff > 0 ? '+' : '';
-        return `<div class="predict-comp-row" onclick="openModal(${MOVIES.indexOf(m)})">
-          <div class="predict-comp-title">${m.title} <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);font-weight:400">${m.year||''}</span></div>
-          <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--dim)">${m.total}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;${parseFloat(diff)>0?'color:var(--green)':'color:var(--red)'}">${sign}${diff} predicted</div>
-        </div>`;
-      }).join('')}
-    ` : ''}
+      ${comps.length > 0 ? `
+        <div style="padding-top:18px;margin-top:20px;border-top:1px solid rgba(255,255,255,0.08)">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--on-dark-dim);margin-bottom:10px">Comparisons from your list</div>
+          ${comps.slice(0,5).map(m => {
+            const diff = (predictedTotal - m.total).toFixed(1);
+            const sign = diff > 0 ? '+' : '';
+            return `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer" onclick="openModal(${MOVIES.indexOf(m)})">
+              <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--on-dark);flex:1">${m.title} <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim)">${m.year||''}</span></div>
+              <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--on-dark-dim)">${m.total}</div>
+              <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;${parseFloat(diff)>0?'color:rgba(60,180,100,0.9)':'color:rgba(200,80,60,0.9)'}">${sign}${diff}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      ` : ''}
 
-    <div class="btn-row" style="margin-top:32px">
-      <button class="btn btn-outline" onclick="initPredict()">← New prediction</button>
-      <button id="predict-wl-btn" class="btn btn-outline" onclick="predictToggleWatchlist()" ${(currentUser?.watchlist||[]).some(w=>String(w.tmdbId)===String(film.tmdbId)) ? 'style="background:var(--green);color:white;border-color:var(--green)"' : ''}>${(currentUser?.watchlist||[]).some(w=>String(w.tmdbId)===String(film.tmdbId)) ? '✓ On Watch List' : '＋ Watchlist'}</button>
-      <button class="btn btn-action" onclick="predictAddToList()">Rate now →</button>
+      <div style="display:flex;gap:12px;margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.08)">
+        <button class="btn btn-outline" onclick="initPredict()" style="color:var(--on-dark-dim);border-color:rgba(255,255,255,0.2)">← New prediction</button>
+        <button id="predict-wl-btn" class="btn btn-outline" onclick="predictToggleWatchlist()" style="${onWl ? 'background:var(--green);color:white;border-color:var(--green)' : 'color:var(--on-dark-dim);border-color:rgba(255,255,255,0.2)'}">${onWl ? '✓ On Watch List' : '＋ Watchlist'}</button>
+        <button class="btn btn-action" onclick="predictAddToList()">Rate now →</button>
+      </div>
     </div>
   `;
 }

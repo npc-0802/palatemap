@@ -159,7 +159,7 @@ export function exploreEntity(type, name) {
   document.getElementById('analysisContent').innerHTML = `
     <div style="max-width:800px">
 
-      <div class="dark-grid" style="background:var(--surface-dark);margin:-40px -56px 32px;padding:40px 56px 32px">
+      <div class="dark-grid" style="background:var(--surface-dark);margin:-40px -56px 32px;padding:40px 56px 32px;border-bottom:3px solid ${parseFloat(avg) >= 90 ? '#C4922A' : parseFloat(avg) >= 80 ? '#1F4A2A' : parseFloat(avg) >= 70 ? '#4A5830' : parseFloat(avg) >= 60 ? '#6B4820' : 'rgba(12,11,9,0.25)'}">
         <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:14px">
           ${typeLabel} &nbsp;·&nbsp; <span onclick="renderAnalysis()" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px">← all ${pluralType}</span>
         </div>

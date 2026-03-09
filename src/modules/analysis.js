@@ -22,10 +22,10 @@ export function renderAnalysis() {
     <div style="max-width:900px">
 
       <!-- HEADER -->
-      <div style="margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid var(--ink)">
-        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);margin-bottom:10px">taste is everything</div>
-        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(32px,4vw,48px);line-height:1;color:var(--ink);letter-spacing:-1px;margin-bottom:8px">Your taste, decoded.</div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.5px">${MOVIES.length} film${MOVIES.length !== 1 ? 's' : ''} · weighted scoring</div>
+      <div class="dark-grid" style="background:var(--surface-dark);margin:-40px -56px 32px;padding:40px 56px 32px">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:10px">taste is everything</div>
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(32px,4vw,48px);line-height:1;color:var(--on-dark);letter-spacing:-1px;margin-bottom:8px">Your taste, decoded.</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);letter-spacing:0.5px">${MOVIES.length} film${MOVIES.length !== 1 ? 's' : ''} · weighted scoring</div>
       </div>
 
       <!-- CATEGORY AVERAGES -->

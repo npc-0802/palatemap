@@ -1101,6 +1101,11 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); 
 .conf-high { background: #e8f5ee; color: var(--green); }
 .conf-medium { background: #fdf6e3; color: #7a6020; }
 .conf-low { background: #fdf0f0; color: var(--red); }
+.predict-dark-block .predict-confidence { background: rgba(255,255,255,0.08); margin-left: 0; }
+@media (max-width: 768px) {
+  .predict-dark-block { padding: 24px 20px !important; }
+  .predict-dark-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
 
 /* ── EXPLORE ── */
 .explore-tabs { display: flex; gap: 0; margin-bottom: 0; border-bottom: 1px solid var(--rule); }
