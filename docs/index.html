@@ -32,8 +32,8 @@
 
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-CpSjlRcQ.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-D8sn_J-R.css">
+  <script type="module" crossorigin src="/assets/index-B9goApBj.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DLMMbPEH.css">
 </head>
 <body>
 <!-- GTM noscript fallback -->
@@ -246,6 +246,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   <div class="addfilm-step-indicator" id="addfilm-step-indicator">Select a film</div>
 
+  <!-- Sticky film context bar (desktop, steps 2–3) -->
+  <div class="addfilm-context-bar" id="addfilm-context-bar">
+    <div class="addfilm-context-bar-inner">
+      <img class="addfilm-context-poster" id="addfilm-context-poster" src="" alt="">
+      <div class="addfilm-context-info">
+        <div class="addfilm-context-title" id="addfilm-context-title"></div>
+        <div class="addfilm-context-meta" id="addfilm-context-meta"></div>
+      </div>
+      <button class="addfilm-context-toggle" id="addfilm-context-toggle" onclick="toggleScoringMode()"></button>
+    </div>
+  </div>
+
   <!-- STEP 1: TMDB Search + Film Confirmation -->
   <div class="step-panel active" id="step1">
     <div id="tmdb-search-phase">
@@ -374,30 +386,28 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 
   <!-- Section D: Discovery picks -->
-  <div id="foryou-discovery-section" style="display:none">
+  <div id="foryou-discovery-section" class="foryou-discovery-section-wrap" style="display:none">
     <div class="foryou-discovery-header">
       <div class="foryou-discovery-header-left">
-        <svg class="foryou-discovery-icon" width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M7 1.5L8.2 5.8 12.5 7 8.2 8.2 7 12.5 5.8 8.2 1.5 7 5.8 5.8z" fill="currentColor" opacity="0.7"/></svg>
-        <span class="foryou-discovery-label">New territory</span>
+        <span class="foryou-discovery-label">palate map · discovery</span>
+        <span class="foryou-discovery-headline">New territory.</span>
       </div>
-      <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.5px;font-style:italic">refreshes with For You</span>
+      <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);letter-spacing:0.5px;font-style:italic">refreshes with For You</span>
     </div>
     <div id="foryou-discovery-grid" class="foryou-discovery-grid"></div>
   </div>
 
-  <!-- Section E: Manual predict (collapsed, power-user) -->
+  <!-- Section E: Manual predict -->
   <div id="foryou-manual" class="foryou-manual">
-    <div class="foryou-manual-toggle" onclick="this.parentElement.classList.toggle('expanded')">Predict a specific film ▸</div>
-    <div class="foryou-manual-content">
-      <div style="max-width:800px">
-        <div style="margin-bottom:8px">
-          <input class="field-input" id="predict-search" type="text" placeholder="Search for a film…" style="width:100%;box-sizing:border-box" oninput="predictSearchDebounce()">
-        </div>
-        <div id="predict-search-results" style="margin-bottom:24px"></div>
-        <div id="predict-result"></div>
-      </div>
+    <div class="foryou-manual-eyebrow">palate map · predict</div>
+    <div class="foryou-manual-headline">What would you score it?</div>
+    <div class="foryou-manual-sub">Pick any film and we'll predict your scores before you watch it.</div>
+    <div style="max-width:500px">
+      <input class="foryou-manual-input" id="predict-search" type="text" placeholder="Search for a film…" oninput="predictSearchDebounce()">
+      <div id="predict-search-results" style="margin-bottom:12px;margin-top:12px"></div>
     </div>
   </div>
+  <div id="predict-result" style="margin-top:24px"></div>
 </div>
 
 <!-- ══════════════ CALIBRATION ══════════════ -->

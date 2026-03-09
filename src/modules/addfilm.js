@@ -41,6 +41,7 @@ function updateStepUI(step) {
       indicator.textContent = STEP_LABELS[step] || '';
     }
   }
+  updateContextBar();
 }
 
 // ── LIVE SEARCH ──
@@ -212,18 +213,53 @@ export function resetToSearch() {
 }
 
 function showAddFilmBanner(title, year) {
-  if (window.innerWidth > 768) return;
-  const el = document.getElementById('mobile-addfilm-banner');
-  if (!el) return;
-  el.innerHTML = `<div style="background:var(--cream);border-bottom:1px solid var(--rule-dark);padding:8px 20px;display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box"><span style="font-family:'DM Mono',monospace;font-size:14px;letter-spacing:2px;text-transform:uppercase;color:var(--action);flex-shrink:0">Rating</span><span style="font-family:'DM Mono',monospace;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}${year ? ' · ' + year : ''}</span></div>`;
-  el.style.display = 'block';
+  // Mobile banner
+  if (window.innerWidth <= 768) {
+    const el = document.getElementById('mobile-addfilm-banner');
+    if (el) {
+      el.innerHTML = `<div style="background:var(--cream);border-bottom:1px solid var(--rule-dark);padding:8px 20px;display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box"><span style="font-family:'DM Mono',monospace;font-size:14px;letter-spacing:2px;text-transform:uppercase;color:var(--action);flex-shrink:0">Rating</span><span style="font-family:'DM Mono',monospace;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}${year ? ' · ' + year : ''}</span></div>`;
+      el.style.display = 'block';
+    }
+  }
+  // Desktop context bar
+  updateContextBar();
+}
+
+function updateContextBar() {
+  const bar = document.getElementById('addfilm-context-bar');
+  if (!bar) return;
+  const isScoring = currentStep === 2 || currentStep === 3;
+  const hasFilm = newFilm.title;
+  if (isScoring && hasFilm) {
+    bar.classList.add('visible');
+    const posterEl = document.getElementById('addfilm-context-poster');
+    const titleEl = document.getElementById('addfilm-context-title');
+    const metaEl = document.getElementById('addfilm-context-meta');
+    const toggleEl = document.getElementById('addfilm-context-toggle');
+    if (newFilm._posterUrl) {
+      posterEl.src = newFilm._posterUrl;
+      posterEl.style.display = '';
+    } else {
+      posterEl.style.display = 'none';
+    }
+    titleEl.textContent = newFilm.title;
+    metaEl.textContent = `${newFilm.year || ''}${newFilm.director ? ' · ' + newFilm.director : ''}`;
+    if (currentStep === 2) {
+      toggleEl.style.display = '';
+      toggleEl.textContent = scoringMode === 'card' ? 'Show all categories' : 'One at a time';
+    } else {
+      toggleEl.style.display = 'none';
+    }
+  } else {
+    bar.classList.remove('visible');
+  }
 }
 
 function hideAddFilmBanner() {
   const el = document.getElementById('mobile-addfilm-banner');
-  if (!el) return;
-  el.style.display = 'none';
-  el.innerHTML = '';
+  if (el) { el.style.display = 'none'; el.innerHTML = ''; }
+  const bar = document.getElementById('addfilm-context-bar');
+  if (bar) bar.classList.remove('visible');
 }
 
 export function confirmTmdbData() {
@@ -509,6 +545,7 @@ window.toggleScoringMode = function() {
     currentCardIdx = 0;
     renderScoreCard();
   }
+  updateContextBar();
 };
 
 // Keep old handlers for all-at-once mode
@@ -796,6 +833,68 @@ export function saveFilm() {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.nav-btn')[0].classList.add('active');
 }
+
+// ── RESUME PROMPT ──
+
+export function checkAddFilmResume() {
+  // If user is mid-flow (step > 1 and has a film selected), show resume prompt
+  if (currentStep > 1 && newFilm.title) {
+    showResumePrompt();
+    return true; // handled
+  }
+  return false; // no prompt needed
+}
+
+function showResumePrompt() {
+  const overlay = document.createElement('div');
+  overlay.className = 'addfilm-resume-overlay';
+  overlay.id = 'addfilm-resume-overlay';
+
+  const posterHtml = newFilm._posterUrl
+    ? `<img class="addfilm-resume-poster" src="${newFilm._posterUrl}" alt="">`
+    : '';
+
+  const stepName = STEP_LABELS[currentStep] || 'scoring';
+
+  overlay.innerHTML = `
+    <div class="addfilm-resume-card">
+      <div style="display:flex;gap:14px;align-items:center">
+        ${posterHtml}
+        <div>
+          <div class="addfilm-resume-title">${newFilm.title}</div>
+          <div class="addfilm-resume-meta">${newFilm.year || ''}${newFilm.director ? ' · ' + newFilm.director : ''}</div>
+        </div>
+      </div>
+      <div class="addfilm-resume-msg">You were in the middle of rating this film. Pick up where you left off?</div>
+      <div class="addfilm-resume-actions">
+        <button class="btn btn-outline" onclick="addFilmResumeNo()">Start fresh</button>
+        <button class="btn btn-primary" onclick="addFilmResumeYes()">Continue →</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+window.addFilmResumeYes = function() {
+  const overlay = document.getElementById('addfilm-resume-overlay');
+  if (overlay) overlay.remove();
+  // Already on the right step, just make sure UI is updated
+  updateContextBar();
+};
+
+window.addFilmResumeNo = function() {
+  const overlay = document.getElementById('addfilm-resume-overlay');
+  if (overlay) overlay.remove();
+  // Reset everything
+  newFilm = { title:'', year:null, director:'', writer:'', cast:'', productionCompanies:'', scores:{} };
+  castChecked = {}; companyChecked = {}; tmdbFullCast = []; prefillScores = null;
+  document.getElementById('f-search').value = '';
+  document.getElementById('tmdb-results').innerHTML = '';
+  document.getElementById('tmdb-search-phase').style.display = 'block';
+  document.getElementById('tmdb-curation-phase').style.display = 'none';
+  hideAddFilmBanner();
+  updateStepUI(1);
+};
 
 window.openAddFilmPosterPicker = async function() {
   if (!newFilm._tmdbDetail?.title) return;

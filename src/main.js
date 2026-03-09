@@ -13,7 +13,8 @@ import { syncToSupabase, loadFromSupabase, saveUserLocally, loadUserLocally, get
 import { saveToStorage, loadFromStorage, runMigrations } from './modules/storage.js';
 import {
   liveSearch, tmdbSelect, toggleCast, showMoreCast, toggleCompany,
-  resetToSearch, confirmTmdbData, goToStep3, goToStep4, saveFilm, goToStep
+  resetToSearch, confirmTmdbData, goToStep3, goToStep4, saveFilm, goToStep,
+  checkAddFilmResume
 } from './modules/addfilm.js';
 import { showSyncPanel, openArchetypeModal, closeArchetypeModal, previewWeight, resetArchetypeWeights, saveArchetypeWeights } from './modules/archetypemodal.js';
 import { renderProfile } from './modules/profile.js';
@@ -35,6 +36,7 @@ export function showScreen(id) {
     const addBanner = document.getElementById('mobile-addfilm-banner');
     if (addBanner) { addBanner.style.display = 'none'; addBanner.innerHTML = ''; }
   }
+  if (id === 'add') checkAddFilmResume();
   if (id === 'analysis') renderAnalysis();
   if (id === 'calibration') resetCalibration();
   if (id === 'predict') initPredict();
@@ -262,6 +264,7 @@ async function init() {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(lastScreen).classList.add('active');
     navBtns.forEach(b => { if (b.getAttribute('onclick')?.includes(lastScreen)) b.classList.add('active'); });
+    if (lastScreen === 'add') checkAddFilmResume();
     if (lastScreen === 'analysis') renderAnalysis();
     if (lastScreen === 'profile') renderProfile();
     if (lastScreen === 'friends') renderFriends();
