@@ -205,6 +205,70 @@ function findComparableFilms(film) {
   }).sort((a,b) => b.total - a.total).slice(0,8);
 }
 
+function buildCalibrationHistory() {
+  const predictions = currentUser?.predictions || {};
+  const cats = ['plot','execution','acting','production','enjoyability','rewatchability','ending','uniqueness'];
+
+  // Only entries where we have both prediction and actual outcome
+  const rated = Object.values(predictions).filter(e =>
+    e?.film && e?.prediction?.predicted_scores && e?.actualTotal != null && e?.predictedTotal != null
+  );
+  if (!rated.length) return null;
+
+  // Sort by abs(delta) descending — most informative errors first — then take up to 6
+  rated.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+  const examples = rated.slice(0, 6);
+
+  // Compute per-category systematic bias across all rated predictions
+  const catDeltas = {};
+  cats.forEach(cat => { catDeltas[cat] = []; });
+  rated.forEach(e => {
+    const ratedFilm = MOVIES.find(m => m.tmdbId && String(m.tmdbId) === String(e.film.tmdbId));
+    if (!ratedFilm) return;
+    cats.forEach(cat => {
+      const pred = e.prediction.predicted_scores[cat];
+      const actual = ratedFilm.scores[cat];
+      if (pred != null && actual != null) catDeltas[cat].push(actual - pred);
+    });
+  });
+
+  // Identify systematic biases (mean delta > 5 in either direction)
+  const biases = cats
+    .filter(cat => catDeltas[cat].length >= 2)
+    .map(cat => {
+      const mean = catDeltas[cat].reduce((s, v) => s + v, 0) / catDeltas[cat].length;
+      return { cat, mean: Math.round(mean * 10) / 10 };
+    })
+    .filter(b => Math.abs(b.mean) >= 5)
+    .sort((a, b) => Math.abs(b.mean) - Math.abs(a.mean));
+
+  const examplesStr = examples.map(e => {
+    const ratedFilm = MOVIES.find(m => m.tmdbId && String(m.tmdbId) === String(e.film.tmdbId));
+    const direction = e.delta > 0 ? 'underpredicted' : 'overpredicted';
+    let catErrors = '';
+    if (ratedFilm) {
+      const significant = cats
+        .map(cat => ({ cat, diff: (ratedFilm.scores[cat] ?? 0) - (e.prediction.predicted_scores[cat] ?? 0) }))
+        .filter(x => Math.abs(x.diff) >= 8)
+        .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
+        .slice(0, 4)
+        .map(x => `${x.cat}: ${e.prediction.predicted_scores[x.cat]}→${ratedFilm.scores[x.cat]} (${x.diff > 0 ? '+' : ''}${x.diff})`);
+      if (significant.length) catErrors = `\n    Category gaps: ${significant.join(', ')}`;
+    }
+    return `- ${e.film.title} (${e.film.year || ''}): predicted ${e.predictedTotal?.toFixed(1)}, actual ${e.actualTotal?.toFixed(1)} — ${direction} by ${Math.abs(e.delta).toFixed(1)}${catErrors}`;
+  }).join('\n');
+
+  const biasStr = biases.length
+    ? `Systematic patterns across all ${rated.length} calibrated prediction${rated.length !== 1 ? 's' : ''}: ${biases.map(b => `${b.cat} ${b.mean > 0 ? 'underpredicted' : 'overpredicted'} by ~${Math.abs(b.mean)} on average`).join('; ')}.`
+    : `${rated.length} calibrated prediction${rated.length !== 1 ? 's' : ''} — no strong systematic bias detected yet.`;
+
+  return `PREDICTION CALIBRATION HISTORY (${rated.length} prediction${rated.length !== 1 ? 's' : ''} you made that the user has since actually rated):
+${examplesStr}
+
+${biasStr}
+Use these to correct for any systematic bias in your score estimates. If you consistently missed a category in one direction, adjust accordingly.`;
+}
+
 async function runPrediction(film) {
   const profile = buildTasteProfile();
   const comps = findComparableFilms(film);
@@ -217,7 +281,9 @@ async function runPrediction(film) {
     `${k}: mean=${v.mean}, std=${v.std}, range=${v.min}–${v.max}`
   ).join('\n');
 
-  const systemPrompt = `You are a precise film taste prediction engine. Your job is to predict how a specific user would score an unrated film, based on their detailed rating history and taste profile. You must respond ONLY with valid JSON — no preamble, no markdown, no explanation outside the JSON.`;
+  const calibration = buildCalibrationHistory();
+
+  const systemPrompt = `You are a precise film taste prediction engine. Your job is to predict how a specific user would score an unrated film, based on their detailed rating history and taste profile. You also receive a calibration history of past predictions alongside the user's actual scores — use these to identify and correct for any systematic biases in your estimates. You must respond ONLY with valid JSON — no preamble, no markdown, no explanation outside the JSON.`;
 
   const userPrompt = `USER TASTE PROFILE:
 Archetype: ${profile.archetype || 'unknown'} (secondary: ${profile.archetypeSecondary || 'none'})
@@ -232,7 +298,7 @@ Bottom 5 films: ${profile.bottom5}
 
 FILMS WITH SHARED DIRECTOR/CAST (most relevant comparisons):
 ${compStr}
-
+${calibration ? '\n' + calibration + '\n' : ''}
 FILM TO PREDICT:
 Title: ${film.title}
 Year: ${film.year}
@@ -243,7 +309,7 @@ Genres: ${film.genres || 'unknown'}
 Synopsis: ${film.overview || 'not available'}
 
 TASK:
-Predict the scores this person would give this film. Use comparable films as the strongest signal. Weight director/cast patterns heavily.
+Predict the scores this person would give this film. Use comparable films as the strongest signal. Weight director/cast patterns heavily. If calibration history is present, use it to correct for known systematic errors.
 
 The reasoning must feel personal and specific to THIS person's taste — not a general film analysis. Write like you genuinely understand how they think about film. Reference their actual rated films by name. Focus on what THEY care about based on their scoring patterns. Be direct and confident. 2-3 sentences max. Never describe the film in general terms — always anchor to their specific ratings and patterns.
 
