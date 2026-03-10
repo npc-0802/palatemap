@@ -52,6 +52,10 @@ export function initPredict() {
     if (secondarySection) secondarySection.style.display = 'none';
     if (manualSection) manualSection.style.display = 'none';
     if (constrainedSection) constrainedSection.style.display = 'none';
+    const picksRow = document.getElementById('foryou-picks-row');
+    if (picksRow) picksRow.style.display = 'none';
+    const orDivider = document.querySelector('.foryou-vs-divider');
+    if (orDivider) orDivider.style.display = 'none';
 
     let lockEl = document.getElementById('predict-lock-state');
     if (!lockEl) {
@@ -81,6 +85,10 @@ export function initPredict() {
   if (secondarySection) secondarySection.style.display = '';
   if (manualSection) manualSection.style.display = '';
   if (constrainedSection) constrainedSection.style.display = '';
+  const picksRow = document.getElementById('foryou-picks-row');
+  if (picksRow) picksRow.style.display = '';
+  const orDivider = document.querySelector('.foryou-vs-divider');
+  if (orDivider) orDivider.style.display = '';
 
   // For You intro hint
   const hintSlot = document.getElementById('foryou-hint-slot');

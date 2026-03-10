@@ -390,7 +390,7 @@ export function openGlobalSearch() {
   document.getElementById('global-search-overlay')?.remove();
   const overlay = document.createElement('div');
   overlay.id = 'global-search-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(12,11,9,0.88);z-index:10000;display:flex;flex-direction:column;align-items:center;padding:56px 20px 20px;overflow-y:auto;opacity:0;transition:opacity 0.25s ease';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(12,11,9,0.5);z-index:10000;display:flex;flex-direction:column;align-items:center;padding:56px 20px 20px;overflow-y:auto;opacity:0;transition:opacity 0.25s ease';
   overlay.innerHTML = `
     <div style="width:100%;max-width:560px;opacity:0;transform:translateY(-12px);transition:opacity 0.3s ease 0.1s,transform 0.3s cubic-bezier(0.22,1,0.36,1) 0.1s" id="gs-content-wrap">
       <div style="position:relative;margin-bottom:2px">
@@ -408,6 +408,7 @@ export function openGlobalSearch() {
     if (wrap) { wrap.style.opacity = '1'; wrap.style.transform = 'translateY(0)'; }
   });
   setTimeout(() => document.getElementById('gs-input')?.focus(), 60);
+  gsRenderSuggestions();
 }
 
 window.closeGlobalSearch = function() {
@@ -426,11 +427,71 @@ function gsSecHeader(label) {
   return `<div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);padding:10px 16px 6px;border-bottom:1px solid var(--rule)">${label}</div>`;
 }
 
+async function gsRenderSuggestions() {
+  const resultsEl = document.getElementById('gs-results');
+  if (!resultsEl) return;
+  let html = '';
+
+  // Watchlist suggestions
+  const wl = (currentUser?.watchlist || []).slice(0, 4);
+  if (wl.length) {
+    html += gsSecHeader('From your watch list');
+    html += wl.map(item => {
+      const poster = item.poster
+        ? `<img src="https://image.tmdb.org/t/p/w92${item.poster}" style="width:28px;height:42px;object-fit:cover;flex-shrink:0">`
+        : `<div style="width:28px;height:42px;background:var(--rule);flex-shrink:0"></div>`;
+      const safeTitle = (item.title || '').replace(/'/g, "\\'");
+      return `<div onclick="closeGlobalSearch();openRecommendedDetail(${item.tmdbId})" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--rule);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+        ${poster}
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.title}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">${item.year || ''}${item.director ? ' · ' + item.director.split(',')[0] : ''}</div>
+        </div>
+        <button onclick="event.stopPropagation();gsRate(${item.tmdbId},'${safeTitle}')" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:6px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0">Rate →</button>
+      </div>`;
+    }).join('');
+  }
+
+  // Trending films from TMDB
+  try {
+    const res = await fetch(`https://api.themoviedb.org/3/trending/movie/week?api_key=${TMDB_KEY}`);
+    const data = await res.json();
+    const ratedTitles = new Set(MOVIES.map(m => m.title.toLowerCase()));
+    const trending = (data.results || []).filter(m => !ratedTitles.has((m.title || '').toLowerCase())).slice(0, 4);
+    if (trending.length && document.getElementById('gs-input')?.value.trim().length < 2) {
+      html += gsSecHeader('Popular this week');
+      html += trending.map(m => {
+        const poster = m.poster_path
+          ? `<img src="https://image.tmdb.org/t/p/w92${m.poster_path}" style="width:28px;height:42px;object-fit:cover;flex-shrink:0">`
+          : `<div style="width:28px;height:42px;background:var(--rule);flex-shrink:0"></div>`;
+        const year = (m.release_date || '').slice(0, 4);
+        const safeTitle = (m.title || '').replace(/'/g, "\\'");
+        const safePoster = (m.poster_path || '').replace(/'/g, "\\'");
+        return `<div onclick="closeGlobalSearch();openRecommendedDetail(${m.id})" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--rule);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+          ${poster}
+          <div style="flex:1;min-width:0">
+            <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.title}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">${year}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;align-items:center">
+            <button onclick="event.stopPropagation();gsAddWatchlist(${m.id},'${safeTitle}','${year}','${safePoster}')" style="font-family:'DM Mono',monospace;font-size:9px;background:none;border:1px solid var(--rule-dark);color:var(--dim);padding:6px 10px;cursor:pointer;white-space:nowrap">＋ List</button>
+            <button onclick="event.stopPropagation();gsRate(${m.id},'${safeTitle}')" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:6px 10px;cursor:pointer;white-space:nowrap">Rate →</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  } catch { /* silent */ }
+
+  if (resultsEl && document.getElementById('gs-input')?.value.trim().length < 2) {
+    resultsEl.innerHTML = html;
+  }
+}
+
 async function gsSearch() {
   const q = document.getElementById('gs-input')?.value.trim();
   const resultsEl = document.getElementById('gs-results');
   if (!resultsEl) return;
-  if (!q || q.length < 2) { resultsEl.innerHTML = ''; return; }
+  if (!q || q.length < 2) { gsRenderSuggestions(); return; }
 
   const ql = q.toLowerCase();
 
@@ -507,7 +568,7 @@ async function gsSearch() {
       const onList = watchlistSet.has(title.toLowerCase());
       const safeTitle = title.replace(/'/g, "\\'");
       const safePoster = (m.poster_path || '').replace(/'/g, "\\'");
-      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--rule)">
+      return `<div onclick="closeGlobalSearch();openRecommendedDetail(${m.id})" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--rule);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
         ${poster}
         <div style="flex:1;min-width:0">
           <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
@@ -597,6 +658,6 @@ window.gsRate = function(tmdbId, title) {
   closeGlobalSearch();
   window.showScreen('add');
   setTimeout(() => {
-    window.tmdbSelect?.(tmdbId, title);
+    window.tmdbSelect?.(tmdbId, title, { autoConfirm: true });
   }, 150);
 };

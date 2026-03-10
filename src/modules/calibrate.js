@@ -213,10 +213,12 @@ function showCalReview() {
     return;
   }
 
+  // Count unique films affected
+  const uniqueFilms = new Set(entries.map(e => e.title)).size;
+
   document.getElementById('cal-review-header').innerHTML = `
-    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:8px">here's what shifted</div>
-    <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(28px,3vw,40px);color:var(--ink);letter-spacing:-1px;margin-bottom:8px">${entries.length} score${entries.length !== 1 ? 's' : ''} recalibrated.</div>
-    <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dim)">Uncheck anything you want to keep. Nothing changes until you apply.</div>`;
+    <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(28px,3vw,40px);color:var(--ink);letter-spacing:-1px;margin-bottom:8px">${entries.length} score${entries.length !== 1 ? 's' : ''} adjusted across ${uniqueFilms} film${uniqueFilms !== 1 ? 's' : ''}.</div>
+    <div style="font-family:'DM Sans',sans-serif;font-size:15px;color:var(--dim);margin-bottom:20px">Your rankings are sharper now.</div>`;
 
   document.getElementById('cal-apply-btn').style.display = '';
 
@@ -261,8 +263,16 @@ function showCalReview() {
       </div>`;
   }
 
-  document.getElementById('cal-diff-list').innerHTML =
-    renderCatGroup('Craft', craftKeys) + renderCatGroup('Experience', expKeys);
+  const detailsHtml = renderCatGroup('Craft', craftKeys) + renderCatGroup('Experience', expKeys);
+
+  document.getElementById('cal-diff-list').innerHTML = `
+    <div style="text-align:center;margin-bottom:16px">
+      <span onclick="document.getElementById('cal-details-expand').style.display=document.getElementById('cal-details-expand').style.display==='none'?'block':'none';this.textContent=document.getElementById('cal-details-expand').style.display==='none'?'Show details ▸':'Hide details ▾'" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--blue);cursor:pointer;letter-spacing:0.5px">Show details ▸</span>
+    </div>
+    <div id="cal-details-expand" style="display:none">
+      <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);margin-bottom:12px">Uncheck anything you want to keep. Nothing changes until you apply.</div>
+      ${detailsHtml}
+    </div>`;
 }
 
 export function applyCalibration() {

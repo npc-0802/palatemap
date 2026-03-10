@@ -252,7 +252,7 @@ window.profileConfirmImport = async function() {
   profileImportedMovies = null;
   syncToSupabase().catch(() => {});
   window.showToast?.(`${count} film${count !== 1 ? 's' : ''} imported.`, { type: 'success' });
-  window.showScreen?.('calibrate');
+  window.showScreen?.('rankings');
 };
 
 function radarLegend(archetype) {

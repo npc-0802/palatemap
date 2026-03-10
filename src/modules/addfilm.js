@@ -125,7 +125,7 @@ window.addWatchlistShowMore = function() {
 
 // ── STEP 1: FILM SELECTION + CONFIRMATION CARD ──
 
-export async function tmdbSelect(tmdbId, title) {
+export async function tmdbSelect(tmdbId, title, { autoConfirm = false } = {}) {
   document.getElementById('tmdb-results').innerHTML = '<div class="tmdb-loading">Loading film details…</div>';
   try {
     const bundle = await fetchTmdbMovieBundle(tmdbId);
@@ -159,6 +159,9 @@ export async function tmdbSelect(tmdbId, title) {
     document.getElementById('tmdb-curation-phase').style.display = 'block';
     // Collapse the curate section by default
     document.getElementById('addfilm-curate').classList.remove('expanded');
+
+    // Skip overview and go straight to rating sliders
+    if (autoConfirm) confirmTmdbData();
 
   } catch(e) {
     document.getElementById('tmdb-results').innerHTML = '<div class="tmdb-error">Failed to load film details. Try again.</div>';
@@ -776,12 +779,22 @@ function renderResult() {
   const predictionComparison = getPredictionComparison(newFilm._tmdbId, total);
   const totalDisplay = (Math.round(total * 10) / 10).toFixed(1);
 
+  const posterSrc = newFilm._posterUrl
+    ? newFilm._posterUrl.replace('/w185', '/w342')
+    : (newFilm.poster ? `https://image.tmdb.org/t/p/w342${newFilm.poster}` : '');
+
   document.getElementById('resultCard').innerHTML = `
-    <div class="result-reveal">
+    <div class="result-reveal" style="padding-top:32px">
       <div class="result-reveal-eyebrow">Your verdict</div>
 
-      <div class="result-reveal-title">${newFilm.title}</div>
-      <div class="result-reveal-meta">${newFilm.year || ''}${newFilm.director ? ' · ' + newFilm.director : ''}</div>
+      ${posterSrc ? `<div style="display:flex;gap:20px;align-items:flex-start;margin-bottom:8px">
+        <img src="${posterSrc}" alt="" style="width:100px;height:150px;object-fit:cover;flex-shrink:0;display:block">
+        <div style="flex:1">
+          <div class="result-reveal-title">${newFilm.title}</div>
+          <div class="result-reveal-meta">${newFilm.year || ''}${newFilm.director ? ' · ' + newFilm.director : ''}</div>
+        </div>
+      </div>` : `<div class="result-reveal-title">${newFilm.title}</div>
+      <div class="result-reveal-meta">${newFilm.year || ''}${newFilm.director ? ' · ' + newFilm.director : ''}</div>`}
 
       <div class="result-reveal-score" style="color:${getTierColor(total)};margin-bottom:4px">${totalDisplay}</div>
       <div class="result-reveal-label" style="margin-bottom:16px">${getLabel(total)}</div>
@@ -831,7 +844,7 @@ function renderResult() {
       <div class="result-reveal-actions">
         <button class="btn btn-outline" onclick="goToStep(2)" style="color:rgba(255,255,255,0.6);border-color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:1.5px;font-family:'DM Mono',monospace">← ADJUST SCORES</button>
         <button class="btn btn-action" onclick="saveFilm()" style="text-transform:uppercase;letter-spacing:1.5px;font-family:'DM Mono',monospace">SAVE TO RANKINGS ✓</button>
-        ${(MOVIES.length + 1 >= 7 && MOVIES.length + 1 <= 9) ? `<button class="btn btn-action" onclick="saveFilmAndRateAnother()" style="text-transform:uppercase;letter-spacing:1.5px;font-family:'DM Mono',monospace">RATE ANOTHER →</button>` : ''}
+        <button class="btn btn-action" onclick="saveFilmAndRateAnother()" style="text-transform:uppercase;letter-spacing:1.5px;font-family:'DM Mono',monospace">RATE ANOTHER →</button>
       </div>
     </div>
   `;
