@@ -43,6 +43,9 @@ function updateStepUI(step) {
     }
   }
   updateContextBar();
+  // Scroll to top on step transitions
+  document.getElementById('add')?.scrollTo(0, 0);
+  window.scrollTo(0, 0);
 }
 
 // ── LIVE SEARCH ──
@@ -903,7 +906,7 @@ function renderResult() {
     : (newFilm.poster ? `https://image.tmdb.org/t/p/w342${newFilm.poster}` : '');
 
   document.getElementById('resultCard').innerHTML = `
-    <div class="result-reveal" style="padding-top:56px">
+    <div class="result-reveal" style="padding-top:20px">
       <div class="result-reveal-eyebrow">Your verdict</div>
 
       ${posterSrc ? `<div style="display:flex;gap:20px;align-items:flex-start;margin-bottom:8px">
