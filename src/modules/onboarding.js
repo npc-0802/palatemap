@@ -725,6 +725,7 @@ function renderStarterRateCard(film, palColor) {
         '<span style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--on-dark)" id="starter-sv-' + film.tmdbId + '-' + cat.key + '">' + val + '</span>' +
         '</div>' +
         '<input type="range" min="1" max="100" value="' + val + '" class="starter-slider" oninput="starterSliderChange(' + film.tmdbId + ',\'' + cat.key + '\',this.value)">' +
+        '<div class="score-scale-labels score-scale-labels-dark" style="margin-top:2px"><span>Stopped watching</span><span>Poor</span><span>Solid</span><span>Great</span><span>Exceptional</span></div>' +
         '</div>';
     }).join('');
     fineTuneHTML = '<div class="starter-sliders-grid" style="margin-top:16px">' + sliders + '</div>';
@@ -745,7 +746,7 @@ function renderStarterRateCard(film, palColor) {
     '<div class="starter-single-slider-label">' + getScoreLabel(overallVal) + '</div>' +
     '</div>' +
     '<input type="range" min="1" max="100" value="' + overallVal + '" class="starter-slider" style="margin-bottom:4px" oninput="starterSingleSliderChange(' + film.tmdbId + ',this.value)">' +
-    '<div style="display:flex;justify-content:space-between;font-family:\'DM Mono\',monospace;font-size:8px;color:var(--on-dark-dim);letter-spacing:0.5px;margin-bottom:16px"><span>Poor</span><span>All-time great</span></div>' +
+    '<div class="score-scale-labels score-scale-labels-dark" style="margin-bottom:16px"><span>Stopped watching</span><span>Poor</span><span>Solid</span><span>Great</span><span>Exceptional</span></div>' +
     // Fine-tune toggle + grid
     '<div style="display:flex;align-items:center;justify-content:space-between">' +
     '<button class="starter-finetune-toggle" onclick="starterToggleFineTune()">' + (starterFineTune ? 'Hide category scores \u2191' : 'Fine-tune each category \u2193') + '</button>' +

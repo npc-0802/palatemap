@@ -487,17 +487,20 @@ function renderAllAtOnce() {
       </div>` : ''}
       <div class="slider-section">
         <div class="slider-label-row">
-          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px">Your score</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px">Your score</span>
+            <span class="score-tooltip-trigger" onclick="toggleScoreTooltip(this)">?</span>
+          </div>
           <div>
             <span class="slider-val" id="sliderVal_${cat.key}">${initVal}</span>
             <span class="slider-desc" id="sliderDesc_${cat.key}" style="margin-left:8px">${getLabel(initVal)}</span>
           </div>
         </div>
         <input type="range" min="1" max="100" value="${initVal}" id="slider_${cat.key}"
-          style="background:linear-gradient(to right,rgba(180,50,40,0.45) 0%,rgba(180,50,40,0.45) 15%,var(--rule) 15%,var(--rule) 85%,rgba(40,130,60,0.45) 85%,rgba(40,130,60,0.45) 100%)"
+          class="score-slider"
           oninput="updateSlider('${cat.key}', this.value)">
-        <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-top:2px">
-          <span>1 — No worse exists</span><span>50 — Solid</span><span>100 — No better exists</span>
+        <div class="score-scale-labels">
+          <span>Stopped watching</span><span>Poor</span><span>Solid</span><span>Great</span><span>Exceptional</span>
         </div>
       </div>
     </div>`;
@@ -532,13 +535,8 @@ function renderScoreCard() {
   const introHint = shouldShowHint('scoring_intro', () => true)
     ? renderHint('scoring_intro',
         '<strong>How scoring works.</strong> ' +
-        'Your palate weights each category differently to produce a final score that reflects how <em>you</em> evaluate film.' +
-        '<span style="display:block;margin-top:10px;font-family:\'DM Mono\',monospace;font-size:10px;line-height:2;color:var(--dim)">' +
-        '100 no better exists · 90+ an all-time favorite · 85+ really quite exceptional · 80+ excellent · ' +
-        '75+ well above average · 70+ great · 65+ very good · 60+ a cut above · 55+ good · 50 solid · ' +
-        '45+ not bad · 40+ sub-par · 35+ multiple flaws · 30+ poor · 25+ bad · ' +
-        '20+ wouldn\'t watch by choice · 15+ so bad I stopped watching · 10+ disgusting · ' +
-        '2+ insulting · 1 no worse exists</span>')
+        '8 categories, 1–100 each. Craft (plot, execution, acting, production) and experience (enjoyability, rewatchability, ending, uniqueness). ' +
+        'Your weights determine the final score.')
     : '';
 
   container.innerHTML = `
@@ -566,10 +564,10 @@ function renderScoreCard() {
       <div class="score-card-label" id="scoreCardLabel">${getLabel(val)}</div>
       <div style="max-width:400px;margin:20px auto 0">
         <input type="range" min="1" max="100" value="${val}" id="scoreCardSlider"
-          style="background:linear-gradient(to right,rgba(180,50,40,0.45) 0%,rgba(180,50,40,0.45) 15%,var(--rule) 15%,var(--rule) 85%,rgba(40,130,60,0.45) 85%,rgba(40,130,60,0.45) 100%)"
+          class="score-slider"
           oninput="updateScoreCard(this.value)">
-        <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-top:2px">
-          <span>1</span><span>50</span><span>100</span>
+        <div class="score-scale-labels">
+          <span>Stopped watching</span><span>Poor</span><span>Solid</span><span>Great</span><span>Exceptional</span>
         </div>
       </div>
     </div>
@@ -653,6 +651,28 @@ window.selectAnchorCard = function(catKey, anchorScore, el) {
   const slider = document.getElementById('scoreCardSlider');
   if (slider) { slider.value = anchorScore; }
   window.updateScoreCard(anchorScore);
+};
+
+window.toggleScoreTooltip = function(el) {
+  const existing = document.querySelector('.score-tooltip');
+  if (existing) { existing.remove(); return; }
+  const tooltip = document.createElement('div');
+  tooltip.className = 'score-tooltip';
+  tooltip.innerHTML = `
+    <p>Scores run 1–100. Most films you like will land between 60 and 90 — the range has room to breathe.</p>
+    <p>The scale is absolute, not relative. A 70 today should still feel like a 70 after 200 films. If it doesn't, that's what calibration is for.</p>
+    <p>Don't overthink it. Go with your gut — you'll refine later.</p>
+  `;
+  const row = el.closest('.slider-label-row') || el.parentElement;
+  row.style.position = 'relative';
+  row.appendChild(tooltip);
+  const close = (e) => {
+    if (!tooltip.contains(e.target) && e.target !== el) {
+      tooltip.remove();
+      document.removeEventListener('click', close);
+    }
+  };
+  setTimeout(() => document.addEventListener('click', close), 0);
 };
 
 window.toggleScoringMode = function() {

@@ -40,6 +40,109 @@
 }
 .gs-list-btn.on-list:hover { background: #2a8a4a; }
 
+/* ── Score Scale Labels ── */
+.score-scale-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 0.3px;
+  margin-top: 4px;
+  padding: 0 2px;
+  user-select: none;
+}
+@media (max-width: 640px) {
+  .score-scale-labels span:nth-child(2),
+  .score-scale-labels span:nth-child(4) {
+    display: none;
+  }
+}
+.score-scale-labels-dark {
+  color: var(--on-dark-dim);
+}
+
+/* ── Score Slider (clean track) ── */
+.score-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--rule);
+  border-radius: 2px;
+  outline: none;
+}
+.score-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--ink);
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(12, 11, 9, 0.2);
+}
+.score-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--ink);
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(12, 11, 9, 0.2);
+}
+.score-slider:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* ── Score Tooltip ── */
+.score-tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--rule-dark);
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--dim);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  user-select: none;
+  flex-shrink: 0;
+}
+.score-tooltip-trigger:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.score-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  max-width: 360px;
+  background: var(--surface-dark);
+  color: var(--on-dark);
+  padding: 16px 18px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  line-height: 1.65;
+  z-index: 10;
+  animation: fadeIn 0.15s ease;
+  box-shadow: 0 8px 24px rgba(12, 11, 9, 0.2);
+}
+.score-tooltip p {
+  margin: 0 0 10px;
+  color: var(--on-dark);
+}
+.score-tooltip p:last-child {
+  margin-bottom: 0;
+  font-style: italic;
+  color: var(--on-dark-dim);
+}
+
 /* ── INLINE HINTS ── */
 .inline-hint {
   display: flex;
