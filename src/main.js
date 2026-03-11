@@ -173,6 +173,7 @@ async function init() {
     showToast,
   });
   loadFromStorage();
+  loadUserLocally();
   runMigrations();
 
   // Check for active Supabase auth session first
