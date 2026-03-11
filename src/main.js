@@ -240,10 +240,13 @@ async function init() {
     return;
   }
 
-  // Backfill: if user completed quiz v2 but weight blend never ran, run it now
-  if (currentUser?.quiz_weights && !currentUser.rating_weights && MOVIES.length >= 3) {
+  // Backfill: re-run weight blend with updated algorithm (mean-deviation + quiz floor)
+  // The migration flag ensures this only runs once per account.
+  const blendV2Key = 'palatemap_blend_v2';
+  if (currentUser?.quiz_weights && MOVIES.length >= 3 && !localStorage.getItem(blendV2Key)) {
     const { updateEffectiveWeights } = await import('./modules/weight-blend.js');
     updateEffectiveWeights();
+    localStorage.setItem(blendV2Key, '1');
   }
 
   renderRankings();
