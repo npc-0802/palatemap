@@ -158,6 +158,15 @@ export async function syncToSupabase() {
     weights: user.weights, harmony_sensitivity: user.harmony_sensitivity || 0.3,
     movies: MOVIES, updated_at: new Date().toISOString(),
     email: user.email || null, auth_id: user.auth_id || null,
+    // Quiz v2 fields
+    ...(user.quiz_weights ? { quiz_weights: user.quiz_weights } : {}),
+    ...(user.quiz_answers ? { quiz_answers: user.quiz_answers } : {}),
+    ...(user.archetype_key ? { archetype_key: user.archetype_key } : {}),
+    ...(user.adjective ? { adjective: user.adjective } : {}),
+    ...(user.full_archetype_name ? { full_archetype_name: user.full_archetype_name } : {}),
+    ...(user.rating_weights ? { rating_weights: user.rating_weights } : {}),
+    ...(user.films_rated != null ? { films_rated: user.films_rated } : {}),
+    ...(user.weight_history?.length ? { weight_history: user.weight_history } : {}),
     ...(user.watchlist !== undefined ? { watchlist: user.watchlist } : {}),
     ...(user.predictions !== undefined ? { predictions: (() => {
       if (!user.predictions) return {};
