@@ -7,6 +7,7 @@ import { saveUserLocally } from './supabase.js';
 import { classifyArchetype } from './quiz-engine.js';
 
 const DECAY_RATE = 0.15;
+const QUIZ_FLOOR = 0.25;     // quiz influence never drops below 25%
 const MAX_SNAPSHOTS = 500;
 
 // ── Skew-adjusted decay ──
@@ -99,34 +100,88 @@ export function recordWeightSnapshot(trigger, opts = {}) {
 }
 
 /**
- * Derive weights from the variance in per-category scores across all rated films.
- * High variance = user discriminates on this category = they care about it.
+ * Derive weights from two signals across all rated films:
+ *
+ * 1. Variance — how much the user discriminates on each category.
+ *    High variance = they punish bad and reward good = they care.
+ *
+ * 2. Mean deviation — how much higher/lower a category is scored
+ *    relative to the user's per-film average. If singularity is
+ *    consistently 8 points above the film's mean, the user is
+ *    telling us that axis matters to their experience — even if
+ *    the absolute range is narrow (sampling bias).
+ *
+ * The two signals are normalized to [0, 1] and blended 50/50,
+ * then mapped to the 1.5–4.5 weight range.
+ *
  * Returns null if fewer than 3 films rated.
  */
 export function computeRatingWeights() {
   if (MOVIES.length < 3) return null;
 
+  // ── Signal 1: Variance ──
   const variances = {};
+  const catMeans = {};
   for (const cat of CATEGORIES) {
     const scores = MOVIES.map(m => m.scores?.[cat.key]).filter(s => s != null);
     if (scores.length < 3) continue;
     const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
-    const variance = scores.reduce((a, s) => a + (s - mean) ** 2, 0) / scores.length;
-    variances[cat.key] = variance;
+    catMeans[cat.key] = mean;
+    variances[cat.key] = scores.reduce((a, s) => a + (s - mean) ** 2, 0) / scores.length;
   }
 
-  const vals = Object.values(variances);
-  if (vals.length === 0) return null;
+  const varVals = Object.values(variances);
+  if (varVals.length === 0) return null;
 
-  const maxVar = Math.max(...vals, 0.01);
-  const minVar = Math.min(...vals);
+  const maxVar = Math.max(...varVals, 0.01);
+  const minVar = Math.min(...varVals);
 
+  // ── Signal 2: Mean deviation ──
+  // For each film, compute the film's average score across all categories,
+  // then measure how far each category deviates from that film average.
+  // A consistently elevated category = the user values it.
+  const deviations = {};
+  for (const cat of CATEGORIES) deviations[cat.key] = [];
+
+  for (const m of MOVIES) {
+    if (!m.scores) continue;
+    const filmScores = CATEGORIES.map(c => m.scores[c.key]).filter(s => s != null);
+    if (filmScores.length < 4) continue; // need most categories scored
+    const filmMean = filmScores.reduce((a, b) => a + b, 0) / filmScores.length;
+    for (const cat of CATEGORIES) {
+      const s = m.scores[cat.key];
+      if (s != null) deviations[cat.key].push(s - filmMean);
+    }
+  }
+
+  // Mean absolute deviation from the per-film average
+  const meanDevs = {};
+  for (const cat of CATEGORIES) {
+    const devs = deviations[cat.key];
+    if (devs.length < 3) continue;
+    // Use absolute value: both "always scores high" and "always scores low"
+    // on a category indicate it's a meaningful differentiator
+    meanDevs[cat.key] = Math.abs(devs.reduce((a, b) => a + b, 0) / devs.length);
+  }
+
+  const devVals = Object.values(meanDevs);
+  const maxDev = Math.max(...devVals, 0.01);
+  const minDev = Math.min(...devVals);
+
+  // ── Combine signals ──
   const weights = {};
   for (const cat of CATEGORIES) {
-    const v = variances[cat.key] ?? 0;
-    weights[cat.key] = maxVar > minVar
-      ? 1.5 + ((v - minVar) / (maxVar - minVar)) * 3.0
-      : 2.5;
+    // Normalize each signal to [0, 1]
+    const varNorm = maxVar > minVar
+      ? ((variances[cat.key] ?? 0) - minVar) / (maxVar - minVar)
+      : 0.5;
+    const devNorm = maxDev > minDev
+      ? ((meanDevs[cat.key] ?? 0) - minDev) / (maxDev - minDev)
+      : 0.5;
+
+    // Blend 50/50 and map to weight range [1.5, 4.5]
+    const combined = 0.5 * varNorm + 0.5 * devNorm;
+    weights[cat.key] = 1.5 + combined * 3.0;
   }
 
   return weights;
@@ -154,7 +209,10 @@ export function updateEffectiveWeights() {
   const skew = computeSkewCoefficient();
   const skewMultiplier = 1.0 + skew * (MAX_SKEW_BOOST - 1.0); // 1.0–3.0
   const effectiveFilms = filmsRated / skewMultiplier;           // acts as if fewer films rated
-  const decay = 1.0 / (1.0 + effectiveFilms * DECAY_RATE);
+  const rawDecay = 1.0 / (1.0 + effectiveFilms * DECAY_RATE);
+  // Quiz influence floor: the quiz captures stated preference that ratings
+  // can't — it should never be fully drowned out by statistical inference.
+  const decay = Math.max(rawDecay, QUIZ_FLOOR);
 
   let effective;
   if (!ratingWeights) {
