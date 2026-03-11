@@ -160,9 +160,9 @@ export function updateEffectiveWeights() {
   recordWeightSnapshot('rating');
   saveUserLocally();
 
-  // Popup on archetype change
+  // Popup on archetype change (delay so screen transitions complete first)
   if (prevArchetype && classification.archetype !== prevArchetype) {
-    showArchetypeChangePopup(prevArchetype, classification.archetype, classification.fullName);
+    setTimeout(() => showArchetypeChangePopup(prevArchetype, classification.archetype, classification.fullName), 400);
   }
 }
 

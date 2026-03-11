@@ -830,10 +830,16 @@ function renderStarterRateCard(film, palColor) {
   const posterUrl = film.poster ? 'https://image.tmdb.org/t/p/w92' + film.poster : null;
 
   // Always 8 categories in 50/50 layout during onboarding
+  let obLastGroup = '';
   const slidersHTML = CATEGORIES.map(function(cat) {
     const val = scores[cat.key] || 65;
     const groupLabel = cat.group === 'craft' ? 'Craft' : 'Experience';
-    return '<div class="score-split score-split-dark" style="margin-bottom:16px">' +
+    let groupHeader = '';
+    if (cat.group !== obLastGroup) {
+      obLastGroup = cat.group;
+      groupHeader = '<div style="font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--on-dark-dim);margin:' + (cat.group === 'craft' ? '0' : '28px') + ' 0 16px;' + (cat.group !== 'craft' ? 'padding-top:20px;border-top:1px solid rgba(255,255,255,0.08)' : '') + '">' + groupLabel + '</div>';
+    }
+    return groupHeader + '<div class="score-split score-split-dark" style="margin-bottom:16px">' +
       '<div class="score-split-copy">' +
         '<div class="score-split-copy-fullname">' + (cat.fullLabel || cat.label) + '</div>' +
         '<div class="score-split-copy-prompt">"' + cat.question + '"</div>' +

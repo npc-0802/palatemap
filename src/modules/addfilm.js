@@ -77,7 +77,7 @@ export function liveSearch(val) {
           '</div>' +
           '<div class="add-result-actions" onclick="event.stopPropagation()">' +
             '<button class="add-result-wl-btn" onclick="addResultToWatchlist(' + m.id + ',\'' + safeTitle + '\',\'' + year + '\',\'' + safePoster + '\',this)">+ List</button>' +
-            '<button class="add-result-rate-btn" onclick="event.stopPropagation();tmdbSelect(' + m.id + ',\'' + safeTitle + '\')">Rate →</button>' +
+            '<button class="add-result-rate-btn" onclick="event.stopPropagation();tmdbSelect(' + m.id + ',\'' + safeTitle + '\',{autoConfirm:true})">Rate →</button>' +
           '</div>' +
         '</div>';
       }).join('');
@@ -425,11 +425,17 @@ function renderAllAtOnce() {
   document.getElementById('calibrationAllAtOnce').style.display = 'block';
 
   const container = document.getElementById('calibrationCategories');
+  let lastGroup = '';
   container.innerHTML = CATEGORIES.map(cat => {
     const initVal = newFilm.scores[cat.key] ?? 65;
     const groupLabel = cat.group === 'craft' ? 'Craft' : 'Experience';
+    let groupHeader = '';
+    if (cat.group !== lastGroup) {
+      lastGroup = cat.group;
+      groupHeader = `<div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);margin:${cat.group === 'craft' ? '0' : '28px'} 0 16px;${cat.group !== 'craft' ? 'padding-top:20px;border-top:1px solid var(--rule)' : ''}">${groupLabel}</div>`;
+    }
 
-    return `<div class="score-split" style="margin-bottom:16px">
+    return groupHeader + `<div class="score-split" style="margin-bottom:16px">
       <div class="score-split-copy">
         <div class="score-split-copy-fullname">${cat.fullLabel || cat.label}</div>
         <div class="score-split-copy-prompt">"${cat.question}"</div>
@@ -700,7 +706,7 @@ function renderResult() {
     : (newFilm.poster ? `https://image.tmdb.org/t/p/w342${newFilm.poster}` : '');
 
   document.getElementById('resultCard').innerHTML = `
-    <div class="result-reveal" style="padding-top:20px">
+    <div class="result-reveal">
       <div class="result-reveal-eyebrow">Your verdict</div>
 
       ${posterSrc ? `<div style="display:flex;gap:20px;align-items:flex-start;margin-bottom:8px">
@@ -802,9 +808,14 @@ window.rateAnotherFromResult = function() {
 // ── RESUME PROMPT ──
 
 export function checkAddFilmDiscard() {
-  // If user is mid-flow (step > 1 and has a film selected), show discard confirmation
+  // If user is mid-scoring (step > 1 and has a film selected), show discard confirmation
   if (currentStep > 1 && newFilm.title) {
     showDiscardPrompt();
+    return true;
+  }
+  // If on confirmation screen (step 1 with film selected), just reset to search
+  if (currentStep === 1 && newFilm._tmdbId) {
+    resetToSearch();
     return true;
   }
   return false;

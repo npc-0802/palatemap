@@ -133,10 +133,15 @@ function renderCalMatchup() {
       <div style="text-align:center;margin-top:24px;display:flex;justify-content:center;align-items:center;gap:24px">
         ${calMatchupIdx > 0 ? `<span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--on-dark-dim);cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="undoCalChoice()">← Undo</span>` : ''}
         <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--on-dark-dim);cursor:pointer;text-decoration:underline;text-underline-offset:2px;letter-spacing:0.5px" onclick="calChoose('skip')">Too close to call</span>
+        ${calMatchupIdx > 0 ? `<span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--on-dark-dim);cursor:pointer;text-decoration:underline;text-underline-offset:2px;letter-spacing:0.5px" onclick="calFinishEarly()">Finish early →</span>` : ''}
       </div>
     </div>
   `;
 }
+
+window.calFinishEarly = function() {
+  showCalReview();
+};
 
 window.undoCalChoice = function() {
   if (calHistory.length === 0) return;

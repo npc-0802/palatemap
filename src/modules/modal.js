@@ -6,6 +6,7 @@ import { syncToSupabase } from './supabase.js';
 import { renderRankings } from './rankings.js';
 import { openPosterPicker } from './posterpicker.js';
 import { fetchTmdbMovieBundle } from './tmdb-movie.js';
+import { updateEffectiveWeights } from './weight-blend.js';
 
 const SCORE_LABELS = [
   [95, 'Nearly perfect'], [90, 'All-time favorite'], [85, 'Really exceptional'], [80, 'Excellent'],
@@ -296,6 +297,7 @@ window.modalRemoveFilm = function() {
   fmEl.classList.remove('visible');
   setTimeout(() => fmEl.classList.remove('open'), 300);
   saveToStorage();
+  updateEffectiveWeights();
   renderRankings();
   syncToSupabase().catch(e => console.warn('sync failed', e));
 };
