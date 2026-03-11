@@ -14,7 +14,7 @@ import { saveToStorage, loadFromStorage, runMigrations } from './modules/storage
 import {
   liveSearch, tmdbSelect, toggleCast, showMoreCast, toggleCompany,
   resetToSearch, confirmTmdbData, goToStep3, goToStep4, saveFilm, goToStep,
-  checkAddFilmResume, renderWatchlistInSearch
+  checkAddFilmResume, checkAddFilmDiscard, renderWatchlistInSearch
 } from './modules/addfilm.js';
 import { showSyncPanel, openArchetypeModal, closeArchetypeModal, previewWeight, resetArchetypeWeights, saveArchetypeWeights } from './modules/archetypemodal.js';
 import { renderProfile } from './modules/profile.js';
@@ -24,6 +24,14 @@ import { predictAddToWatchlist } from './modules/predict.js';
 
 // ── SCREEN NAVIGATION ──
 export function showScreen(id) {
+  // If clicking Add Film while already on Add Film with a film in progress, show discard prompt
+  if (id === 'add') {
+    const currentScreen = localStorage.getItem('palatemap_last_screen');
+    const addEl = document.getElementById('add');
+    const isOnAdd = addEl?.classList.contains('active') || currentScreen === 'add';
+    if (isOnAdd && checkAddFilmDiscard()) return;
+  }
+
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   document.querySelectorAll('.nav-btn, .nav-mobile-btn').forEach(b => {

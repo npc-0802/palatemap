@@ -36,12 +36,7 @@ function updateStepUI(step) {
   currentStep = step;
   const indicator = document.getElementById('addfilm-step-indicator');
   if (indicator) {
-    if (step === 2 && scoringMode === 'card') {
-      const cat = CATEGORIES[currentCardIdx];
-      indicator.textContent = `Score · ${cat ? cat.label : ''}`;
-    } else {
-      indicator.textContent = STEP_LABELS[step] || '';
-    }
+    indicator.textContent = STEP_LABELS[step] || '';
   }
   updateContextBar();
   // Scroll to top on step transitions
@@ -72,16 +67,18 @@ export function liveSearch(val) {
         const poster = m.poster_path
           ? '<img class="add-result-poster" src="https://image.tmdb.org/t/p/w92' + m.poster_path + '" alt="">'
           : '<div class="add-result-poster-none"></div>';
-        const overview = (m.overview||'').slice(0,120) + ((m.overview||'').length > 120 ? '…' : '');
         const safeTitle = m.title.replace(/'/g,"\\'").replace(/"/g,'\\"');
+        const safePoster = (m.poster_path || '').replace(/'/g,"\\'");
         return '<div class="add-result" onclick="tmdbSelect(' + m.id + ', \'' + safeTitle + '\')">' +
           poster +
           '<div class="add-result-info">' +
             '<div class="add-result-title">' + m.title + '</div>' +
             '<div class="add-result-meta">' + year + (m.vote_average ? ' · ' + m.vote_average.toFixed(1) + ' TMDB' : '') + '</div>' +
-            (overview ? '<div class="add-result-overview">' + overview + '</div>' : '') +
           '</div>' +
-          '<svg class="add-result-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+          '<div class="add-result-actions" onclick="event.stopPropagation()">' +
+            '<button class="add-result-wl-btn" onclick="addResultToWatchlist(' + m.id + ',\'' + safeTitle + '\',\'' + year + '\',\'' + safePoster + '\',this)">+ List</button>' +
+            '<button class="add-result-rate-btn" onclick="event.stopPropagation();tmdbSelect(' + m.id + ',\'' + safeTitle + '\')">Rate →</button>' +
+          '</div>' +
         '</div>';
       }).join('');
     } catch(e) {
@@ -314,12 +311,7 @@ function updateContextBar() {
     }
     titleEl.textContent = newFilm.title;
     metaEl.textContent = `${newFilm.year || ''}${newFilm.director ? ' · ' + newFilm.director : ''}`;
-    if (currentStep === 2) {
-      toggleEl.style.display = '';
-      toggleEl.textContent = scoringMode === 'card' ? 'Show all categories' : 'One at a time';
-    } else {
-      toggleEl.style.display = 'none';
-    }
+    toggleEl.style.display = 'none';
   } else {
     bar.classList.remove('visible');
   }
@@ -352,10 +344,10 @@ export function confirmTmdbData() {
 // ── STEP 2: SCORING ──
 
 let prefillScores = null;
-let scoringMode = 'card'; // always start one-at-a-time
+let scoringMode = 'all'; // unified scoring view
 let currentCardIdx = 0;
 let showingInterstitial = false;
-let showCategoryCopy = localStorage.getItem('pm_show_category_copy') === 'true';
+let showCategoryCopy = true; // always show copy in new layout
 
 export function prefillWithPrediction(scores) {
   prefillScores = scores;
@@ -421,272 +413,47 @@ function getAnchors(catKey) {
 function renderCalibration() {
   // Initialize scores
   CATEGORIES.forEach(cat => {
-    newFilm.scores[cat.key] = prefillScores?.[cat.key] ?? newFilm.scores[cat.key] ?? 72;
+    newFilm.scores[cat.key] = prefillScores?.[cat.key] ?? newFilm.scores[cat.key] ?? 65;
   });
-
-  if (scoringMode === 'card') {
-    currentCardIdx = 0;
-    showingInterstitial = false;
-    // Show craft intro for first-time scorers
-    if (!localStorage.getItem('pm_seen_craft_intro')) {
-      renderCraftIntro();
-    } else {
-      renderScoreCard();
-    }
-  } else {
-    renderAllAtOnce();
-  }
+  renderAllAtOnce();
 }
 
-function renderCraftIntro() {
-  showingInterstitial = true;
-  const container = document.getElementById('scoreCardContainer');
-  container.style.display = '';
-  document.getElementById('calibrationAllAtOnce').style.display = 'none';
-  container.innerHTML = `
-    <div class="score-interstitial">
-      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:20px">how scoring works</div>
-      <div class="score-interstitial-title">Let's start with craft.</div>
-      <div class="score-interstitial-sub">You'll rate this film across 8 categories. The first four measure <strong>craft</strong> — plot, execution, acting, and production. How well was this film made?</div>
-      <div style="margin-top:32px">
-        <button class="btn btn-primary" onclick="dismissCraftIntro()">Let's go →</button>
-      </div>
-    </div>
-  `;
-}
+// Card mode removed — unified scoring view
 
 function renderAllAtOnce() {
   document.getElementById('scoreCardContainer').style.display = 'none';
   document.getElementById('calibrationAllAtOnce').style.display = 'block';
 
   const container = document.getElementById('calibrationCategories');
-  container.innerHTML = `
-    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-      <span class="score-split-toggle" onclick="toggleCategoryCopy()">${showCategoryCopy ? 'Hide guide' : 'Show category guide'}</span>
-    </div>` +
-  CATEGORIES.map(cat => {
-    const anchors = getAnchors(cat.key);
-    const initVal = newFilm.scores[cat.key] ?? 72;
+  container.innerHTML = CATEGORIES.map(cat => {
+    const initVal = newFilm.scores[cat.key] ?? 65;
     const groupLabel = cat.group === 'craft' ? 'Craft' : 'Experience';
 
-    const copyPanel = showCategoryCopy ? `
+    return `<div class="score-split" style="margin-bottom:16px">
       <div class="score-split-copy">
         <div class="score-split-copy-fullname">${cat.fullLabel || cat.label}</div>
         <div class="score-split-copy-prompt">"${cat.question}"</div>
         <div class="score-split-copy-desc">${cat.description || ''}</div>
-        ${cat.nuance ? `<div class="score-split-copy-nuance">${cat.nuance}</div>` : ''}
-      </div>` : '';
-
-    const sliderContent = `
-      ${anchors.length > 0 ? `
-      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Reference films:</div>
-      <div class="anchor-row">
-        ${anchors.map(a => `
-          <div class="anchor-film" onclick="selectAnchor('${cat.key}', ${a.scores[cat.key]}, this)">
-            ${a.poster ? `<img class="anchor-film-poster" src="https://image.tmdb.org/t/p/w92${a.poster}" alt="">` : ''}
-            <div>
-              <div class="anchor-film-title">${a.title}</div>
-              <div class="anchor-film-score">${a.scores[cat.key]}</div>
-            </div>
-          </div>`).join('')}
-      </div>` : ''}
-      <div class="slider-section">
-        <div class="slider-label-row">
-          <div style="display:flex;align-items:center;gap:6px">
-            <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px">Your score</span>
-            <span class="score-tooltip-trigger" onclick="toggleScoreTooltip(this)">?</span>
-          </div>
-          <div>
-            <span class="slider-val" id="sliderVal_${cat.key}">${initVal}</span>
-            <span class="slider-desc" id="sliderDesc_${cat.key}" style="margin-left:8px">${getLabel(initVal)}</span>
-          </div>
-        </div>
-        <div class="score-slider-wrap">
+      </div>
+      <div class="score-split-slider">
+        <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:6px">${groupLabel}</div>
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;color:var(--ink)" id="sliderVal_${cat.key}">${initVal}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-bottom:8px" id="sliderDesc_${cat.key}">${getLabel(initVal)}</div>
+        <div style="width:100%;padding:0 8px">
           <input type="range" min="1" max="100" value="${initVal}" id="slider_${cat.key}"
             class="score-slider"
             oninput="updateSlider('${cat.key}', this.value)" onpointerdown="this.parentElement.classList.add('touched')">
-        </div>
-        <div class="score-scale-labels">
-          <span class="scale-label-poor">Poor</span><span class="scale-label-solid">Solid</span><span class="scale-label-exceptional">Exceptional</span>
-        </div>
-      </div>`;
-
-    return `<div class="category-section" id="catSection_${cat.key}">
-      <div class="cat-header">
-        <div class="cat-name">${cat.fullLabel || cat.label}</div>
-        <div class="cat-weight">${groupLabel} · ×${cat.weight}</div>
-      </div>
-      ${!showCategoryCopy ? `<div class="cat-question">${cat.question}</div>` : ''}
-      ${showCategoryCopy ? `<div class="score-split">${copyPanel}<div style="flex:1;min-width:0">${sliderContent}</div></div>` : sliderContent}
-    </div>`;
-  }).join('');
-}
-
-function renderScoreCard() {
-  const container = document.getElementById('scoreCardContainer');
-  container.style.display = 'block';
-  document.getElementById('calibrationAllAtOnce').style.display = 'none';
-
-  const cat = CATEGORIES[currentCardIdx];
-  const groupLabel = currentCardIdx < 4 ? 'Craft' : 'Experience';
-  const val = newFilm.scores[cat.key] ?? 72;
-  const anchors = getAnchors(cat.key);
-
-  // Progress dots
-  const dots = CATEGORIES.map((c, i) => {
-    const score = newFilm.scores[c.key];
-    const isActive = i === currentCardIdx;
-    const isScored = i < currentCardIdx;
-    const color = isScored ? getTierColor(score) : '';
-    return `<div class="score-dot${isActive ? ' active' : ''}${isScored ? ' scored' : ''}" style="${isScored ? `background:${color}` : ''}"></div>`;
-  }).join('');
-
-  // Update step indicator text
-  const indicator = document.getElementById('addfilm-step-indicator');
-  if (indicator) indicator.textContent = `Score · ${cat.label}`;
-
-  // Scoring guide — persists through all cards until dismissed
-  const introHint = shouldShowHint('scoring_intro', () => true)
-    ? renderHint('scoring_intro',
-        '<strong>How scoring works.</strong> ' +
-        '8 categories, 1–100 each. Craft (plot, execution, acting, production) and experience (enjoyability, rewatchability, ending, uniqueness). ' +
-        'Your weights determine the final score.')
-    : '';
-
-  // Copy panel (left side of 50/50)
-  const copyPanel = showCategoryCopy ? `
-    <div class="score-split-copy">
-      <div class="score-split-copy-fullname">${cat.fullLabel || cat.label}</div>
-      <div class="score-split-copy-prompt">"${cat.question}"</div>
-      <div class="score-split-copy-desc">${cat.description || ''}</div>
-      ${cat.nuance ? `<div class="score-split-copy-nuance">${cat.nuance}</div>` : ''}
-    </div>` : '';
-
-  // Slider panel (right side, or full-width when copy is hidden)
-  const sliderPanel = `
-    <div class="${showCategoryCopy ? 'score-split-slider' : ''}">
-      ${anchors.length > 0 ? `
-        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;width:100%">Reference</div>
-        <div class="anchor-row" style="display:grid;grid-template-columns:repeat(${Math.min(anchors.length, 3)}, 1fr);gap:8px;max-width:480px;margin:0 auto 20px;width:100%">
-          ${anchors.slice(0, 3).map(a => `
-            <div class="anchor-film" data-score="${a.scores[cat.key]}" onclick="selectAnchorCard('${cat.key}', ${a.scores[cat.key]}, this)">
-              ${a.poster ? `<img class="anchor-film-poster" src="https://image.tmdb.org/t/p/w92${a.poster}" alt="">` : ''}
-              <div>
-                <div class="anchor-film-title">${a.title}</div>
-                <div class="anchor-film-score">${a.scores[cat.key]}</div>
-              </div>
-            </div>`).join('')}
-        </div>` : ''}
-      <div class="score-card-value" id="scoreCardValue" style="color:${getTierColor(val)}">${val}</div>
-      <div class="score-card-label" id="scoreCardLabel">${getLabel(val)}</div>
-      <div style="max-width:400px;margin:20px auto 0;padding:0 20px;width:100%">
-        <div class="score-slider-wrap">
-          <input type="range" min="1" max="100" value="${val}" id="scoreCardSlider"
-            class="score-slider"
-            oninput="updateScoreCard(this.value)" onpointerdown="this.parentElement.classList.add('touched')">
-        </div>
-        <div class="score-scale-labels">
-          <span class="scale-label-poor">Poor</span><span class="scale-label-solid">Solid</span><span class="scale-label-exceptional">Exceptional</span>
+          <div class="score-scale-labels" style="margin-top:2px"><span class="scale-label-poor">Poor</span><span class="scale-label-solid">Solid</span><span class="scale-label-exceptional">Exceptional</span></div>
         </div>
       </div>
     </div>`;
-
-  container.innerHTML = `
-    ${introHint}
-    <div style="position:relative">
-      <div class="score-progress-dots">${dots}</div>
-    </div>
-    <div class="score-card score-card-enter-right" id="activeScoreCard">
-      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:8px">${groupLabel} · Category ${currentCardIdx + 1} of 8</div>
-      ${!showCategoryCopy ? `
-        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:32px;color:var(--ink);letter-spacing:-1px;margin-bottom:6px">${cat.label}</div>
-        <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dim);font-style:italic;margin-bottom:28px">"${cat.question}"</div>` : ''}
-      ${showCategoryCopy ? `<div class="score-split">${copyPanel}${sliderPanel}</div>` : sliderPanel}
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
-      <span class="score-split-toggle" onclick="toggleCategoryCopy()">${showCategoryCopy ? 'Hide guide' : 'Show category guide'}</span>
-      <div></div>
-    </div>
-    <div class="score-card-nav">
-      <button class="btn btn-outline" onclick="${currentCardIdx === 0 ? 'goToStep(1)' : 'scoreCardPrev()'}" style="min-width:100px">← ${currentCardIdx === 0 ? 'Back' : 'Prev'}</button>
-      <button class="btn btn-primary" onclick="scoreCardNext()" style="min-width:100px">${currentCardIdx === 7 ? 'Continue →' : 'Next →'}</button>
-    </div>
-  `;
+  }).join('') + `
+    <div style="display:flex;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid var(--rule)">
+      <button class="btn btn-primary" onclick="finishScoring()" style="min-width:120px">Continue →</button>
+    </div>`;
 }
 
-function renderInterstitial() {
-  showingInterstitial = true;
-  const container = document.getElementById('scoreCardContainer');
-  container.innerHTML = `
-    <div class="score-interstitial">
-      <div class="score-interstitial-title">Now for how it made you feel.</div>
-      <div class="score-interstitial-sub">The first four categories measured craft — how well the film was made. The next four measure experience — how the film landed for you personally.</div>
-      <div style="margin-top:24px;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);line-height:1.6">Prefer to see all 8 categories at once?<br><span onclick="dismissInterstitial();toggleScoringMode()" style="color:var(--blue);cursor:pointer;text-decoration:underline">Switch to full view →</span></div>
-      <div style="margin-top:24px">
-        <button class="btn btn-primary" onclick="dismissInterstitial()">Continue →</button>
-      </div>
-    </div>
-  `;
-}
-
-window.dismissCraftIntro = function() {
-  localStorage.setItem('pm_seen_craft_intro', '1');
-  showingInterstitial = false;
-  renderScoreCard();
-};
-
-window.dismissInterstitial = function() {
-  showingInterstitial = false;
-  renderScoreCard();
-};
-
-window.scoreCardNext = function() {
-  if (currentCardIdx < 7) {
-    currentCardIdx++;
-    // Show interstitial between craft and experience (after index 3, before index 4)
-    if (currentCardIdx === 4 && !showingInterstitial) {
-      renderInterstitial();
-      return;
-    }
-    renderScoreCard();
-  } else {
-    // Done scoring — go to step 3
-    goToStep3();
-  }
-};
-
-window.scoreCardPrev = function() {
-  if (currentCardIdx > 0) {
-    currentCardIdx--;
-    renderScoreCard();
-  }
-};
-
-window.updateScoreCard = function(val) {
-  val = parseInt(val);
-  const cat = CATEGORIES[currentCardIdx];
-  newFilm.scores[cat.key] = val;
-  const numEl = document.getElementById('scoreCardValue');
-  const lblEl = document.getElementById('scoreCardLabel');
-  if (numEl) { numEl.textContent = val; numEl.style.color = getTierColor(val); }
-  if (lblEl) lblEl.textContent = getLabel(val);
-  // Deselect anchor if slider no longer matches
-  const row = document.querySelector('#activeScoreCard .anchor-row');
-  if (row) {
-    row.querySelectorAll('.anchor-film.selected').forEach(a => {
-      const score = parseInt(a.getAttribute('data-score'));
-      if (score !== val) a.classList.remove('selected');
-    });
-  }
-};
-
-window.selectAnchorCard = function(catKey, anchorScore, el) {
-  el.closest('.anchor-row').querySelectorAll('.anchor-film').forEach(a => a.classList.remove('selected'));
-  el.classList.add('selected');
-  const slider = document.getElementById('scoreCardSlider');
-  if (slider) { slider.value = anchorScore; }
-  window.updateScoreCard(anchorScore);
-};
+// Old card mode functions removed — unified scoring view
 
 window.toggleScoreTooltip = function(el) {
   const existing = document.querySelector('.score-tooltip');
@@ -710,27 +477,8 @@ window.toggleScoreTooltip = function(el) {
   setTimeout(() => document.addEventListener('click', close), 0);
 };
 
-window.toggleCategoryCopy = function() {
-  showCategoryCopy = !showCategoryCopy;
-  localStorage.setItem('pm_show_category_copy', showCategoryCopy ? 'true' : 'false');
-  if (scoringMode === 'card') renderScoreCard();
-  else renderAllAtOnce();
-};
-
 window.toggleScoringMode = function() {
-  if (scoringMode === 'card') {
-    scoringMode = 'all';
-    localStorage.setItem('pm_scoring_mode', 'all');
-    renderAllAtOnce();
-    const indicator = document.getElementById('addfilm-step-indicator');
-    if (indicator) indicator.textContent = 'Score';
-  } else {
-    scoringMode = 'card';
-    localStorage.setItem('pm_scoring_mode', 'card');
-    currentCardIdx = 0;
-    renderScoreCard();
-  }
-  updateContextBar();
+  // No-op — unified scoring view
 };
 
 // Keep old handlers for all-at-once mode
@@ -744,8 +492,14 @@ window.selectAnchor = function(catKey, anchorScore, el) {
 window.updateSlider = function(catKey, val) {
   val = parseInt(val);
   newFilm.scores[catKey] = val;
-  document.getElementById('sliderVal_' + catKey).textContent = val;
-  document.getElementById('sliderDesc_' + catKey).textContent = getLabel(val);
+  const numEl = document.getElementById('sliderVal_' + catKey);
+  const lblEl = document.getElementById('sliderDesc_' + catKey);
+  if (numEl) numEl.textContent = val;
+  if (lblEl) lblEl.textContent = getLabel(val);
+};
+
+window.finishScoring = function() {
+  goToStep3();
 };
 
 // ── STEP 3: HEAD-TO-HEAD ──
@@ -1047,6 +801,15 @@ window.rateAnotherFromResult = function() {
 
 // ── RESUME PROMPT ──
 
+export function checkAddFilmDiscard() {
+  // If user is mid-flow (step > 1 and has a film selected), show discard confirmation
+  if (currentStep > 1 && newFilm.title) {
+    showDiscardPrompt();
+    return true;
+  }
+  return false;
+}
+
 export function checkAddFilmResume() {
   // If user is mid-flow (step > 1 and has a film selected), show resume prompt
   if (currentStep > 1 && newFilm.title) {
@@ -1055,6 +818,61 @@ export function checkAddFilmResume() {
   }
   return false; // no prompt needed
 }
+
+function showDiscardPrompt() {
+  const overlay = document.createElement('div');
+  overlay.className = 'addfilm-resume-overlay';
+  overlay.id = 'addfilm-discard-overlay';
+
+  const posterHtml = newFilm._posterUrl
+    ? `<img class="addfilm-resume-poster" src="${newFilm._posterUrl}" alt="">`
+    : '';
+
+  overlay.innerHTML = `
+    <div class="addfilm-resume-card">
+      <div style="display:flex;gap:14px;align-items:center">
+        ${posterHtml}
+        <div>
+          <div class="addfilm-resume-title">${newFilm.title}</div>
+          <div class="addfilm-resume-meta">${newFilm.year || ''}${newFilm.director ? ' · ' + newFilm.director : ''}</div>
+        </div>
+      </div>
+      <div class="addfilm-resume-msg">Are you sure you want to start rating another film? This film's rating will be discarded.</div>
+      <div class="addfilm-resume-actions">
+        <button class="btn btn-outline" onclick="addFilmDiscardNo()">No</button>
+        <button class="btn btn-primary" onclick="addFilmDiscardYes()">Yes</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+window.addFilmDiscardYes = function() {
+  const overlay = document.getElementById('addfilm-discard-overlay');
+  if (overlay) overlay.remove();
+  // Reset the add film flow
+  newFilm = { title:'', year:null, director:'', writer:'', cast:'', scores:{} };
+  currentStep = 1;
+  prefillScores = null;
+  hideAddFilmBanner();
+  goToStep(1);
+  renderWatchlistInSearch();
+};
+
+window.addFilmDiscardNo = function() {
+  const overlay = document.getElementById('addfilm-discard-overlay');
+  if (overlay) overlay.remove();
+};
+
+window.addResultToWatchlist = async function(tmdbId, title, year, posterPath, btnEl) {
+  const { addToWatchlist } = await import('./watchlist.js');
+  addToWatchlist({ tmdbId, title, year: parseInt(year) || null, poster: posterPath || null });
+  if (btnEl) {
+    btnEl.textContent = '✓ Listed';
+    btnEl.classList.add('added');
+    btnEl.disabled = true;
+  }
+};
 
 function showResumePrompt() {
   const overlay = document.createElement('div');

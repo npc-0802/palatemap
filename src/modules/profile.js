@@ -1,11 +1,64 @@
 import { MOVIES, currentUser, setMovies, recalcAllTotals } from '../state.js';
 import { ARCHETYPES } from '../data/archetypes.js';
+import { ARCHETYPE_DESCRIPTIONS, ADJECTIVE_DESCRIPTIONS, classifyArchetype } from './quiz-engine.js';
 import { saveToStorage } from './storage.js';
 import { syncToSupabase } from './supabase.js';
 import { updateDisplayName, updateUsername, exportFullData, exportFilmsCSV } from './account.js';
 import { shouldShowHint, renderHint } from './hints.js';
+import { on } from '../events.js';
 
 let profileImportedMovies = null;
+
+// Dynamic re-render on user/weight changes
+let profileListenersAttached = false;
+function ensureProfileListeners() {
+  if (profileListenersAttached) return;
+  profileListenersAttached = true;
+  on('user:changed', () => {
+    const el = document.getElementById('profileContent');
+    if (el && el.innerHTML) renderProfile();
+  });
+}
+
+function getArchetypeInfo(user) {
+  // Use quiz v2 fields if available
+  if (user.archetype_key || user.full_archetype_name) {
+    const key = user.archetype_key || 'balanced';
+    const desc = ARCHETYPE_DESCRIPTIONS[key] || ARCHETYPE_DESCRIPTIONS.balanced || {};
+    const adj = user.adjective ? (ADJECTIVE_DESCRIPTIONS[user.adjective] || '') : '';
+    // Recompute from current weights for live updates
+    const live = user.weights ? classifyArchetype(user.weights) : null;
+    const archName = live?.archetype || user.archetype || desc.name || 'Holist';
+    const fullName = live?.fullName || user.full_archetype_name || archName;
+    const color = live?.color || '#3d5a80';
+    const liveKey = live?.archetypeKey || key;
+    const liveDesc = ARCHETYPE_DESCRIPTIONS[liveKey] || desc;
+    return {
+      name: archName,
+      fullName,
+      color,
+      description: liveDesc.description || '',
+      quote: liveDesc.quote || '',
+      tagline: liveDesc.tagline || '',
+      adjective: live?.adjective || user.adjective,
+      adjectiveDesc: adj,
+      key: liveKey,
+    };
+  }
+  // Fallback to old ARCHETYPES
+  const arch = ARCHETYPES[user.archetype] || {};
+  return {
+    name: user.archetype || '',
+    fullName: user.archetype || '',
+    color: arch.palette || '#3d5a80',
+    description: arch.description || '',
+    quote: arch.quote || '',
+    tagline: '',
+    adjective: null,
+    adjectiveDesc: '',
+    key: null,
+  };
+}
 
 const CATS = ['story','craft','performance','world','experience','hold','ending','singularity'];
 const CAT_LABELS = { story:'Story', craft:'Craft', performance:'Performance', world:'World', experience:'Experience', hold:'Hold', ending:'Ending', singularity:'Singularity' };
@@ -117,24 +170,21 @@ function signatureFilms(movies) {
   }).join('');
 }
 
-function tasteNoteCard(user, movies) {
-  const arch = ARCHETYPES[user.archetype] || {};
+function tasteNoteCard(user, movies, archInfo) {
   const avgTotal = movies.length ? (movies.reduce((s, m) => s + m.total, 0) / movies.length).toFixed(1) : '—';
   const catAvgs = CATS.map(c => {
     const vals = movies.filter(m => m.scores?.[c] != null);
     return { c, avg: vals.length ? vals.reduce((s, m) => s + m.scores[c], 0) / vals.length : 0 };
   });
   const topCat = movies.length ? [...catAvgs].sort((a,b) => b.avg - a.avg)[0] : null;
-  const quote = arch.quote || '';
-  const palette = arch.palette || '#3d5a80';
   return `
     <div style="width:320px;height:440px;flex-shrink:0;border:1px solid var(--ink);background:var(--paper);overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box">
       <div style="padding:28px 28px 0">
         <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:40px">palate map · taste note</div>
-        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:26px;line-height:1.25;color:var(--ink);letter-spacing:-0.5px;margin-bottom:24px">${quote}</div>
-        <div style="width:32px;height:2px;background:${palette};margin-bottom:20px"></div>
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:26px;line-height:1.25;color:var(--ink);letter-spacing:-0.5px;margin-bottom:24px">${archInfo.quote}</div>
+        <div style="width:32px;height:2px;background:${archInfo.color};margin-bottom:20px"></div>
         <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:18px;color:var(--ink);margin-bottom:4px">${user.display_name}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:1px">${user.archetype}${user.archetype_secondary ? ' · ' + user.archetype_secondary : ''}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:1px">${archInfo.fullName}</div>
       </div>
       <div style="padding:0 28px 24px">
         <div style="border-top:1px solid var(--rule);padding-top:14px;display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">
@@ -147,22 +197,21 @@ function tasteNoteCard(user, movies) {
   `;
 }
 
-function shareCard(user, movies) {
+function shareCard(user, movies, archInfo) {
   const top3 = [...movies].sort((a, b) => b.total - a.total).slice(0, 3);
   const avgTotal = movies.length ? (movies.reduce((s, m) => s + m.total, 0) / movies.length).toFixed(1) : '—';
-  const arch = ARCHETYPES[user.archetype] || {};
   return `
     <div style="width:320px;height:440px;flex-shrink:0;border:1px solid var(--ink);background:var(--paper);overflow:hidden;display:flex;flex-direction:column;box-sizing:border-box">
-      <div class="dark-grid" style="background:var(--surface-dark);padding:20px 24px 20px;border-bottom:3px solid ${arch.palette || '#3d5a80'};flex-shrink:0">
+      <div class="dark-grid" style="background:var(--surface-dark);padding:20px 24px 20px;border-bottom:3px solid ${archInfo.color};flex-shrink:0">
         <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:14px">palate map</div>
         <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;color:var(--on-dark);line-height:1;margin-bottom:4px">${user.display_name}</div>
         <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);margin-bottom:14px">${user.username}</div>
-        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:22px;color:${arch.palette || 'var(--on-dark)'};margin-bottom:4px">${user.archetype}</div>
-        ${user.archetype_secondary ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim)">+ ${user.archetype_secondary}</div>` : ''}
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:22px;color:${archInfo.color};margin-bottom:4px">${archInfo.fullName}</div>
+        ${archInfo.tagline ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim)">${archInfo.tagline}</div>` : ''}
       </div>
       <div style="padding:16px 24px;flex:1;display:flex;flex-direction:column;justify-content:space-between">
         <div>
-          <div style="font-family:'DM Sans',sans-serif;font-size:11px;line-height:1.65;color:var(--dim);margin-bottom:12px">${arch.description || ''}</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:11px;line-height:1.65;color:var(--dim);margin-bottom:12px">${archInfo.description}</div>
           <div style="border-top:1px solid var(--rule);padding-top:12px;margin-bottom:4px">
             ${top3.map(m => `<div style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--ink);margin-bottom:5px;display:flex;justify-content:space-between"><span>${m.title}</span><span style="color:var(--dim);font-family:'DM Mono',monospace;font-size:10px">${m.total}</span></div>`).join('')}
           </div>
@@ -263,15 +312,17 @@ function radarLegend(archetype) {
 }
 
 export function renderProfile() {
+  ensureProfileListeners();
   const el = document.getElementById('profileContent');
   if (!el) return;
 
   const user = currentUser;
   if (!user) { el.innerHTML = '<p style="color:var(--dim)">Sign in to view your profile.</p>'; return; }
 
-  const arch = ARCHETYPES[user.archetype] || {};
+  const archInfo = getArchetypeInfo(user);
   const weights = user.weights || {};
-  const archWeights = arch.weights || null;
+  const oldArch = ARCHETYPES[user.archetype] || {};
+  const archWeights = oldArch.weights || null;
   const movies = MOVIES;
 
   const catAvgs = CATS.map(c => {
@@ -288,7 +339,7 @@ export function renderProfile() {
       <div style="margin-bottom:36px;padding-bottom:28px;border-bottom:2px solid var(--ink)">
         <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);margin-bottom:12px">taste profile</div>
         <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(36px,5vw,56px);line-height:1;color:var(--ink);margin-bottom:10px">${user.display_name}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.5px">${user.username} &nbsp;·&nbsp; ${user.archetype}${user.archetype_secondary ? ' &nbsp;+&nbsp; ' + user.archetype_secondary : ''}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.5px">${user.username} &nbsp;·&nbsp; ${archInfo.fullName}</div>
       </div>
 
       <!-- PALATE + FINGERPRINT (side by side) -->
@@ -297,15 +348,13 @@ export function renderProfile() {
         <!-- Left: Archetype -->
         <div style="flex:1 1 0%;min-width:0">
           <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">Palate</div>
-          <div class="dark-grid profile-palate-block" style="background:var(--surface-dark);padding:28px 32px;margin-bottom:20px;border-top:3px solid ${arch.palette || '#3d5a80'};position:relative">
-            <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:10px">primary</div>
-            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:40px;color:${arch.palette || 'var(--on-dark)'};line-height:1;margin-bottom:14px">${user.archetype}</div>
-            ${user.archetype_secondary ? `
-            <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:6px;margin-top:16px">secondary</div>
-            <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:22px;color:var(--on-dark);opacity:0.75">${user.archetype_secondary}</div>` : ''}
+          <div class="dark-grid profile-palate-block" style="background:var(--surface-dark);padding:28px 32px;margin-bottom:20px;border-top:3px solid ${archInfo.color};position:relative">
+            <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:10px">your palate type</div>
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:40px;color:${archInfo.color};line-height:1;margin-bottom:14px">${archInfo.fullName}</div>
+            ${archInfo.tagline ? `<div style="font-family:'DM Sans',sans-serif;font-size:13px;font-style:italic;color:var(--on-dark);opacity:0.8">${archInfo.tagline}</div>` : ''}
           </div>
-          <p style="font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.75;color:var(--ink);margin:0 0 10px">${arch.description || ''}</p>
-          <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.5px;margin-bottom:16px">${arch.quote || ''}</div>
+          <p style="font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.75;color:var(--ink);margin:0 0 10px">${archInfo.description}</p>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.5px;margin-bottom:16px">${archInfo.quote}</div>
           <span onclick="openArchetypeModal()" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--blue);cursor:pointer;text-decoration:underline">Edit weights →</span>
         </div>
 
@@ -313,7 +362,7 @@ export function renderProfile() {
         <div style="flex:0 0 280px">
           <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">Taste Fingerprint</div>
           ${radarChart(weights, archWeights)}
-          ${radarLegend(user.archetype)}
+          ${radarLegend(archInfo.fullName)}
         </div>
       </div>
 
@@ -359,8 +408,8 @@ export function renderProfile() {
         <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Your Palate Map Card</div>
         <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--dim);margin-bottom:20px">Screenshot to share.</div>
         <div style="display:inline-flex;gap:20px;align-items:flex-start;flex-wrap:wrap;justify-content:center">
-          ${shareCard(user, movies)}
-          ${tasteNoteCard(user, movies)}
+          ${shareCard(user, movies, archInfo)}
+          ${tasteNoteCard(user, movies, archInfo)}
         </div>
       </div>
 

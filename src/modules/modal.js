@@ -8,10 +8,12 @@ import { openPosterPicker } from './posterpicker.js';
 import { fetchTmdbMovieBundle } from './tmdb-movie.js';
 
 const SCORE_LABELS = [
-  [90, 'All-time favorite'], [85, 'Really exceptional'], [80, 'Excellent'],
+  [95, 'Nearly perfect'], [90, 'All-time favorite'], [85, 'Really exceptional'], [80, 'Excellent'],
   [75, 'Well above average'], [70, 'Great'], [65, 'Very good'], [60, 'A cut above'],
   [55, 'Good'], [50, 'Solid'], [45, 'Not bad'], [40, 'Sub-par'], [35, 'Multiple flaws'],
-  [30, 'Poor'], [25, 'Bad'], [20, "Wouldn't watch"], [0, 'Unwatchable']
+  [30, 'Poor'], [25, 'Bad'], [20, "Wouldn't watch"],
+  [15, 'So bad I stopped watching'], [10, 'Disgusting'], [5, 'Insulting'],
+  [2, 'Nearly the worst possible'], [0, 'Unwatchable']
 ];
 function getLabelSimple(score) {
   for (const [t, l] of SCORE_LABELS) if (score >= t) return l;

@@ -1,6 +1,7 @@
 import { MOVIES, CATEGORIES, currentUser, setCurrentUser, scoreClass, getLabel, calcTotal, mergeSplitNames } from '../state.js';
 import { syncToSupabase, saveUserLocally } from './supabase.js';
 import { ARCHETYPES } from '../data/archetypes.js';
+import { classifyArchetype } from './quiz-engine.js';
 import { track } from '../analytics.js';
 import { shouldShowHint, renderHint } from './hints.js';
 
@@ -135,12 +136,71 @@ export function initPredict() {
   if (secondarySection) secondarySection.style.display = '';
   if (picksRow) picksRow.style.display = '';
 
-  // Manual predict + entity search: Tier 2+ only
-  if (manualSection) manualSection.style.display = tier.canPredict ? '' : 'none';
-  if (constrainedSection) constrainedSection.style.display = tier.canConstrain ? '' : 'none';
+  // Show all sections but disable locked ones with unlock message
+  if (manualSection) manualSection.style.display = '';
+  if (constrainedSection) constrainedSection.style.display = '';
+  if (orDivider) orDivider.style.display = '';
 
-  // OR divider: only show when manual section is visible
-  if (orDivider) orDivider.style.display = tier.canPredict ? '' : 'none';
+  // Disable locked sections with overlay
+  if (!tier.canPredict && manualSection) {
+    manualSection.style.position = 'relative';
+    manualSection.style.opacity = '0.4';
+    manualSection.style.pointerEvents = 'none';
+    let overlay = manualSection.querySelector('.foryou-lock-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'foryou-lock-overlay';
+      overlay.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2';
+      overlay.innerHTML = `<div style="pointer-events:auto;background:var(--paper);border:1px solid var(--rule);padding:12px 20px;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.5px;text-align:center">Rate ${5 - MOVIES.length} more film${5 - MOVIES.length !== 1 ? 's' : ''} to unlock</div>`;
+      manualSection.appendChild(overlay);
+    }
+  } else if (manualSection) {
+    manualSection.style.opacity = '';
+    manualSection.style.pointerEvents = '';
+    const overlay = manualSection.querySelector('.foryou-lock-overlay');
+    if (overlay) overlay.remove();
+  }
+
+  if (!tier.canConstrain && constrainedSection) {
+    constrainedSection.style.position = 'relative';
+    constrainedSection.style.opacity = '0.4';
+    constrainedSection.style.pointerEvents = 'none';
+    let overlay = constrainedSection.querySelector('.foryou-lock-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'foryou-lock-overlay';
+      overlay.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2';
+      overlay.innerHTML = `<div style="pointer-events:auto;background:var(--paper);border:1px solid var(--rule);padding:12px 20px;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.5px;text-align:center">Rate ${5 - MOVIES.length} more film${5 - MOVIES.length !== 1 ? 's' : ''} to unlock</div>`;
+      constrainedSection.appendChild(overlay);
+    }
+  } else if (constrainedSection) {
+    constrainedSection.style.opacity = '';
+    constrainedSection.style.pointerEvents = '';
+    const overlay = constrainedSection.querySelector('.foryou-lock-overlay');
+    if (overlay) overlay.remove();
+  }
+
+  // Discovery section: disable if locked
+  const discoverySection = document.getElementById('foryou-discovery-section');
+  if (!tier.canDiscover && discoverySection) {
+    discoverySection.style.position = 'relative';
+    discoverySection.style.opacity = '0.4';
+    discoverySection.style.pointerEvents = 'none';
+    let dOverlay = discoverySection.querySelector('.foryou-lock-overlay');
+    if (!dOverlay) {
+      dOverlay = document.createElement('div');
+      dOverlay.className = 'foryou-lock-overlay';
+      dOverlay.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2';
+      const needed = 10 - MOVIES.length;
+      dOverlay.innerHTML = `<div style="pointer-events:auto;background:var(--paper);border:1px solid var(--rule);padding:12px 20px;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.5px;text-align:center">Rate ${needed} more film${needed !== 1 ? 's' : ''} to unlock</div>`;
+      discoverySection.appendChild(dOverlay);
+    }
+  } else if (discoverySection) {
+    discoverySection.style.opacity = '';
+    discoverySection.style.pointerEvents = '';
+    const dOverlay = discoverySection.querySelector('.foryou-lock-overlay');
+    if (dOverlay) dOverlay.remove();
+  }
 
   // For You intro hint
   const hintSlot = document.getElementById('foryou-hint-slot');
@@ -196,11 +256,16 @@ export function initPredict() {
   }
 }
 
-function setForYouDotColor() {
+function getArchetypeColor() {
+  if (currentUser?.weights) {
+    try { return classifyArchetype(currentUser.weights).color; } catch {}
+  }
   const archetype = currentUser?.archetype;
-  const color = archetype && ARCHETYPES[archetype]
-    ? ARCHETYPES[archetype].palette
-    : null;
+  return (archetype && ARCHETYPES[archetype]) ? ARCHETYPES[archetype].palette : null;
+}
+
+function setForYouDotColor() {
+  const color = getArchetypeColor();
   if (color) {
     document.querySelectorAll('.foryou-dot').forEach(dot => {
       dot.style.background = color;
@@ -214,8 +279,7 @@ function renderProgressNudge() {
   if (MOVIES.length >= 50) { nudgeEl.style.display = 'none'; return; }
   const remaining = 50 - MOVIES.length;
   const pct = Math.round((MOVIES.length / 50) * 100);
-  const paletteColor = (currentUser?.archetype && ARCHETYPES[currentUser.archetype])
-    ? ARCHETYPES[currentUser.archetype].palette : 'var(--blue)';
+  const paletteColor = getArchetypeColor() || 'var(--blue)';
   nudgeEl.style.display = '';
   nudgeEl.className = 'foryou-nudge';
   nudgeEl.innerHTML = `
@@ -234,9 +298,8 @@ function timeAgo(date) {
 function renderForYouHeader(updatedAt) {
   const el = document.getElementById('foryou-header');
   if (!el) return;
-  const archetype = currentUser?.archetype || '';
-  const paletteColor = (archetype && ARCHETYPES[archetype])
-    ? ARCHETYPES[archetype].palette : 'var(--blue)';
+  const archetype = currentUser?.full_archetype_name || currentUser?.archetype || '';
+  const paletteColor = getArchetypeColor() || 'var(--blue)';
   const ago = updatedAt ? `Updated ${timeAgo(new Date(updatedAt))}` : '';
   const headline = MOVIES.length < 50 ? 'Getting to know your taste.' : 'What to watch tonight.';
   el.innerHTML = `

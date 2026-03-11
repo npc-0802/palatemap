@@ -160,9 +160,72 @@ export function updateEffectiveWeights() {
   recordWeightSnapshot('rating');
   saveUserLocally();
 
-  // Toast on archetype change
+  // Popup on archetype change
   if (prevArchetype && classification.archetype !== prevArchetype) {
-    const label = classification.fullName || classification.archetype;
-    window.showToast?.(`Your palate type shifted → ${label}`, { duration: 5000 });
+    showArchetypeChangePopup(prevArchetype, classification.archetype, classification.fullName);
   }
+}
+
+// ── Archetype change notification ──
+
+const ARCHETYPE_CHANGE_COPY = {
+  // FROM Narrativist →
+  'Narrativist→Formalist': 'Your focus has shifted from story to craft. Where you once tracked the narrative thread, you now notice how a film is built — the decisions behind the camera matter more than where the plot goes.',
+  'Narrativist→Humanist': 'Characters have overtaken story as your compass. You still care about where a film goes, but now it\'s the people in it that pull you forward — not the plot itself.',
+  'Narrativist→Sensualist': 'You\'ve moved from following the thread to feeling the texture. Story structure matters less now than the experience of watching — the hold a film has on you is what you\'re really scoring.',
+  'Narrativist→Archivist': 'Your appetite has shifted from well-told stories to stories nobody else is telling. Originality now outweighs narrative satisfaction — you want the thing that\'s never been done.',
+  'Narrativist→Holist': 'Your weights have balanced out. Where story once led your scores, you now evaluate films as a whole — no single dimension dominates your palate anymore.',
+
+  // FROM Formalist →
+  'Formalist→Narrativist': 'Story has taken the lead over craft. You still notice filmmaking, but what pulls your scores is the narrative — where a film goes and whether it earns its ending.',
+  'Formalist→Humanist': 'People have moved ahead of precision. You still appreciate craft, but your scores now tilt toward the performances and characters that make you lean forward.',
+  'Formalist→Sensualist': 'Feeling has overtaken analysis. The experience of watching — the mood, the hold, the gut response — now matters more to you than how precisely a film was constructed.',
+  'Formalist→Archivist': 'Originality has edged out execution. You still respect craft, but now you weight films more on whether they\'re doing something genuinely new.',
+  'Formalist→Holist': 'Your palate has evened out. Where craft once led, you now weigh all dimensions equally — you experience film as a whole rather than through a technical lens.',
+
+  // FROM Humanist →
+  'Humanist→Narrativist': 'Story has overtaken character as your entry point. The people still matter, but now you care more about where the narrative takes them — and whether the ending lands.',
+  'Humanist→Formalist': 'Craft now leads over character. You still notice great performances, but the filmmaking itself — the frame, the world, the technical execution — drives your scores.',
+  'Humanist→Sensualist': 'The feeling has surpassed the people. Characters still matter, but the overall experience — the mood, the hold, the emotional residue — is what your palate rewards most.',
+  'Humanist→Archivist': 'Originality has overtaken character. You still respond to great performances, but now you weight a film\'s singularity — whether it\'s genuinely unlike anything else.',
+  'Humanist→Holist': 'Your palate has broadened. Where characters once dominated your scores, you now evaluate films holistically — no single dimension leads.',
+
+  // FROM Sensualist →
+  'Sensualist→Narrativist': 'Story has overtaken sensation. Where the experience of watching was once enough, you now care more about the narrative itself — where it goes and how it ends.',
+  'Sensualist→Formalist': 'Craft has overtaken feeling. Your scores now respond more to how a film is made than to how it makes you feel — precision and world-building lead the way.',
+  'Sensualist→Humanist': 'Characters have overtaken experience. The people in a film now drive your scores more than the feeling of watching — a great performance moves you more than a great mood.',
+  'Sensualist→Archivist': 'Originality has overtaken experience. You still value how a film feels, but now you weight singularity most — the films that couldn\'t exist any other way.',
+  'Sensualist→Holist': 'Your palate has balanced. Where experience once dominated, you now respond to films as a whole — craft, story, character, and feeling carry equal weight.',
+
+  // FROM Archivist →
+  'Archivist→Narrativist': 'Story now leads over originality. You still appreciate the singular, but your scores increasingly reward films that tell a great story — well-structured, well-ended.',
+  'Archivist→Formalist': 'Craft has overtaken singularity. You still value the new, but now filmmaking precision and world-building drive your scores more than pure originality.',
+  'Archivist→Humanist': 'Characters now outweigh originality. A great performance moves your scores more than a novel concept — the people in a film are what you\'re really watching for.',
+  'Archivist→Sensualist': 'Experience has overtaken originality. The feel of a film — its hold, its mood, its emotional weight — now matters more than whether it\'s doing something new.',
+  'Archivist→Holist': 'Your palate has evened out. Where singularity once led, you now evaluate across all dimensions — no single axis dominates your scores.',
+
+  // FROM Holist →
+  'Holist→Narrativist': 'Story has emerged as your leading dimension. Where you once weighed everything equally, narrative structure — plot, ending, how a film gets where it\'s going — now shapes your scores most.',
+  'Holist→Formalist': 'Craft has separated from the pack. Your scores now lean toward filmmaking and world-building — the technical architecture of a film matters most to your palate.',
+  'Holist→Humanist': 'Characters have risen above the rest. Your palate has found its center of gravity in the people on screen — performances now lead your scores.',
+  'Holist→Sensualist': 'Experience has become your dominant signal. Where everything once carried equal weight, the feeling of watching — the mood, the hold, the gut response — now leads.',
+  'Holist→Archivist': 'Originality has broken ahead. Your once-balanced palate now tilts toward the singular — you reward films that do something genuinely unprecedented.',
+};
+
+function showArchetypeChangePopup(from, to, fullName) {
+  const key = `${from}→${to}`;
+  const copy = ARCHETYPE_CHANGE_COPY[key] || `Your palate type has shifted from ${from} to ${to}. As you rate more films, our understanding of your taste continues to evolve.`;
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(12,11,9,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn 0.2s ease';
+  overlay.innerHTML = `
+    <div style="background:var(--surface-dark);max-width:420px;width:100%;padding:32px 28px;text-align:center;box-shadow:0 16px 48px rgba(12,11,9,0.4)">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:16px">palate type shifted</div>
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;color:var(--on-dark);line-height:1.1;margin-bottom:8px">${fullName || to}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);margin-bottom:20px">previously ${from}</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.7;color:var(--on-dark);opacity:0.85;margin-bottom:24px;text-align:left">${copy}</div>
+      <button style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;background:transparent;color:var(--on-dark);border:1.5px solid var(--on-dark);padding:10px 24px;cursor:pointer" onclick="this.closest('div[style*=fixed]').remove()">Got it</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
 }

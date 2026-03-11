@@ -743,14 +743,23 @@ function renderStarterFilms() {
 
       <div class="starter-grid">${cardsHTML}</div>
 
-      <div style="text-align:center;margin-top:24px">
-        <span id="starter-load-more" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);cursor:pointer;letter-spacing:1px" onclick="starterLoadMoreFilms()">
-          ${starterLoadingMore ? 'Loading…' : `Not seeing anything familiar? <span style="color:${palColor}">Show me more →</span>`}
+      <div style="text-align:center;margin-top:28px">
+        <span id="starter-load-more" style="font-family:'DM Sans',sans-serif;font-size:16px;color:${palColor};cursor:pointer;letter-spacing:0.3px" onclick="starterLoadMoreFilms()">
+          ${starterLoadingMore ? 'Loading…' : 'Show me more →'}
         </span>
       </div>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:16px;border-top:1px solid rgba(244,239,230,0.1)">
-        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);cursor:pointer;letter-spacing:0.5px" onclick="starterSkipToSearch()">Skip to search →</span>
+      <div style="margin-top:28px;padding-top:20px;border-top:1px solid rgba(244,239,230,0.1)">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);text-align:center;letter-spacing:1px;margin-bottom:12px">Or search for a specific film</div>
+        <div style="position:relative;max-width:400px;margin:0 auto">
+          <input id="starter-search-input" type="text" placeholder="Search by title…"
+            style="width:100%;box-sizing:border-box;background:rgba(244,239,230,0.06);border:1px solid rgba(244,239,230,0.15);color:var(--on-dark);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 14px;border-radius:3px;outline:none"
+            oninput="starterSearchFilm(this.value)">
+          <div id="starter-search-results" style="margin-top:8px"></div>
+        </div>
+      </div>
+
+      <div style="text-align:${starterRated.length > 0 ? 'right' : 'center'};margin-top:20px;padding-top:12px">
         ${starterRated.length >= 10 ? `
           <button class="ob-btn" style="margin:0;background:${palColor};font-size:13px;padding:12px 28px" onclick="starterFinish()">Enter Palate Map →</button>
         ` : starterRated.length > 0 ? `
@@ -786,13 +795,29 @@ function renderStarterCard(film, idx, palColor) {
 }
 
 function getScoreLabel(v) {
-  if (v >= 90) return 'All-time great';
+  if (v === 100) return 'No better exists';
+  if (v === 1) return 'No worse exists';
+  if (v >= 95) return 'Nearly perfect';
+  if (v >= 90) return 'An all-time favorite';
+  if (v >= 85) return 'Really quite exceptional';
   if (v >= 80) return 'Excellent';
+  if (v >= 75) return 'Well above average';
   if (v >= 70) return 'Great';
+  if (v >= 65) return 'Very good';
   if (v >= 60) return 'A cut above';
+  if (v >= 55) return 'Good';
   if (v >= 50) return 'Solid';
+  if (v >= 45) return 'Not bad';
   if (v >= 40) return 'Sub-par';
-  return 'Poor';
+  if (v >= 35) return 'Multiple flaws';
+  if (v >= 30) return 'Poor';
+  if (v >= 25) return 'Bad';
+  if (v >= 20) return "Wouldn't watch by choice";
+  if (v >= 15) return 'So bad I stopped watching';
+  if (v >= 10) return 'Disgusting';
+  if (v >= 5) return 'Insulting';
+  if (v >= 2) return 'Nearly the worst possible';
+  return 'Unwatchable';
 }
 
 function renderStarterRateCard(film, palColor) {
@@ -1032,6 +1057,14 @@ window.starterLoadMoreFilms = async function() {
         genre: ''
       }));
     starterDiscoverFilms.push(...newFilms);
+
+    // Trim so total grid count fills complete rows
+    const cols = window.innerWidth <= 768 ? 2 : 4;
+    const totalVisible = getStarterFilms().length;
+    const remainder = totalVisible % cols;
+    if (remainder > 0 && starterDiscoverFilms.length >= remainder) {
+      starterDiscoverFilms.splice(starterDiscoverFilms.length - remainder);
+    }
   } catch (e) {
     console.warn('Failed to load more starter films:', e);
   }
@@ -1039,8 +1072,60 @@ window.starterLoadMoreFilms = async function() {
   renderStarterFilms();
 };
 
-window.starterSkipToSearch = function() {
-  starterFinishAndExit({ goToAdd: true });
+let _starterSearchTimer = null;
+window.starterSearchFilm = function(query) {
+  const resultsEl = document.getElementById('starter-search-results');
+  if (!resultsEl) return;
+  clearTimeout(_starterSearchTimer);
+  if (!query || query.length < 2) { resultsEl.innerHTML = ''; return; }
+  _starterSearchTimer = setTimeout(async () => {
+    try {
+      const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
+      const res = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1`);
+      const data = await res.json();
+      const ratedSet = new Set([...MOVIES.map(m => String(m.tmdbId)), ...starterRated.map(String)]);
+      const results = (data.results || [])
+        .filter(f => f.poster_path && !ratedSet.has(String(f.id)))
+        .slice(0, 5);
+      if (!results.length) {
+        resultsEl.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--on-dark-dim);padding:8px 0">No results</div>';
+        return;
+      }
+      resultsEl.innerHTML = results.map(f => {
+        const year = f.release_date ? f.release_date.slice(0, 4) : '';
+        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 4px;cursor:pointer;border-bottom:1px solid rgba(244,239,230,0.08)" onclick="starterSearchSelect(${f.id}, '${f.poster_path}', '${f.title.replace(/'/g, "\\'")}', '${year}')">
+          <img src="https://image.tmdb.org/t/p/w92${f.poster_path}" style="width:32px;height:48px;object-fit:cover;border-radius:2px;flex-shrink:0" alt="">
+          <div style="min-width:0">
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:14px;color:var(--on-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.title}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim)">${year}</div>
+          </div>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      resultsEl.innerHTML = '';
+    }
+  }, 350);
+};
+
+window.starterSearchSelect = function(tmdbId, posterPath, title, year) {
+  // Add to discover films and expand the rating card
+  const existing = getStarterFilms().find(f => String(f.tmdbId) === String(tmdbId));
+  if (!existing) {
+    starterDiscoverFilms.unshift({ tmdbId, title, year, director: '', poster: posterPath, genre: '' });
+  }
+  // Clear search
+  const input = document.getElementById('starter-search-input');
+  if (input) input.value = '';
+  const resultsEl = document.getElementById('starter-search-results');
+  if (resultsEl) resultsEl.innerHTML = '';
+  // Expand the film for rating
+  starterExpandedId = tmdbId;
+  renderStarterFilms();
+  // Scroll to the expanded card
+  setTimeout(() => {
+    const inline = document.querySelector('.starter-rate-inline');
+    if (inline) inline.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 100);
 };
 
 window.starterFinish = function() {

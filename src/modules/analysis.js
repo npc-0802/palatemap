@@ -33,7 +33,7 @@ export function renderAnalysis() {
         const filtered = catAvgs.filter(c => c.avg != null && !isNaN(c.avg));
         const topCat = filtered.length ? filtered.reduce((a, b) => (b.avg > a.avg ? b : a)) : null;
         if (shouldShowHint('analysis_settling', () => MOVIES.length < 20) && topCat) {
-          return renderHint('analysis_settling', 'Your averages are still settling — they\'ll sharpen as you rate more films. Right now your strongest category is <strong>' + topCat.label + '</strong> at ' + topCat.avg + '.');
+          return renderHint('analysis_settling', 'The category you\'ve rated highest on average is <strong>' + topCat.label + '</strong> at ' + topCat.avg + '. These averages will sharpen as you rate more films.');
         }
         return '';
       })()}
