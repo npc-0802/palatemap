@@ -1175,6 +1175,12 @@ async function obFinish(reveal, opts = {}) {
   recalcAllTotals();
   recordWeightSnapshot('onboarding');
 
+  // For returning users with existing ratings, blend quiz weights with rating signal
+  if (MOVIES.length >= 3) {
+    const { updateEffectiveWeights } = await import('./weight-blend.js');
+    updateEffectiveWeights();
+  }
+
   // Render app content underneath the overlay before animating
   const { updateMastheadProfile, updateStorageStatus, setCloudStatus } = await import('../ui-callbacks.js');
   updateMastheadProfile();
