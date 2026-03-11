@@ -1,5 +1,5 @@
 Palate Map
-Product Brief · Living Document · v3.26
+Product Brief · Living Document · v3.27
 Last updated: March 2026
 Confidential — do not distribute
 
@@ -57,12 +57,12 @@ Design Principles
   Paper surfaces = daily utility (rankings, scoring, analysis, watchlist).
   This duality is intentional and should be preserved. The fix is not to change either surface — it's to design the seam between them.
 • No dark mode yet. Clean paper aesthetic is intentional and differentiating.
-• Animations: layered motion system. Cold landing: staggered reveal (wordmark → hero → rule → value props → auth card with glow); exit: fade-out-down (0.4s, ease-in). Onboarding → app: curtain lift (0.5s, accelerating ease-out on overlay; 0.4s deceleration ease-in on app content with 200ms offset — creates dissolve-overlap). Modals: two-class system (open → display:flex, visible → opacity/transform transition). Screen transitions: per-screen (Rankings instant, For You slide-up, Profile slow fade). Quiz: cross-fade between steps, cinematic first-step intro with staggered card reveal, dramatic archetype reveal with scale animation. Film cards: lift + shadow on hover, score badge pop. Global search: fade-in overlay + slide-down content. Add Film: poster scale-in (0.97→1), score card horizontal slide transitions, craft/experience interstitial fade, result reveal 7-phase staged animation on dark surface. No bounces — motion feels like gravity and intention.
+• Animations: layered motion system. Cold landing: staggered reveal (wordmark → hero → rule → value props → auth card with glow); exit: fade-out-down (0.4s, ease-in). Onboarding → app: curtain lift (0.5s, accelerating ease-out on overlay; 0.4s deceleration ease-in on app content with 200ms offset — creates dissolve-overlap). Modals: two-class system (open → display:flex, visible → opacity/transform transition). Screen transitions: per-screen (Rankings instant, For You slide-up, Profile slow fade). Quiz: cross-fade between steps, cinematic first-step intro with staggered card reveal, dramatic archetype reveal with scale animation. Film cards: lift + shadow on hover, score badge pop. Global search: fade-in overlay + slide-down content. Add Film: poster scale-in (0.97→1), unified score-split layout with bouncing slider arrow hints that fade on touch, result reveal 7-phase staged animation on dark surface. No bounces — motion feels like gravity and intention.
 • Mobile: responsive bottom bar redesigned. Tab strip (5 items: Rankings, Analysis, Friends, Watch, Profile) sits above a full-width persimmon "Search" CTA bar (opens global search overlay). The .mobile-bottom wrapper handles fixed positioning; ::after pseudo-element matches action color to cover browser chrome gap transitions. Screen padding accounts for both rows.
 • Rankings nav icon is a medal (ribbon + circle), not a hamburger. Analysis uses bar chart. Icons are distinct across all 5 tabs.
 
 03  Current Architecture
-Status: Phase 1 complete, Phase 2 complete, Phase 3.1–3.8 complete, 3.11 complete, 3.13 complete, 3.15–3.25 complete. Vite multi-file vanilla JS.
+Status: Phase 1 complete, Phase 2 complete, Phase 3.1–3.8 complete, 3.11 complete, 3.13 complete, 3.15–3.27 complete. Vite multi-file vanilla JS.
 
 File Structure
 palatemap/
@@ -536,6 +536,25 @@ Phase 3 — Growth Features [IN PROGRESS]
   - Legacy user handling: users without quiz_weights are prompted to complete new onboarding before accessing the app (forced re-onboarding, no silent weight migration).
   - Starter films use NEW_ARCHETYPE_TO_OLD mapping (Archivist→Completionist, Holist→Visceralist) for compatibility with existing starter-films.js data.
 
+• 3.27 Scoring & UX Overhaul ✓ — unified scoring, archetype display, cross-cutting UX:
+  - Scoring UI: replaced one-at-a-time card mode with onboarding-style all-categories view (score-split layout). Both Add Film and starter onboarding now share the same 50/50 copy-left/slider-right layout with Craft/Experience group section headers.
+  - Animated slider arrows: bouncing chevron hints (`.score-slider-wrap::before/::after`) that fade on first touch. Applied to both Add Film and onboarding sliders.
+  - Sticky scoring header: film title/poster stays visible during onboarding scoring via `position: sticky` on the header element (required removing `overflow: hidden` from `.starter-rate-card`).
+  - Unified archetype display: profile and share cards show single combined name (e.g. "Studied Narrativist") instead of separate primary/secondary. `getArchetypeInfo()` in profile.js recomputes live from `classifyArchetype(weights)`.
+  - Archetype change popup: full-screen overlay with contextual copy for all 30 permutations (6 types × 5 transitions). Fires from `updateEffectiveWeights()` with 400ms delay for screen transition completion. Copy stored in `ARCHETYPE_CHANGE_COPY` map in weight-blend.js.
+  - For You early state: all sections visible at every prediction tier. Locked sections show 40% opacity + lock overlay with "Rate X more films to unlock" instead of being hidden.
+  - Score labels: added "Nearly perfect" (95–99) and "Nearly the worst possible" (2–4) to global LABELS. Film overviews shown in full (no truncation with ellipsis).
+  - Weight display: all weight values rounded to 1 decimal place via `.toFixed(1)` to prevent floating-point display bugs (e.g. ×4.199999999999999).
+  - Add Film flow: "Rate →" inline CTA on search results auto-confirms (skips description, goes straight to scoring). "+ List" adds to watchlist. Main row click still goes to description.
+  - Add Film navigation: clicking "Add Film" always goes to search screen. Two exceptions: (1) mid-rating shows discard prompt, (2) returning from navigation shows resume prompt. Both "No" actions reset to fresh search.
+  - Film removal: `modalRemoveFilm` now calls `updateEffectiveWeights()` to recalculate weights from updated film list.
+  - Calibration: added "Finish early →" option that appears after first comparison, skips remaining matchups and goes to review.
+  - Share cards: long film titles truncated with ellipsis to prevent layout overflow.
+  - Watchlist: "For You" recommendations CTA added below film list.
+  - Global search: row click now works for all films — falls back to watchlist detail modal or Add Film when no prediction cache exists.
+  - Onboarding: "Skip this for now →" CTA below search input (visible when 0 films rated).
+  - Masthead wordmark: hover state with opacity transition.
+
 Phase 4 — Platform
 • 4.1 Universal entity search — global search surfacing any director/actor/writer/company (entity-level, not film-level — film search is covered by 3.8 Global Search). Entity page shows: TMDB data, user's own rankings (if any), community avg score (requires 4.2). Requires schema change: separate palatemap_ratings table (see below).
 • 4.2 Community ratings layer — requires migrating films from per-user JSON blob to a normalized palatemap_ratings table (user_id, tmdb_id, scores jsonb, total, metadata). Migration strategy: dual-write first (sync to both blob and table), validate counts match, then switch reads. See technical audit roadmap Section 1 for full schema + migration plan. Enables: community avg score on any film or entity, "popular with users like you" discovery, per-rating sync (eliminates row-size limits and full-row overwrite).
@@ -720,4 +739,4 @@ This migration should be planned alongside Phase 4.2 (community ratings) as they
 
 Engineering rule: until the palatemap_predictions table exists, every prediction call must store the full predicted_scores, archetype_at_time, and weights_at_time on the prediction entry in currentUser.predictions. This ensures the data needed for future cross-user learning is captured now and will be migratable when the schema is ready. Do not store only the predicted total — always store the full score breakdown.
 
-Palate Map · private product brief · v3.26 · do not distribute
+Palate Map · private product brief · v3.27 · do not distribute
