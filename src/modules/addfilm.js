@@ -177,7 +177,7 @@ function renderConfirmationHero() {
     : '';
   const directors = newFilm._allDirectors || [];
   const directorStr = directors.join(', ');
-  const overview = (detail.overview || '').slice(0, 240) + (detail.overview && detail.overview.length > 240 ? '…' : '');
+  const overview = detail.overview || '';
   const runtime = detail.runtime ? detail.runtime + ' min' : '';
   const metaParts = [newFilm.year, runtime, directorStr].filter(Boolean);
 
@@ -807,27 +807,42 @@ window.rateAnotherFromResult = function() {
 
 // ── RESUME PROMPT ──
 
+// Called when user clicks Add Film while ALREADY on the Add Film screen
 export function checkAddFilmDiscard() {
-  // If user is mid-scoring (step > 1 and has a film selected), show discard confirmation
+  // Only triggers if actively mid-rating (step > 1)
   if (currentStep > 1 && newFilm.title) {
     showDiscardPrompt();
     return true;
   }
-  // If on confirmation screen (step 1 with film selected), just reset to search
-  if (currentStep === 1 && newFilm._tmdbId) {
-    resetToSearch();
+  // On confirmation screen or search — just reset to fresh search
+  if (newFilm._tmdbId || currentStep > 1) {
+    doResetToSearch();
     return true;
   }
   return false;
 }
 
+// Called when navigating TO the Add Film screen (from another screen or on load)
 export function checkAddFilmResume() {
-  // If user is mid-flow (step > 1 and has a film selected), show resume prompt
+  // Only triggers if there's an in-progress rating (step > 1)
   if (currentStep > 1 && newFilm.title) {
     showResumePrompt();
-    return true; // handled
+    return true;
   }
-  return false; // no prompt needed
+  return false;
+}
+
+function doResetToSearch() {
+  newFilm = { title:'', year:null, director:'', writer:'', cast:'', productionCompanies:'', scores:{} };
+  currentStep = 1;
+  prefillScores = null;
+  hideAddFilmBanner();
+  document.getElementById('f-search').value = '';
+  document.getElementById('tmdb-results').innerHTML = '';
+  document.getElementById('tmdb-search-phase').style.display = '';
+  document.getElementById('tmdb-curation-phase').style.display = 'none';
+  updateStepUI(1);
+  renderWatchlistInSearch();
 }
 
 function showDiscardPrompt() {
@@ -861,13 +876,7 @@ function showDiscardPrompt() {
 window.addFilmDiscardYes = function() {
   const overlay = document.getElementById('addfilm-discard-overlay');
   if (overlay) overlay.remove();
-  // Reset the add film flow
-  newFilm = { title:'', year:null, director:'', writer:'', cast:'', scores:{} };
-  currentStep = 1;
-  prefillScores = null;
-  hideAddFilmBanner();
-  goToStep(1);
-  renderWatchlistInSearch();
+  doResetToSearch();
 };
 
 window.addFilmDiscardNo = function() {
@@ -925,17 +934,7 @@ window.addFilmResumeYes = function() {
 window.addFilmResumeNo = function() {
   const overlay = document.getElementById('addfilm-resume-overlay');
   if (overlay) overlay.remove();
-  // Reset to search screen
-  newFilm = { title:'', year:null, director:'', writer:'', cast:'', productionCompanies:'', scores:{} };
-  currentStep = 1;
-  prefillScores = null;
-  hideAddFilmBanner();
-  document.getElementById('f-search').value = '';
-  document.getElementById('tmdb-results').innerHTML = '';
-  document.getElementById('tmdb-search-phase').style.display = '';
-  document.getElementById('tmdb-curation-phase').style.display = 'none';
-  updateStepUI(1);
-  renderWatchlistInSearch();
+  doResetToSearch();
 };
 
 window.openAddFilmPosterPicker = async function() {

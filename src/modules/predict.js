@@ -2188,7 +2188,19 @@ function renderConstrainedResults(name, type, _tmdbId, results) {
 
 async function openRecommendedDetail(tmdbId) {
   const cached = currentUser?.predictions?.[String(tmdbId)];
-  if (!cached?.film) return;
+  if (!cached?.film) {
+    // No prediction — check watchlist or go straight to rating
+    const wlIdx = (currentUser?.watchlist || []).findIndex(w => String(w.tmdbId) === String(tmdbId));
+    if (wlIdx >= 0) {
+      window.openWatchlistDetail(wlIdx);
+      return;
+    }
+    // Not on watchlist — go to Add Film with this film
+    const { closeModal } = await import('./modal.js');
+    window.showScreen('add');
+    setTimeout(() => window.tmdbSelect?.(tmdbId, ''), 150);
+    return;
+  }
   // Determine if hero or secondary
   const heroTmdbId = currentUser?.cachedRecommendations?.[0]?.tmdbId;
   track('foryou_recommendation_clicked', {

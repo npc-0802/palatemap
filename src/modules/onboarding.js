@@ -757,6 +757,9 @@ function renderStarterFilms() {
             oninput="starterSearchFilm(this.value)">
           <div id="starter-search-results" style="margin-top:8px"></div>
         </div>
+        ${starterRated.length === 0 ? `<div style="text-align:center;margin-top:16px">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);cursor:pointer;letter-spacing:0.5px;text-decoration:underline;text-underline-offset:2px" onclick="starterFinish()">Skip this for now →</span>
+        </div>` : ''}
       </div>
 
       <div style="text-align:${starterRated.length > 0 ? 'right' : 'center'};margin-top:20px;padding-top:12px">
