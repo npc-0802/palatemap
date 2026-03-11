@@ -731,7 +731,7 @@ function renderResult() {
       <div class="result-reveal-grid">
         ${CATEGORIES.map(cat => `
           <div class="result-cat">
-            <div class="result-cat-name">${cat.label} ×${+cat.weight.toFixed(1)}</div>
+            <div class="result-cat-name"><span class="result-cat-label">${cat.label}</span> <span class="result-cat-wt">×${+cat.weight.toFixed(1)}</span></div>
             <div class="result-cat-val ${scoreClass(savedFilm.scores[cat.key] || 0)}">${savedFilm.scores[cat.key] || '—'}</div>
           </div>`).join('')}
       </div>
