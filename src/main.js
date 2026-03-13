@@ -161,6 +161,7 @@ window._testSkipToQuiz = function(name) {
 };
 
 window.landingGoogle = async function() {
+  localStorage.setItem('palatemap_auth_pending', '1');
   const { signInWithGoogle } = await import('./modules/supabase.js');
   signInWithGoogle();
 };
@@ -209,20 +210,23 @@ async function init() {
         // Exception: if palatemap_pending_name is set, user just clicked
         // "Get Started" or Google from the landing page — go to onboarding.
         const pendingName = localStorage.getItem('palatemap_pending_name');
-        if (pendingName) {
+        const authPending = localStorage.getItem('palatemap_auth_pending');
+        if (pendingName || authPending) {
+          // User just came from our landing page (Google sign-in or name entry)
           const name = pendingName
             || session.user.user_metadata?.full_name
             || session.user.user_metadata?.name
             || session.user.email?.split('@')[0]
             || '';
           localStorage.removeItem('palatemap_pending_name');
+          localStorage.removeItem('palatemap_auth_pending');
           window._pendingAuthSession = session;
           renderRankings();
           updateStorageStatus();
           launchOnboarding({ skipToQuiz: true, name });
           return;
         } else {
-          // Discard partial local user if any
+          // Stale session, no profile — show cold landing
           if (currentUser && !currentUser.quiz_weights) {
             setCurrentUser(null);
             setMovies([]);
