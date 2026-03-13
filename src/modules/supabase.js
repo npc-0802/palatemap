@@ -7,9 +7,7 @@ const SUPABASE_URL = 'https://gzuuhjjedrzeqbgxhfip.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_OprjtxkrwknRf8jSZ7bYWg_GGqRiu4z';
 export const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const REDIRECT_URL = window.location.hostname === 'localhost'
-  ? 'http://localhost:5173'
-  : 'https://palatemap.com';
+const REDIRECT_URL = window.location.origin;
 
 // ── AUTH ──
 
