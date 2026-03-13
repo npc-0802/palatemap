@@ -1,0 +1,6235 @@
+{
+  "version": "1.2",
+  "tags": {
+    "007": {
+      "tagId": 1,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "007 (series)": {
+      "tagId": 2,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "18th century": {
+      "tagId": 3,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "heuristic_only"
+    },
+    "1920s": {
+      "tagId": 4,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "heuristic_only"
+    },
+    "1930s": {
+      "tagId": 5,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "heuristic_only"
+    },
+    "1950s": {
+      "tagId": 6,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "heuristic_only"
+    },
+    "1960s": {
+      "tagId": 7,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "heuristic_only"
+    },
+    "1970s": {
+      "tagId": 8,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "heuristic_only"
+    },
+    "1980s": {
+      "tagId": 9,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "heuristic_only"
+    },
+    "19th century": {
+      "tagId": 10,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "heuristic_only"
+    },
+    "3d": {
+      "tagId": 11,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "70mm": {
+      "tagId": 12,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft"
+    },
+    "80s": {
+      "tagId": 13,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "heuristic_only"
+    },
+    "9/11": {
+      "tagId": 14,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "aardman": {
+      "tagId": 15,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "aardman studios": {
+      "tagId": 16,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "abortion": {
+      "tagId": 17,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "absurd": {
+      "tagId": 18,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "experience"
+    },
+    "action": {
+      "tagId": 19,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "experience",
+      "secondary_category": "craft"
+    },
+    "action packed": {
+      "tagId": 20,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "adaptation": {
+      "tagId": 21,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story"
+    },
+    "adapted from:book": {
+      "tagId": 22,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "heuristic_only"
+    },
+    "adapted from:comic": {
+      "tagId": 23,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "heuristic_only"
+    },
+    "adapted from:game": {
+      "tagId": 24,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "heuristic_only"
+    },
+    "addiction": {
+      "tagId": 25,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "performance"
+    },
+    "adolescence": {
+      "tagId": 26,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "adoption": {
+      "tagId": 27,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "adultery": {
+      "tagId": 28,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "adventure": {
+      "tagId": 29,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "experience"
+    },
+    "affectionate": {
+      "tagId": 30,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance"
+    },
+    "afi 100": {
+      "tagId": 31,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "afi 100 (laughs)": {
+      "tagId": 32,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "afi 100 (movie quotes)": {
+      "tagId": 33,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "africa": {
+      "tagId": 34,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "afterlife": {
+      "tagId": 35,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "aging": {
+      "tagId": 36,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "performance"
+    },
+    "aids": {
+      "tagId": 37,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "airplane": {
+      "tagId": 38,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "airport": {
+      "tagId": 39,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "alaska": {
+      "tagId": 40,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "alcatraz": {
+      "tagId": 41,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "alcoholism": {
+      "tagId": 42,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "alien": {
+      "tagId": 43,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "alien invasion": {
+      "tagId": 44,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "aliens": {
+      "tagId": 45,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world"
+    },
+    "allegory": {
+      "tagId": 46,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "singularity"
+    },
+    "almodovar": {
+      "tagId": 47,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "alone in the world": {
+      "tagId": 48,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "alter ego": {
+      "tagId": 49,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "alternate endings": {
+      "tagId": 50,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "ending"
+    },
+    "alternate history": {
+      "tagId": 51,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "singularity"
+    },
+    "alternate reality": {
+      "tagId": 52,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "world"
+    },
+    "alternate universe": {
+      "tagId": 53,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "amazing cinematography": {
+      "tagId": 54,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "amazing photography": {
+      "tagId": 55,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "american civil war": {
+      "tagId": 56,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "amnesia": {
+      "tagId": 57,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "amy smart": {
+      "tagId": 58,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "android(s)/cyborg(s)": {
+      "tagId": 59,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "androids": {
+      "tagId": 60,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "animal movie": {
+      "tagId": 61,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "animals": {
+      "tagId": 62,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "animated": {
+      "tagId": 63,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "animation": {
+      "tagId": 64,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "anime": {
+      "tagId": 65,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "antarctica": {
+      "tagId": 66,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "anti-hero": {
+      "tagId": 67,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance",
+      "secondary_category": "story"
+    },
+    "anti-semitism": {
+      "tagId": 68,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "anti-war": {
+      "tagId": 69,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "apocalypse": {
+      "tagId": 70,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "archaeology": {
+      "tagId": 71,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "argentina": {
+      "tagId": 72,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "arms dealer": {
+      "tagId": 73,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "arnold": {
+      "tagId": 74,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "art": {
+      "tagId": 75,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "singularity"
+    },
+    "art house": {
+      "tagId": 76,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "craft"
+    },
+    "artificial intelligence": {
+      "tagId": 77,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "artist": {
+      "tagId": 78,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "artistic": {
+      "tagId": 79,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "singularity"
+    },
+    "artsy": {
+      "tagId": 80,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "craft"
+    },
+    "assassin": {
+      "tagId": 81,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "assassination": {
+      "tagId": 82,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story"
+    },
+    "assassins": {
+      "tagId": 83,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "astronauts": {
+      "tagId": 84,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "atheism": {
+      "tagId": 85,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "atmospheric": {
+      "tagId": 86,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "australia": {
+      "tagId": 87,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "australian": {
+      "tagId": 88,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "author:alan moore": {
+      "tagId": 89,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "heuristic_only"
+    },
+    "author:neil gaiman": {
+      "tagId": 90,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "heuristic_only"
+    },
+    "autism": {
+      "tagId": 91,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "aviation": {
+      "tagId": 92,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "awesome": {
+      "tagId": 93,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "awesome soundtrack": {
+      "tagId": 94,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "awful": {
+      "tagId": 95,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "bad": {
+      "tagId": 96,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "bad acting": {
+      "tagId": 97,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "bad cgi": {
+      "tagId": 98,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "bad ending": {
+      "tagId": 99,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "bad plot": {
+      "tagId": 100,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "bad science": {
+      "tagId": 101,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "bad script": {
+      "tagId": 102,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "bad sequel": {
+      "tagId": 103,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "ballet": {
+      "tagId": 104,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "bank robbery": {
+      "tagId": 105,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "baseball": {
+      "tagId": 106,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "based on a book": {
+      "tagId": 107,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only"
+    },
+    "based on a comic": {
+      "tagId": 108,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only"
+    },
+    "based on a play": {
+      "tagId": 109,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only"
+    },
+    "based on a true story": {
+      "tagId": 110,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only"
+    },
+    "based on a tv show": {
+      "tagId": 111,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only"
+    },
+    "based on a video game": {
+      "tagId": 112,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only"
+    },
+    "based on book": {
+      "tagId": 113,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only"
+    },
+    "based on comic": {
+      "tagId": 114,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only"
+    },
+    "based on true story": {
+      "tagId": 115,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only"
+    },
+    "basketball": {
+      "tagId": 116,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "batman": {
+      "tagId": 117,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "bdsm": {
+      "tagId": 118,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "beatles": {
+      "tagId": 119,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "beautiful": {
+      "tagId": 120,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "world"
+    },
+    "beautiful scenery": {
+      "tagId": 121,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "craft"
+    },
+    "beautifully filmed": {
+      "tagId": 122,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "world"
+    },
+    "beauty pageant": {
+      "tagId": 123,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "beer": {
+      "tagId": 124,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "berlin": {
+      "tagId": 125,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "best of 2005": {
+      "tagId": 126,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "best war films": {
+      "tagId": 127,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "betrayal": {
+      "tagId": 128,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story"
+    },
+    "better than expected": {
+      "tagId": 129,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "better than the american version": {
+      "tagId": 130,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "biblical": {
+      "tagId": 131,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "big budget": {
+      "tagId": 132,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "craft"
+    },
+    "biographical": {
+      "tagId": 133,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "biography": {
+      "tagId": 134,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "biopic": {
+      "tagId": 135,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "birds": {
+      "tagId": 136,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "biting": {
+      "tagId": 137,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "experience"
+    },
+    "bittersweet": {
+      "tagId": 138,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "ending",
+      "secondary_category": "experience"
+    },
+    "bizarre": {
+      "tagId": 139,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "world"
+    },
+    "black and white": {
+      "tagId": 140,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "craft",
+      "secondary_category": "world"
+    },
+    "black comedy": {
+      "tagId": 141,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "experience"
+    },
+    "blaxploitation": {
+      "tagId": 142,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "bleak": {
+      "tagId": 143,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "blindness": {
+      "tagId": 144,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "performance",
+      "secondary_category": "world"
+    },
+    "blood": {
+      "tagId": 145,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "bloody": {
+      "tagId": 146,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "experience",
+      "secondary_category": "world"
+    },
+    "boarding school": {
+      "tagId": 147,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "boat": {
+      "tagId": 148,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "bollywood": {
+      "tagId": 149,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "bombs": {
+      "tagId": 150,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "bond": {
+      "tagId": 151,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "book": {
+      "tagId": 152,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "book was better": {
+      "tagId": 153,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "books": {
+      "tagId": 154,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "boring": {
+      "tagId": 155,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "boring!": {
+      "tagId": 156,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "boston": {
+      "tagId": 157,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "bowling": {
+      "tagId": 158,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "boxing": {
+      "tagId": 159,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "brainwashing": {
+      "tagId": 160,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "brazil": {
+      "tagId": 161,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "breathtaking": {
+      "tagId": 162,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "world"
+    },
+    "brilliant": {
+      "tagId": 163,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "british": {
+      "tagId": 164,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "british comedy": {
+      "tagId": 165,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "broadway": {
+      "tagId": 166,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "brothers": {
+      "tagId": 167,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "performance",
+      "secondary_category": "story"
+    },
+    "brutal": {
+      "tagId": 168,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience",
+      "secondary_category": "world"
+    },
+    "brutality": {
+      "tagId": 169,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience",
+      "secondary_category": "world"
+    },
+    "buddy movie": {
+      "tagId": 170,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "bullshit history": {
+      "tagId": 171,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "bullying": {
+      "tagId": 172,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "performance",
+      "secondary_category": "story"
+    },
+    "business": {
+      "tagId": 173,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "c.s. lewis": {
+      "tagId": 174,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "california": {
+      "tagId": 175,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "camp": {
+      "tagId": 176,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "campy": {
+      "tagId": 177,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "canada": {
+      "tagId": 178,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "cancer": {
+      "tagId": 179,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "cannibalism": {
+      "tagId": 180,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "caper": {
+      "tagId": 181,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "capitalism": {
+      "tagId": 182,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "car chase": {
+      "tagId": 183,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "carrie-anne moss": {
+      "tagId": 184,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "cars": {
+      "tagId": 185,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "cartoon": {
+      "tagId": 186,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "casino": {
+      "tagId": 187,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "catastrophe": {
+      "tagId": 188,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "experience"
+    },
+    "cathartic": {
+      "tagId": 189,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience",
+      "secondary_category": "ending"
+    },
+    "catholicism": {
+      "tagId": 190,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "censorship": {
+      "tagId": 191,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "cerebral": {
+      "tagId": 192,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "singularity"
+    },
+    "cgi": {
+      "tagId": 193,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "character study": {
+      "tagId": 194,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance",
+      "secondary_category": "story"
+    },
+    "chase": {
+      "tagId": 195,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "experience"
+    },
+    "cheating": {
+      "tagId": 196,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "cheerleading": {
+      "tagId": 197,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "cheesy": {
+      "tagId": 198,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "chess": {
+      "tagId": 199,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "chicago": {
+      "tagId": 200,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "chick flick": {
+      "tagId": 201,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "child abuse": {
+      "tagId": 202,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "childhood": {
+      "tagId": 203,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "performance"
+    },
+    "children": {
+      "tagId": 204,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "china": {
+      "tagId": 205,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "chocolate": {
+      "tagId": 206,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "chris tucker": {
+      "tagId": 207,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "christian": {
+      "tagId": 208,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "christianity": {
+      "tagId": 209,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "christmas": {
+      "tagId": 210,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "cia": {
+      "tagId": 211,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "cinematography": {
+      "tagId": 212,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft"
+    },
+    "circus": {
+      "tagId": 213,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "civil war": {
+      "tagId": 214,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "classic": {
+      "tagId": 215,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "hold"
+    },
+    "classic car": {
+      "tagId": 216,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "classical music": {
+      "tagId": 217,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "claustrophobic": {
+      "tagId": 218,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "claymation": {
+      "tagId": 219,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "clever": {
+      "tagId": 220,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "singularity"
+    },
+    "clones": {
+      "tagId": 221,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "cloning": {
+      "tagId": 222,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "clowns": {
+      "tagId": 223,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "coen bros": {
+      "tagId": 224,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "coen brothers": {
+      "tagId": 225,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "cold war": {
+      "tagId": 226,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "college": {
+      "tagId": 227,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "colonialism": {
+      "tagId": 228,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "colourful": {
+      "tagId": 229,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "craft"
+    },
+    "comedy": {
+      "tagId": 230,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "experience"
+    },
+    "comic": {
+      "tagId": 231,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "comic book": {
+      "tagId": 232,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "comic book adaption": {
+      "tagId": 233,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "comics": {
+      "tagId": 234,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "coming of age": {
+      "tagId": 235,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "performance"
+    },
+    "coming-of-age": {
+      "tagId": 236,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "performance"
+    },
+    "communism": {
+      "tagId": 237,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "compassionate": {
+      "tagId": 238,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance"
+    },
+    "competition": {
+      "tagId": 239,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "complex": {
+      "tagId": 240,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "craft"
+    },
+    "complex characters": {
+      "tagId": 241,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance",
+      "secondary_category": "story"
+    },
+    "complicated": {
+      "tagId": 242,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story"
+    },
+    "complicated plot": {
+      "tagId": 243,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "singularity"
+    },
+    "computer animation": {
+      "tagId": 244,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "computer game": {
+      "tagId": 245,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "computers": {
+      "tagId": 246,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "con artists": {
+      "tagId": 247,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "con men": {
+      "tagId": 248,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "confrontational": {
+      "tagId": 249,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "confusing": {
+      "tagId": 250,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story"
+    },
+    "conspiracy": {
+      "tagId": 251,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story"
+    },
+    "conspiracy theory": {
+      "tagId": 252,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "controversial": {
+      "tagId": 253,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity"
+    },
+    "cooking": {
+      "tagId": 254,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "cool": {
+      "tagId": 255,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "corny": {
+      "tagId": 256,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "corporate america": {
+      "tagId": 257,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "corruption": {
+      "tagId": 258,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story"
+    },
+    "costume drama": {
+      "tagId": 259,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world"
+    },
+    "courage": {
+      "tagId": 260,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "performance",
+      "secondary_category": "story"
+    },
+    "court": {
+      "tagId": 261,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "courtroom": {
+      "tagId": 262,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "courtroom drama": {
+      "tagId": 263,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "crappy sequel": {
+      "tagId": 264,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "crazy": {
+      "tagId": 265,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "creativity": {
+      "tagId": 266,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "craft"
+    },
+    "creepy": {
+      "tagId": 267,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "crime": {
+      "tagId": 268,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "world"
+    },
+    "crime gone awry": {
+      "tagId": 269,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story"
+    },
+    "criterion": {
+      "tagId": 270,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "cross dressing": {
+      "tagId": 271,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "crude humor": {
+      "tagId": 272,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "cuba": {
+      "tagId": 273,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "cult": {
+      "tagId": 274,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "hold",
+      "secondary_category": "singularity"
+    },
+    "cult classic": {
+      "tagId": 275,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "hold",
+      "secondary_category": "singularity"
+    },
+    "cult film": {
+      "tagId": 276,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "hold",
+      "secondary_category": "singularity"
+    },
+    "culture clash": {
+      "tagId": 277,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "cute": {
+      "tagId": 278,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "cute!": {
+      "tagId": 279,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "cyberpunk": {
+      "tagId": 280,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "singularity"
+    },
+    "cyborgs": {
+      "tagId": 281,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "cynical": {
+      "tagId": 282,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story"
+    },
+    "dance": {
+      "tagId": 283,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "dancing": {
+      "tagId": 284,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "dark": {
+      "tagId": 285,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "dark comedy": {
+      "tagId": 286,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience",
+      "secondary_category": "singularity"
+    },
+    "dark fantasy": {
+      "tagId": 287,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "singularity"
+    },
+    "dark hero": {
+      "tagId": 288,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance"
+    },
+    "dark humor": {
+      "tagId": 289,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience",
+      "secondary_category": "singularity"
+    },
+    "dc comics": {
+      "tagId": 290,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "deadpan": {
+      "tagId": 291,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance",
+      "secondary_category": "experience"
+    },
+    "death": {
+      "tagId": 292,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "ending"
+    },
+    "death penalty": {
+      "tagId": 293,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "demons": {
+      "tagId": 294,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "depp & burton": {
+      "tagId": 295,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "depressing": {
+      "tagId": 296,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "depression": {
+      "tagId": 297,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "performance",
+      "secondary_category": "world"
+    },
+    "desert": {
+      "tagId": 298,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world"
+    },
+    "destiny": {
+      "tagId": 299,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "detective": {
+      "tagId": 300,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "devil": {
+      "tagId": 301,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "dialogue": {
+      "tagId": 302,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "performance"
+    },
+    "dialogue driven": {
+      "tagId": 303,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "performance"
+    },
+    "dinosaurs": {
+      "tagId": 304,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "directorial debut": {
+      "tagId": 305,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft"
+    },
+    "disability": {
+      "tagId": 306,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "disappointing": {
+      "tagId": 307,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "disaster": {
+      "tagId": 308,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "experience"
+    },
+    "disney": {
+      "tagId": 309,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "disney animated feature": {
+      "tagId": 310,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "distopia": {
+      "tagId": 311,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "disturbing": {
+      "tagId": 312,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience",
+      "secondary_category": "world"
+    },
+    "divorce": {
+      "tagId": 313,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "performance",
+      "secondary_category": "story"
+    },
+    "doctors": {
+      "tagId": 314,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "documentary": {
+      "tagId": 315,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "craft"
+    },
+    "dog": {
+      "tagId": 316,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "dogs": {
+      "tagId": 317,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "dolphins": {
+      "tagId": 318,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "downbeat": {
+      "tagId": 319,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "dr. seuss": {
+      "tagId": 320,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "dragon": {
+      "tagId": 321,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "dragons": {
+      "tagId": 322,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "drama": {
+      "tagId": 323,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "dramatic": {
+      "tagId": 324,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "performance",
+      "secondary_category": "experience"
+    },
+    "dreamlike": {
+      "tagId": 325,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "singularity"
+    },
+    "dreams": {
+      "tagId": 326,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world",
+      "secondary_category": "singularity"
+    },
+    "dreamworks": {
+      "tagId": 327,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "drinking": {
+      "tagId": 328,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "drug abuse": {
+      "tagId": 329,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "drug addiction": {
+      "tagId": 330,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "drugs": {
+      "tagId": 331,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "world"
+    },
+    "dumb": {
+      "tagId": 332,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "dumb but funny": {
+      "tagId": 333,
+      "disposition": "defer_ambiguous",
+      "review_status": "manually_reviewed"
+    },
+    "dynamic cgi action": {
+      "tagId": 334,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "experience"
+    },
+    "dysfunctional family": {
+      "tagId": 335,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "performance",
+      "secondary_category": "story"
+    },
+    "dystopia": {
+      "tagId": 336,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world",
+      "secondary_category": "story"
+    },
+    "dystopic future": {
+      "tagId": 337,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "earnest": {
+      "tagId": 338,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance"
+    },
+    "easily confused with other movie(s) (title)": {
+      "tagId": 339,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "east germany": {
+      "tagId": 340,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "eccentricity": {
+      "tagId": 341,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "performance"
+    },
+    "ecology": {
+      "tagId": 342,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "educational": {
+      "tagId": 343,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "eerie": {
+      "tagId": 344,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "effects": {
+      "tagId": 345,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "world"
+    },
+    "egypt": {
+      "tagId": 346,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "emma watson": {
+      "tagId": 347,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "emotional": {
+      "tagId": 348,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "experience",
+      "secondary_category": "performance"
+    },
+    "end of the world": {
+      "tagId": 349,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "world"
+    },
+    "england": {
+      "tagId": 350,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "enigmatic": {
+      "tagId": 351,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "world"
+    },
+    "ennio morricone": {
+      "tagId": 352,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world"
+    },
+    "enormously long battle scene": {
+      "tagId": 353,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "ensemble cast": {
+      "tagId": 354,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance"
+    },
+    "entertaining": {
+      "tagId": 355,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "entirely dialogue": {
+      "tagId": 356,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "performance"
+    },
+    "environment": {
+      "tagId": 357,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "environmental": {
+      "tagId": 358,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "epic": {
+      "tagId": 359,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "craft"
+    },
+    "erotic": {
+      "tagId": 360,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "espionage": {
+      "tagId": 361,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "ethnic conflict": {
+      "tagId": 362,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "evolution": {
+      "tagId": 363,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "excellent": {
+      "tagId": 364,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "excellent script": {
+      "tagId": 365,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "exceptional acting": {
+      "tagId": 366,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance"
+    },
+    "exciting": {
+      "tagId": 367,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "existentialism": {
+      "tagId": 368,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "story"
+    },
+    "explosions": {
+      "tagId": 369,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "factual": {
+      "tagId": 370,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "fairy tale": {
+      "tagId": 371,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "fairy tales": {
+      "tagId": 372,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "fake documentary": {
+      "tagId": 373,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity"
+    },
+    "family": {
+      "tagId": 374,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "performance",
+      "secondary_category": "story"
+    },
+    "family bonds": {
+      "tagId": 375,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "family drama": {
+      "tagId": 376,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "fantasy": {
+      "tagId": 377,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "fantasy world": {
+      "tagId": 378,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world"
+    },
+    "farce": {
+      "tagId": 379,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "fascism": {
+      "tagId": 380,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "fashion": {
+      "tagId": 381,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "fast paced": {
+      "tagId": 382,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "experience"
+    },
+    "father daughter relationship": {
+      "tagId": 383,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "father son relationship": {
+      "tagId": 384,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "father-son relationship": {
+      "tagId": 385,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "fbi": {
+      "tagId": 386,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "feel good movie": {
+      "tagId": 387,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "feel-good": {
+      "tagId": 388,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "fight scenes": {
+      "tagId": 389,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "experience",
+      "secondary_category": "craft"
+    },
+    "fighting": {
+      "tagId": 390,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "fighting the system": {
+      "tagId": 391,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "experience"
+    },
+    "figure skating": {
+      "tagId": 392,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "film noir": {
+      "tagId": 393,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "craft"
+    },
+    "finnish": {
+      "tagId": 394,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "firefly": {
+      "tagId": 395,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "first contact": {
+      "tagId": 396,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "world"
+    },
+    "fish": {
+      "tagId": 397,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "flashbacks": {
+      "tagId": 398,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "craft"
+    },
+    "food": {
+      "tagId": 399,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "football": {
+      "tagId": 400,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "forceful": {
+      "tagId": 401,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "foreign": {
+      "tagId": 402,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "foul language": {
+      "tagId": 403,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "fountain of youth": {
+      "tagId": 404,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "france": {
+      "tagId": 405,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "franchise": {
+      "tagId": 406,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "francis ford copolla": {
+      "tagId": 407,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "free speech": {
+      "tagId": 408,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "free to download": {
+      "tagId": 409,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "freedom": {
+      "tagId": 410,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "french": {
+      "tagId": 411,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "friendship": {
+      "tagId": 412,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "performance",
+      "secondary_category": "story"
+    },
+    "frightening": {
+      "tagId": 413,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience",
+      "secondary_category": "world"
+    },
+    "fun": {
+      "tagId": 414,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "fun movie": {
+      "tagId": 415,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "funniest movies": {
+      "tagId": 416,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "funny": {
+      "tagId": 417,
+      "disposition": "defer_ambiguous",
+      "review_status": "manually_reviewed"
+    },
+    "funny as hell": {
+      "tagId": 418,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "future": {
+      "tagId": 419,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "futuristic": {
+      "tagId": 420,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world"
+    },
+    "gambling": {
+      "tagId": 421,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "gangs": {
+      "tagId": 422,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "gangster": {
+      "tagId": 423,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "gangsters": {
+      "tagId": 424,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world",
+      "secondary_category": "story"
+    },
+    "gay": {
+      "tagId": 425,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "gay character": {
+      "tagId": 426,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "geek": {
+      "tagId": 427,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "geeks": {
+      "tagId": 428,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "genetics": {
+      "tagId": 429,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "genius": {
+      "tagId": 430,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "genocide": {
+      "tagId": 431,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "george orwell": {
+      "tagId": 432,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "german": {
+      "tagId": 433,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "germany": {
+      "tagId": 434,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "ghosts": {
+      "tagId": 435,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "ghosts/afterlife": {
+      "tagId": 436,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "giant robots": {
+      "tagId": 437,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "gilliam": {
+      "tagId": 438,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "girlie movie": {
+      "tagId": 439,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "glbt": {
+      "tagId": 440,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "global warming": {
+      "tagId": 441,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "god": {
+      "tagId": 442,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "golden palm": {
+      "tagId": 443,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "golf": {
+      "tagId": 444,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "good": {
+      "tagId": 445,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "good acting": {
+      "tagId": 446,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "good action": {
+      "tagId": 447,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "good dialogue": {
+      "tagId": 448,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "good music": {
+      "tagId": 449,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "good romantic comedies": {
+      "tagId": 450,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "good sequel": {
+      "tagId": 451,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "good soundtrack": {
+      "tagId": 452,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "good story": {
+      "tagId": 453,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "good versus evil": {
+      "tagId": 454,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story"
+    },
+    "goofy": {
+      "tagId": 455,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "gore": {
+      "tagId": 456,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "goretastic": {
+      "tagId": 457,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "gory": {
+      "tagId": 458,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "goth": {
+      "tagId": 459,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "gothic": {
+      "tagId": 460,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "craft"
+    },
+    "graphic design": {
+      "tagId": 461,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "graphic novel": {
+      "tagId": 462,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "gratuitous violence": {
+      "tagId": 463,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft"
+    },
+    "great": {
+      "tagId": 464,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "great acting": {
+      "tagId": 465,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "great cinematography": {
+      "tagId": 466,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "great dialogue": {
+      "tagId": 467,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "great ending": {
+      "tagId": 468,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "great movie": {
+      "tagId": 469,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "great music": {
+      "tagId": 470,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "great soundtrack": {
+      "tagId": 471,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "greed": {
+      "tagId": 472,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story"
+    },
+    "grim": {
+      "tagId": 473,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world"
+    },
+    "grindhouse": {
+      "tagId": 474,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "gritty": {
+      "tagId": 475,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "gross-out": {
+      "tagId": 476,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "gruesome": {
+      "tagId": 477,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "guilt": {
+      "tagId": 478,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "performance",
+      "secondary_category": "story"
+    },
+    "guilty pleasure": {
+      "tagId": 479,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "gulf war": {
+      "tagId": 480,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "gunfight": {
+      "tagId": 481,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "guns": {
+      "tagId": 482,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "gypsy accent": {
+      "tagId": 483,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "hackers": {
+      "tagId": 484,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "hacking": {
+      "tagId": 485,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "halloween": {
+      "tagId": 486,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "hallucinatory": {
+      "tagId": 487,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "singularity"
+    },
+    "handycam": {
+      "tagId": 488,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "hannibal lecter": {
+      "tagId": 489,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "happy ending": {
+      "tagId": 490,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "ending"
+    },
+    "hard to watch": {
+      "tagId": 491,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience",
+      "secondary_category": "performance"
+    },
+    "harry potter": {
+      "tagId": 492,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "harsh": {
+      "tagId": 493,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "haunted house": {
+      "tagId": 494,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "hawaii": {
+      "tagId": 495,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "heartbreaking": {
+      "tagId": 496,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance",
+      "secondary_category": "experience"
+    },
+    "heartwarming": {
+      "tagId": 497,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance",
+      "secondary_category": "experience"
+    },
+    "heist": {
+      "tagId": 498,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "experience"
+    },
+    "heroin": {
+      "tagId": 499,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "heroine": {
+      "tagId": 500,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "heroine in tight suit": {
+      "tagId": 501,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "high fantasy": {
+      "tagId": 502,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world"
+    },
+    "high school": {
+      "tagId": 503,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "highly quotable": {
+      "tagId": 504,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "hold"
+    },
+    "hilarious": {
+      "tagId": 505,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "hillarious": {
+      "tagId": 506,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "hip hop": {
+      "tagId": 507,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "historical": {
+      "tagId": 508,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world",
+      "secondary_category": "story"
+    },
+    "history": {
+      "tagId": 509,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "hit men": {
+      "tagId": 510,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "hitchcock": {
+      "tagId": 511,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "hitman": {
+      "tagId": 512,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "holiday": {
+      "tagId": 513,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "hollywood": {
+      "tagId": 514,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "holocaust": {
+      "tagId": 515,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "homeless": {
+      "tagId": 516,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "homophobia": {
+      "tagId": 517,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "homosexuality": {
+      "tagId": 518,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "honest": {
+      "tagId": 519,
+      "disposition": "defer_ambiguous",
+      "review_status": "manually_reviewed"
+    },
+    "hong kong": {
+      "tagId": 520,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "horrible": {
+      "tagId": 521,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "horror": {
+      "tagId": 522,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "experience",
+      "secondary_category": "world"
+    },
+    "horses": {
+      "tagId": 523,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "hospital": {
+      "tagId": 524,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "hostage": {
+      "tagId": 525,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "hotel": {
+      "tagId": 526,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "humanity": {
+      "tagId": 527,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance"
+    },
+    "humor": {
+      "tagId": 528,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "humorous": {
+      "tagId": 529,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "hunting": {
+      "tagId": 530,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "idealism": {
+      "tagId": 531,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "identity": {
+      "tagId": 532,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "singularity"
+    },
+    "idiotic": {
+      "tagId": 533,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "imaginary friend": {
+      "tagId": 534,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "imagination": {
+      "tagId": 535,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "world"
+    },
+    "imdb top 250": {
+      "tagId": 536,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "immigrants": {
+      "tagId": 537,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "immortality": {
+      "tagId": 538,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "incest": {
+      "tagId": 539,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "independent film": {
+      "tagId": 540,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity"
+    },
+    "india": {
+      "tagId": 541,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "indiana jones": {
+      "tagId": 542,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "indians": {
+      "tagId": 543,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "indie": {
+      "tagId": 544,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity"
+    },
+    "infidelity": {
+      "tagId": 545,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "innocence lost": {
+      "tagId": 546,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "insanity": {
+      "tagId": 547,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "inspirational": {
+      "tagId": 548,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "inspiring": {
+      "tagId": 549,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "intellectual": {
+      "tagId": 550,
+      "disposition": "defer_ambiguous",
+      "review_status": "manually_reviewed"
+    },
+    "intelligent": {
+      "tagId": 551,
+      "disposition": "defer_ambiguous",
+      "review_status": "manually_reviewed"
+    },
+    "intelligent sci-fi": {
+      "tagId": 552,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "singularity"
+    },
+    "intense": {
+      "tagId": 553,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "interesting": {
+      "tagId": 554,
+      "disposition": "defer_ambiguous",
+      "review_status": "manually_reviewed"
+    },
+    "internet": {
+      "tagId": 555,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "interracial romance": {
+      "tagId": 556,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "intimate": {
+      "tagId": 557,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance",
+      "secondary_category": "world"
+    },
+    "investigation": {
+      "tagId": 558,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story"
+    },
+    "iran": {
+      "tagId": 559,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "iraq": {
+      "tagId": 560,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "iraq war": {
+      "tagId": 561,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "ireland": {
+      "tagId": 562,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "irish": {
+      "tagId": 563,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "irish accent": {
+      "tagId": 564,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "ironic": {
+      "tagId": 565,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity"
+    },
+    "irreverent": {
+      "tagId": 566,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "experience"
+    },
+    "islam": {
+      "tagId": 567,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "island": {
+      "tagId": 568,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "isolation": {
+      "tagId": 569,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "israel": {
+      "tagId": 570,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "italian": {
+      "tagId": 571,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "italy": {
+      "tagId": 572,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "james bond": {
+      "tagId": 573,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "jane austen": {
+      "tagId": 574,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "japan": {
+      "tagId": 575,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "japanese": {
+      "tagId": 576,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "jay and silent bob": {
+      "tagId": 577,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "jazz": {
+      "tagId": 578,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "jesus": {
+      "tagId": 579,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "jewish": {
+      "tagId": 580,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "jews": {
+      "tagId": 581,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "journalism": {
+      "tagId": 582,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "judaism": {
+      "tagId": 583,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "jungle": {
+      "tagId": 584,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "justice": {
+      "tagId": 585,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story"
+    },
+    "kick-butt women": {
+      "tagId": 586,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "kidnapping": {
+      "tagId": 587,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "experience"
+    },
+    "kids": {
+      "tagId": 588,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "kids and family": {
+      "tagId": 589,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "king arthur": {
+      "tagId": 590,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "kubrick": {
+      "tagId": 591,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "kung fu": {
+      "tagId": 592,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "kurosawa": {
+      "tagId": 593,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "lame": {
+      "tagId": 594,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "las vegas": {
+      "tagId": 595,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "latin america": {
+      "tagId": 596,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "lawyer": {
+      "tagId": 597,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "lawyers": {
+      "tagId": 598,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "lesbian": {
+      "tagId": 599,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "life": {
+      "tagId": 600,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "life & death": {
+      "tagId": 601,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "ending"
+    },
+    "life philosophy": {
+      "tagId": 602,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "singularity"
+    },
+    "light": {
+      "tagId": 603,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "lions": {
+      "tagId": 604,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "literary adaptation": {
+      "tagId": 605,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "literature": {
+      "tagId": 606,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "liv tyler": {
+      "tagId": 607,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "london": {
+      "tagId": 608,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "lone hero": {
+      "tagId": 609,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "performance",
+      "secondary_category": "story"
+    },
+    "loneliness": {
+      "tagId": 610,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "performance",
+      "secondary_category": "world"
+    },
+    "long": {
+      "tagId": 611,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "experience"
+    },
+    "los angeles": {
+      "tagId": 612,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "love": {
+      "tagId": 613,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "experience"
+    },
+    "love story": {
+      "tagId": 614,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "love triangles": {
+      "tagId": 615,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "low budget": {
+      "tagId": 616,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "craft"
+    },
+    "lynch": {
+      "tagId": 617,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "lyrical": {
+      "tagId": 618,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "world"
+    },
+    "macabre": {
+      "tagId": 619,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "singularity"
+    },
+    "mad scientist": {
+      "tagId": 620,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "made for tv": {
+      "tagId": 621,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft"
+    },
+    "mafia": {
+      "tagId": 622,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "magic": {
+      "tagId": 623,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "magic realism": {
+      "tagId": 624,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "world"
+    },
+    "male nudity": {
+      "tagId": 625,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "man versus machine": {
+      "tagId": 626,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "manipulation": {
+      "tagId": 627,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "marijuana": {
+      "tagId": 628,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "marriage": {
+      "tagId": 629,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "mars": {
+      "tagId": 630,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "martial arts": {
+      "tagId": 631,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "marvel": {
+      "tagId": 632,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "marx brothers": {
+      "tagId": 633,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "masterpiece": {
+      "tagId": 634,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "math": {
+      "tagId": 635,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "mathematics": {
+      "tagId": 636,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "maze": {
+      "tagId": 637,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "medieval": {
+      "tagId": 638,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "meditative": {
+      "tagId": 639,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "craft"
+    },
+    "melancholic": {
+      "tagId": 640,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "melancholy": {
+      "tagId": 641,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "memory": {
+      "tagId": 642,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "singularity"
+    },
+    "memory loss": {
+      "tagId": 643,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story"
+    },
+    "mental hospital": {
+      "tagId": 644,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "mental illness": {
+      "tagId": 645,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "performance",
+      "secondary_category": "story"
+    },
+    "mentor": {
+      "tagId": 646,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "performance",
+      "secondary_category": "story"
+    },
+    "metaphysics": {
+      "tagId": 647,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity"
+    },
+    "mexico": {
+      "tagId": 648,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "middle east": {
+      "tagId": 649,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "midlife crisis": {
+      "tagId": 650,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "military": {
+      "tagId": 651,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "mindfuck": {
+      "tagId": 652,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "ending"
+    },
+    "mining": {
+      "tagId": 653,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "minnesota": {
+      "tagId": 654,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "mission from god": {
+      "tagId": 655,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "mistaken identity": {
+      "tagId": 656,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "miyazaki": {
+      "tagId": 657,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "mob": {
+      "tagId": 658,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "mockumentary": {
+      "tagId": 659,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity"
+    },
+    "modern fantasy": {
+      "tagId": 660,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world",
+      "secondary_category": "singularity"
+    },
+    "money": {
+      "tagId": 661,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "monkey": {
+      "tagId": 662,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "monster": {
+      "tagId": 663,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "monsters": {
+      "tagId": 664,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "monty python": {
+      "tagId": 665,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "moody": {
+      "tagId": 666,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "craft"
+    },
+    "moon": {
+      "tagId": 667,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "moral ambiguity": {
+      "tagId": 668,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "performance"
+    },
+    "morality": {
+      "tagId": 669,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story"
+    },
+    "mother daughter relationship": {
+      "tagId": 670,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "mother-son relationship": {
+      "tagId": 671,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "motorcycle": {
+      "tagId": 672,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "mountain climbing": {
+      "tagId": 673,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "movie business": {
+      "tagId": 674,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "movielens top pick": {
+      "tagId": 675,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "moving": {
+      "tagId": 676,
+      "disposition": "defer_ambiguous",
+      "review_status": "manually_reviewed"
+    },
+    "mozart": {
+      "tagId": 677,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "mtv": {
+      "tagId": 678,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "multiple storylines": {
+      "tagId": 679,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "craft"
+    },
+    "mummy": {
+      "tagId": 680,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "muppets": {
+      "tagId": 681,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "murder": {
+      "tagId": 682,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story"
+    },
+    "murder mystery": {
+      "tagId": 683,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "ending"
+    },
+    "music": {
+      "tagId": 684,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world"
+    },
+    "music business": {
+      "tagId": 685,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "musical": {
+      "tagId": 686,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "musicians": {
+      "tagId": 687,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "mutants": {
+      "tagId": 688,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "mystery": {
+      "tagId": 689,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "ending"
+    },
+    "mythology": {
+      "tagId": 690,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "narrated": {
+      "tagId": 691,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story"
+    },
+    "nasa": {
+      "tagId": 692,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "native americans": {
+      "tagId": 693,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "natural disaster": {
+      "tagId": 694,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "experience"
+    },
+    "nature": {
+      "tagId": 695,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "nazi": {
+      "tagId": 696,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "nazis": {
+      "tagId": 697,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "neil gaiman": {
+      "tagId": 698,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "neo-nazis": {
+      "tagId": 699,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "neo-noir": {
+      "tagId": 700,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "craft"
+    },
+    "nerds": {
+      "tagId": 701,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "new jersey": {
+      "tagId": 702,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "new orleans": {
+      "tagId": 703,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "new york": {
+      "tagId": 704,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "new york city": {
+      "tagId": 705,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "new zealand": {
+      "tagId": 706,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "ninja": {
+      "tagId": 707,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "no dialogue": {
+      "tagId": 708,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "singularity"
+    },
+    "no plot": {
+      "tagId": 709,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story"
+    },
+    "nocturnal": {
+      "tagId": 710,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world"
+    },
+    "noir": {
+      "tagId": 711,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "craft"
+    },
+    "noir thriller": {
+      "tagId": 712,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "non-hollywood ending": {
+      "tagId": 713,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "ending",
+      "secondary_category": "singularity"
+    },
+    "non-linear": {
+      "tagId": 714,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "craft"
+    },
+    "nonlinear": {
+      "tagId": 715,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "craft"
+    },
+    "nostalgia": {
+      "tagId": 716,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "hold"
+    },
+    "nostalgic": {
+      "tagId": 717,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "hold"
+    },
+    "not as good as the first": {
+      "tagId": 718,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "not funny": {
+      "tagId": 719,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "notable nudity": {
+      "tagId": 720,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "notable soundtrack": {
+      "tagId": 721,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world"
+    },
+    "nuclear": {
+      "tagId": 722,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "nuclear bomb": {
+      "tagId": 723,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "nuclear war": {
+      "tagId": 724,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "nudity": {
+      "tagId": 725,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "nudity (full frontal - brief)": {
+      "tagId": 726,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "nudity (full frontal - notable)": {
+      "tagId": 727,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "nudity (full frontal)": {
+      "tagId": 728,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "nudity (rear)": {
+      "tagId": 729,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "nudity (topless - brief)": {
+      "tagId": 730,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "nudity (topless - notable)": {
+      "tagId": 731,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "nudity (topless)": {
+      "tagId": 732,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "obsession": {
+      "tagId": 733,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "performance",
+      "secondary_category": "story"
+    },
+    "ocean": {
+      "tagId": 734,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "off-beat comedy": {
+      "tagId": 735,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "experience"
+    },
+    "office": {
+      "tagId": 736,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "oil": {
+      "tagId": 737,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "olympics": {
+      "tagId": 738,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "ominous": {
+      "tagId": 739,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "opera": {
+      "tagId": 740,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "organized crime": {
+      "tagId": 741,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "original": {
+      "tagId": 742,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity"
+    },
+    "original plot": {
+      "tagId": 743,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "singularity"
+    },
+    "orphans": {
+      "tagId": 744,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "oscar": {
+      "tagId": 745,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "oscar (best actor)": {
+      "tagId": 746,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "oscar (best actress)": {
+      "tagId": 747,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "oscar (best animated feature)": {
+      "tagId": 748,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "oscar (best cinematography)": {
+      "tagId": 749,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "oscar (best directing)": {
+      "tagId": 750,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "oscar (best editing)": {
+      "tagId": 751,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "oscar (best effects - visual effects)": {
+      "tagId": 752,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "oscar (best foreign language film)": {
+      "tagId": 753,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "oscar (best music - original score)": {
+      "tagId": 754,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "oscar (best music - original song)": {
+      "tagId": 755,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "oscar (best picture)": {
+      "tagId": 756,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "oscar (best sound)": {
+      "tagId": 757,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "oscar (best supporting actor)": {
+      "tagId": 758,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "oscar (best supporting actress)": {
+      "tagId": 759,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "oscar (best writing - screenplay written directly for the screen)": {
+      "tagId": 760,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "oscar winner": {
+      "tagId": 761,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "over the top": {
+      "tagId": 762,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "overrated": {
+      "tagId": 763,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "palestine": {
+      "tagId": 764,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "parallel universe": {
+      "tagId": 765,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "world"
+    },
+    "paranoia": {
+      "tagId": 766,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "experience",
+      "secondary_category": "performance"
+    },
+    "paranoid": {
+      "tagId": 767,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "parenthood": {
+      "tagId": 768,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "performance",
+      "secondary_category": "story"
+    },
+    "paris": {
+      "tagId": 769,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "parody": {
+      "tagId": 770,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "passionate": {
+      "tagId": 771,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance",
+      "secondary_category": "experience"
+    },
+    "penguins": {
+      "tagId": 772,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "perfect": {
+      "tagId": 773,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "period piece": {
+      "tagId": 774,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world"
+    },
+    "peter pan": {
+      "tagId": 775,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "pg": {
+      "tagId": 776,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "pg-13": {
+      "tagId": 777,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "philip k. dick": {
+      "tagId": 778,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "philosophical": {
+      "tagId": 779,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "story"
+    },
+    "philosophy": {
+      "tagId": 780,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "story"
+    },
+    "photographer": {
+      "tagId": 781,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "photography": {
+      "tagId": 782,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft"
+    },
+    "pigs": {
+      "tagId": 783,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "pirates": {
+      "tagId": 784,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "pixar": {
+      "tagId": 785,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "pixar animation": {
+      "tagId": 786,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "plot": {
+      "tagId": 787,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story"
+    },
+    "plot holes": {
+      "tagId": 788,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story"
+    },
+    "plot twist": {
+      "tagId": 789,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "ending"
+    },
+    "poetry": {
+      "tagId": 790,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "singularity"
+    },
+    "poignant": {
+      "tagId": 791,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance",
+      "secondary_category": "experience"
+    },
+    "pointless": {
+      "tagId": 792,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "poker": {
+      "tagId": 793,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "poland": {
+      "tagId": 794,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "police": {
+      "tagId": 795,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "police corruption": {
+      "tagId": 796,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "world"
+    },
+    "police investigation": {
+      "tagId": 797,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "political": {
+      "tagId": 798,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "political corruption": {
+      "tagId": 799,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "politics": {
+      "tagId": 800,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "pornography": {
+      "tagId": 801,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "post apocalyptic": {
+      "tagId": 802,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "post-apocalyptic": {
+      "tagId": 803,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world"
+    },
+    "potential oscar nom": {
+      "tagId": 804,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "poverty": {
+      "tagId": 805,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world",
+      "secondary_category": "story"
+    },
+    "powerful ending": {
+      "tagId": 806,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "ending"
+    },
+    "predictable": {
+      "tagId": 807,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "pregnancy": {
+      "tagId": 808,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "prejudice": {
+      "tagId": 809,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "prequel": {
+      "tagId": 810,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "president": {
+      "tagId": 811,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "pretentious": {
+      "tagId": 812,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "experience"
+    },
+    "prison": {
+      "tagId": 813,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world",
+      "secondary_category": "story"
+    },
+    "prison escape": {
+      "tagId": 814,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "private detective": {
+      "tagId": 815,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "product placement": {
+      "tagId": 816,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft"
+    },
+    "prohibition": {
+      "tagId": 817,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "propaganda": {
+      "tagId": 818,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story"
+    },
+    "prostitution": {
+      "tagId": 819,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "psychedelic": {
+      "tagId": 820,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "singularity"
+    },
+    "psychiatrist": {
+      "tagId": 821,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "psychiatry": {
+      "tagId": 822,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "psychological": {
+      "tagId": 823,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "performance"
+    },
+    "psychology": {
+      "tagId": 824,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "pulp": {
+      "tagId": 825,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "punk": {
+      "tagId": 826,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "puppets": {
+      "tagId": 827,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "queer": {
+      "tagId": 828,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "quirky": {
+      "tagId": 829,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "experience"
+    },
+    "quotable": {
+      "tagId": 830,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "hold"
+    },
+    "rabbits": {
+      "tagId": 831,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "race": {
+      "tagId": 832,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "race issues": {
+      "tagId": 833,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "racing": {
+      "tagId": 834,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "racism": {
+      "tagId": 835,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "world"
+    },
+    "radio": {
+      "tagId": 836,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "rags to riches": {
+      "tagId": 837,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "rape": {
+      "tagId": 838,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "rats": {
+      "tagId": 839,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "realistic": {
+      "tagId": 840,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "performance"
+    },
+    "realistic action": {
+      "tagId": 841,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "experience"
+    },
+    "reality tv": {
+      "tagId": 842,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "rebellion": {
+      "tagId": 843,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "redemption": {
+      "tagId": 844,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "ending",
+      "secondary_category": "story"
+    },
+    "reflective": {
+      "tagId": 845,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "singularity"
+    },
+    "relationships": {
+      "tagId": 846,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "performance",
+      "secondary_category": "story"
+    },
+    "religion": {
+      "tagId": 847,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "remade": {
+      "tagId": 848,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "remake": {
+      "tagId": 849,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "revenge": {
+      "tagId": 850,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "ending"
+    },
+    "revolution": {
+      "tagId": 851,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "ridiculous": {
+      "tagId": 852,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "rio de janeiro": {
+      "tagId": 853,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "road movie": {
+      "tagId": 854,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "road trip": {
+      "tagId": 855,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "roald dahl": {
+      "tagId": 856,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "robbery": {
+      "tagId": 857,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "robert downey jr": {
+      "tagId": 858,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "robert ludlum": {
+      "tagId": 859,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "robot": {
+      "tagId": 860,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "robots": {
+      "tagId": 861,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world"
+    },
+    "rock and roll": {
+      "tagId": 862,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "romance": {
+      "tagId": 863,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "performance"
+    },
+    "romantic": {
+      "tagId": 864,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "romantic comedy": {
+      "tagId": 865,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "rome": {
+      "tagId": 866,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "runaway": {
+      "tagId": 867,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story"
+    },
+    "russia": {
+      "tagId": 868,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "russian": {
+      "tagId": 869,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "sacrifice": {
+      "tagId": 870,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "ending"
+    },
+    "sad": {
+      "tagId": 871,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "sad but good": {
+      "tagId": 872,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "samurai": {
+      "tagId": 873,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "san francisco": {
+      "tagId": 874,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "sappy": {
+      "tagId": 875,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance"
+    },
+    "sarcasm": {
+      "tagId": 876,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "satire": {
+      "tagId": 877,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "story"
+    },
+    "satirical": {
+      "tagId": 878,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "story"
+    },
+    "saturday night live": {
+      "tagId": 879,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "saturn award (best science fiction film)": {
+      "tagId": 880,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "saturn award (best special effects)": {
+      "tagId": 881,
+      "disposition": "exclude_award_canon",
+      "review_status": "heuristic_only"
+    },
+    "scary": {
+      "tagId": 882,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience",
+      "secondary_category": "world"
+    },
+    "scenic": {
+      "tagId": 883,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "craft"
+    },
+    "schizophrenia": {
+      "tagId": 884,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "school": {
+      "tagId": 885,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "sci fi": {
+      "tagId": 886,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "sci-fi": {
+      "tagId": 887,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "science": {
+      "tagId": 888,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "science fiction": {
+      "tagId": 889,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "scifi": {
+      "tagId": 890,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "scifi cult": {
+      "tagId": 891,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "hold",
+      "secondary_category": "singularity"
+    },
+    "scotland": {
+      "tagId": 892,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "screwball": {
+      "tagId": 893,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "screwball comedy": {
+      "tagId": 894,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "script": {
+      "tagId": 895,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "craft"
+    },
+    "secret service": {
+      "tagId": 896,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "secrets": {
+      "tagId": 897,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story"
+    },
+    "segregation": {
+      "tagId": 898,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "self discovery": {
+      "tagId": 899,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "performance",
+      "secondary_category": "story"
+    },
+    "sentimental": {
+      "tagId": 900,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance",
+      "secondary_category": "experience"
+    },
+    "sequel": {
+      "tagId": 901,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "sequels": {
+      "tagId": 902,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story"
+    },
+    "serial killer": {
+      "tagId": 903,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "experience"
+    },
+    "series": {
+      "tagId": 904,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "sex": {
+      "tagId": 905,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "sex comedy": {
+      "tagId": 906,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "sexual": {
+      "tagId": 907,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "sexual abuse": {
+      "tagId": 908,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "sexuality": {
+      "tagId": 909,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "experience"
+    },
+    "sexualized violence": {
+      "tagId": 910,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "sexy": {
+      "tagId": 911,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "shakespeare": {
+      "tagId": 912,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "shallow": {
+      "tagId": 913,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "singularity"
+    },
+    "shark": {
+      "tagId": 914,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "shopping": {
+      "tagId": 915,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "short": {
+      "tagId": 916,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "short-term memory loss": {
+      "tagId": 917,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "silent": {
+      "tagId": 918,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "singularity"
+    },
+    "silly": {
+      "tagId": 919,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "silly fun": {
+      "tagId": 920,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "simple": {
+      "tagId": 921,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story"
+    },
+    "single father": {
+      "tagId": 922,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "sisters": {
+      "tagId": 923,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "skinhead": {
+      "tagId": 924,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "slackers": {
+      "tagId": 925,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "slapstick": {
+      "tagId": 926,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "slasher": {
+      "tagId": 927,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "slavery": {
+      "tagId": 928,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "slow": {
+      "tagId": 929,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience",
+      "secondary_category": "craft"
+    },
+    "slow paced": {
+      "tagId": 930,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience",
+      "secondary_category": "craft"
+    },
+    "small town": {
+      "tagId": 931,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "snakes": {
+      "tagId": 932,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "so bad it's funny": {
+      "tagId": 933,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "so bad it's good": {
+      "tagId": 934,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "soccer": {
+      "tagId": 935,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "social commentary": {
+      "tagId": 936,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "singularity"
+    },
+    "solitude": {
+      "tagId": 937,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world",
+      "secondary_category": "performance"
+    },
+    "sophia coppola": {
+      "tagId": 938,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "south africa": {
+      "tagId": 939,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "south america": {
+      "tagId": 940,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "southern theme": {
+      "tagId": 941,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "space": {
+      "tagId": 942,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "space opera": {
+      "tagId": 943,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world"
+    },
+    "space program": {
+      "tagId": 944,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "space travel": {
+      "tagId": 945,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "spaghetti western": {
+      "tagId": 946,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "spain": {
+      "tagId": 947,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "spanish": {
+      "tagId": 948,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "spanish civil war": {
+      "tagId": 949,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "special": {
+      "tagId": 950,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "special effects": {
+      "tagId": 951,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "world"
+    },
+    "spelling bee": {
+      "tagId": 952,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "spiders": {
+      "tagId": 953,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "spielberg": {
+      "tagId": 954,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "spies": {
+      "tagId": 955,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "splatter": {
+      "tagId": 956,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "spock": {
+      "tagId": 957,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "spoof": {
+      "tagId": 958,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "sports": {
+      "tagId": 959,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "spy": {
+      "tagId": 960,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "spying": {
+      "tagId": 961,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "stage magic": {
+      "tagId": 962,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "stand-up comedy": {
+      "tagId": 963,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "star trek": {
+      "tagId": 964,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "star wars": {
+      "tagId": 965,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "steampunk": {
+      "tagId": 966,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "singularity"
+    },
+    "stereotypes": {
+      "tagId": 967,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance"
+    },
+    "stoner movie": {
+      "tagId": 968,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "stop motion": {
+      "tagId": 969,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "world"
+    },
+    "stop-motion": {
+      "tagId": 970,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "world"
+    },
+    "story": {
+      "tagId": 971,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story"
+    },
+    "storytelling": {
+      "tagId": 972,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "craft"
+    },
+    "stranded": {
+      "tagId": 973,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "strange": {
+      "tagId": 974,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "world"
+    },
+    "strippers": {
+      "tagId": 975,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "studio ghibli": {
+      "tagId": 976,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "stunning": {
+      "tagId": 977,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "world"
+    },
+    "stupid": {
+      "tagId": 978,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "stupid as hell": {
+      "tagId": 979,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "stupidity": {
+      "tagId": 980,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "stylish": {
+      "tagId": 981,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "world"
+    },
+    "stylized": {
+      "tagId": 982,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "singularity"
+    },
+    "submarine": {
+      "tagId": 983,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "suburbia": {
+      "tagId": 984,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "suicide": {
+      "tagId": 985,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "suicide attempt": {
+      "tagId": 986,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "super hero": {
+      "tagId": 987,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "super-hero": {
+      "tagId": 988,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "superhero": {
+      "tagId": 989,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "superheroes": {
+      "tagId": 990,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "supernatural": {
+      "tagId": 991,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world"
+    },
+    "suprisingly clever": {
+      "tagId": 992,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "surfing": {
+      "tagId": 993,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "surprise ending": {
+      "tagId": 994,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "ending",
+      "secondary_category": "story"
+    },
+    "surreal": {
+      "tagId": 995,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "world"
+    },
+    "surrealism": {
+      "tagId": 996,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "world"
+    },
+    "surveillance": {
+      "tagId": 997,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "survival": {
+      "tagId": 998,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "experience"
+    },
+    "suspense": {
+      "tagId": 999,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience",
+      "secondary_category": "story"
+    },
+    "suspenseful": {
+      "tagId": 1000,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience",
+      "secondary_category": "story"
+    },
+    "swashbuckler": {
+      "tagId": 1001,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "swedish": {
+      "tagId": 1002,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "sweet": {
+      "tagId": 1003,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience",
+      "secondary_category": "performance"
+    },
+    "switching places": {
+      "tagId": 1004,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "sword fight": {
+      "tagId": 1005,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "sword fighting": {
+      "tagId": 1006,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "talking animals": {
+      "tagId": 1007,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "talky": {
+      "tagId": 1008,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "performance"
+    },
+    "tarantino": {
+      "tagId": 1009,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "teacher": {
+      "tagId": 1010,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "tear jerker": {
+      "tagId": 1011,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance",
+      "secondary_category": "experience"
+    },
+    "technology": {
+      "tagId": 1012,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "teen": {
+      "tagId": 1013,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "teen movie": {
+      "tagId": 1014,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "teenager": {
+      "tagId": 1015,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "teenagers": {
+      "tagId": 1016,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "teens": {
+      "tagId": 1017,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "teleportation": {
+      "tagId": 1018,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "television": {
+      "tagId": 1019,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "tense": {
+      "tagId": 1020,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience",
+      "secondary_category": "story"
+    },
+    "terminal illness": {
+      "tagId": 1021,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "terrorism": {
+      "tagId": 1022,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "texas": {
+      "tagId": 1023,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "thought-provoking": {
+      "tagId": 1024,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "story"
+    },
+    "thriller": {
+      "tagId": 1025,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience",
+      "secondary_category": "story"
+    },
+    "time": {
+      "tagId": 1026,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "time loop": {
+      "tagId": 1027,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "time travel": {
+      "tagId": 1028,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "world"
+    },
+    "tokyo": {
+      "tagId": 1029,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "tolkien": {
+      "tagId": 1030,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "tom clancy": {
+      "tagId": 1031,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "too long": {
+      "tagId": 1032,
+      "disposition": "exclude_evaluative",
+      "review_status": "manually_reviewed"
+    },
+    "too short": {
+      "tagId": 1033,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "torture": {
+      "tagId": 1034,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "experience",
+      "secondary_category": "world"
+    },
+    "touching": {
+      "tagId": 1035,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance",
+      "secondary_category": "experience"
+    },
+    "toys": {
+      "tagId": 1036,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "tragedy": {
+      "tagId": 1037,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "ending"
+    },
+    "train": {
+      "tagId": 1038,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "trains": {
+      "tagId": 1039,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "transformation": {
+      "tagId": 1040,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "singularity"
+    },
+    "transgender": {
+      "tagId": 1041,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "travel": {
+      "tagId": 1042,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "treasure": {
+      "tagId": 1043,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "treasure hunt": {
+      "tagId": 1044,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "tricky": {
+      "tagId": 1045,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "ending"
+    },
+    "trilogy": {
+      "tagId": 1046,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "true story": {
+      "tagId": 1047,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "truman capote": {
+      "tagId": 1048,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "twist": {
+      "tagId": 1049,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "ending"
+    },
+    "twist ending": {
+      "tagId": 1050,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "ending",
+      "secondary_category": "story"
+    },
+    "twists & turns": {
+      "tagId": 1051,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "ending"
+    },
+    "undercover cop": {
+      "tagId": 1052,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "underdog": {
+      "tagId": 1053,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "experience"
+    },
+    "underrated": {
+      "tagId": 1054,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "understated": {
+      "tagId": 1055,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "performance"
+    },
+    "underwater": {
+      "tagId": 1056,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "unfunny": {
+      "tagId": 1057,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "unintentionally funny": {
+      "tagId": 1058,
+      "disposition": "defer_ambiguous",
+      "review_status": "manually_reviewed"
+    },
+    "unique": {
+      "tagId": 1059,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "united nations": {
+      "tagId": 1060,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "unlikeable characters": {
+      "tagId": 1061,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "performance"
+    },
+    "unlikely friendships": {
+      "tagId": 1062,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "unrealistic": {
+      "tagId": 1063,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story"
+    },
+    "unusual plot structure": {
+      "tagId": 1064,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "story"
+    },
+    "us history": {
+      "tagId": 1065,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "utopia": {
+      "tagId": 1066,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world",
+      "secondary_category": "singularity"
+    },
+    "vampire": {
+      "tagId": 1067,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "vampire human love": {
+      "tagId": 1068,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "vampires": {
+      "tagId": 1069,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "vengeance": {
+      "tagId": 1070,
+      "disposition": "candidate_structural",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "story",
+      "secondary_category": "ending"
+    },
+    "very funny": {
+      "tagId": 1071,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "very good": {
+      "tagId": 1072,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "very interesting": {
+      "tagId": 1073,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "video game": {
+      "tagId": 1074,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "video game adaptation": {
+      "tagId": 1075,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "video games": {
+      "tagId": 1076,
+      "disposition": "exclude_person_name",
+      "review_status": "heuristic_only"
+    },
+    "videogame": {
+      "tagId": 1077,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "vienna": {
+      "tagId": 1078,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "vietnam": {
+      "tagId": 1079,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "vietnam war": {
+      "tagId": 1080,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "view askew": {
+      "tagId": 1081,
+      "disposition": "exclude_franchise_ip",
+      "review_status": "heuristic_only"
+    },
+    "vigilante": {
+      "tagId": 1082,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "vigilantism": {
+      "tagId": 1083,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "violence": {
+      "tagId": 1084,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "experience",
+      "secondary_category": "world"
+    },
+    "violent": {
+      "tagId": 1085,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "experience",
+      "secondary_category": "world"
+    },
+    "virginity": {
+      "tagId": 1086,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "virtual reality": {
+      "tagId": 1087,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "virus": {
+      "tagId": 1088,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "visceral": {
+      "tagId": 1089,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "experience"
+    },
+    "visual": {
+      "tagId": 1090,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "world"
+    },
+    "visually appealing": {
+      "tagId": 1091,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "world"
+    },
+    "visually stunning": {
+      "tagId": 1092,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "world"
+    },
+    "visuals": {
+      "tagId": 1093,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "craft",
+      "secondary_category": "world"
+    },
+    "voodoo": {
+      "tagId": 1094,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "voyeurism": {
+      "tagId": 1095,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "war": {
+      "tagId": 1096,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "war movie": {
+      "tagId": 1097,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "wartime": {
+      "tagId": 1098,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world",
+      "secondary_category": "story"
+    },
+    "waste of time": {
+      "tagId": 1099,
+      "disposition": "exclude_evaluative",
+      "review_status": "heuristic_only"
+    },
+    "watch the credits": {
+      "tagId": 1100,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "weapons": {
+      "tagId": 1101,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "wedding": {
+      "tagId": 1102,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "weed": {
+      "tagId": 1103,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "weird": {
+      "tagId": 1104,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "singularity",
+      "secondary_category": "world"
+    },
+    "werewolf": {
+      "tagId": 1105,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "werewolves": {
+      "tagId": 1106,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "western": {
+      "tagId": 1107,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "whimsical": {
+      "tagId": 1108,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "wilderness": {
+      "tagId": 1109,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world"
+    },
+    "wine": {
+      "tagId": 1110,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "wistful": {
+      "tagId": 1111,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "witch": {
+      "tagId": 1112,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "witches": {
+      "tagId": 1113,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "witty": {
+      "tagId": 1114,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "experience"
+    },
+    "wizards": {
+      "tagId": 1115,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "women": {
+      "tagId": 1116,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "working class": {
+      "tagId": 1117,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "workplace": {
+      "tagId": 1118,
+      "disposition": "exclude_metadata_or_noise",
+      "review_status": "manually_reviewed"
+    },
+    "world politics": {
+      "tagId": 1119,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "world war i": {
+      "tagId": 1120,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "world war ii": {
+      "tagId": 1121,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "writer's life": {
+      "tagId": 1122,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "writers": {
+      "tagId": 1123,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "writing": {
+      "tagId": 1124,
+      "disposition": "candidate_descriptive",
+      "review_status": "heuristic_only",
+      "primary_category": "story",
+      "secondary_category": "craft"
+    },
+    "wuxia": {
+      "tagId": 1125,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "wwii": {
+      "tagId": 1126,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    },
+    "zombie": {
+      "tagId": 1127,
+      "disposition": "candidate_descriptive",
+      "review_status": "promoted_from_deferred",
+      "primary_category": "world",
+      "secondary_category": "experience"
+    },
+    "zombies": {
+      "tagId": 1128,
+      "disposition": "defer_ambiguous",
+      "review_status": "heuristic_only"
+    }
+  }
+}

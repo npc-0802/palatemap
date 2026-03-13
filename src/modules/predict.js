@@ -1,13 +1,112 @@
 import { MOVIES, CATEGORIES, currentUser, setCurrentUser, scoreClass, getLabel, calcTotal, mergeSplitNames } from '../state.js';
-import { syncToSupabase, saveUserLocally } from './supabase.js';
+import { syncToSupabase, saveUserLocally, logPrediction } from './supabase.js';
 import { ARCHETYPES } from '../data/archetypes.js';
 import { classifyArchetype } from './quiz-engine.js';
 import { track } from '../analytics.js';
 import { shouldShowHint, renderHint } from './hints.js';
+import { loadTagVectors, getTagVector, tagVectorsLoaded, getAdmissibleTags, findSimilarFilms } from './tag-genome.js';
+import { computeCategoryFingerprints, categorySimilarity, overallSimilarity, getTopCategoryTags, tagSimilarity, getCoverageCount } from './tag-profile.js';
 
 const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 const TMDB = 'https://api.themoviedb.org/3';
 const PROXY_URL = 'https://palate-map-proxy.noahparikhcott.workers.dev';
+
+// Tag genome feature gate
+const TAG_GENOME_ENABLED = () => localStorage.getItem('pm_tag_genome') !== 'off';
+
+// Cached category fingerprints (recomputed when movies change)
+let _cachedFingerprints = null;
+let _fingerprintMovieCount = 0;
+
+function getCategoryFingerprints() {
+  if (!tagVectorsLoaded()) return null;
+  if (_cachedFingerprints && _fingerprintMovieCount === MOVIES.length) return _cachedFingerprints;
+  _cachedFingerprints = computeCategoryFingerprints(MOVIES, (tmdbId) => getTagVector(tmdbId));
+  _fingerprintMovieCount = MOVIES.length;
+  return _cachedFingerprints;
+}
+
+// Build tag context section for Claude prompt
+function buildTagContext(film) {
+  if (!TAG_GENOME_ENABLED() || !tagVectorsLoaded()) return null;
+
+  const filmVec = getTagVector(film.tmdbId);
+  if (!filmVec) return null;
+
+  const fingerprints = getCategoryFingerprints();
+  if (!fingerprints) return null;
+
+  const coverage = fingerprints._filmsWithCoverage || 0;
+  const tagIndex = getAdmissibleTags();
+  const cats = ['story', 'craft', 'performance', 'world', 'experience', 'hold', 'ending', 'singularity'];
+
+  // Determine confidence language based on coverage
+  let confidencePrefix, useSoftLanguage;
+  if (coverage < 5) return null; // too few films for meaningful alignment
+  if (coverage < 10) { confidencePrefix = 'Preliminary alignment (limited data)'; useSoftLanguage = true; }
+  else if (coverage < 20) { confidencePrefix = 'Estimated alignment'; useSoftLanguage = false; }
+  else { confidencePrefix = 'Alignment'; useSoftLanguage = false; }
+
+  // Top film traits by category (strongest tag values)
+  const traitLines = [];
+  for (const cat of cats) {
+    const topTags = [];
+    for (let i = 0; i < filmVec.values.length; i++) {
+      if (filmVec.values[i] >= 0.5) {
+        // Check if this tag has a primary_category matching this cat
+        const tagName = tagIndex[i]?.tag;
+        if (tagName) topTags.push({ tag: tagName, val: filmVec.values[i] });
+      }
+    }
+    topTags.sort((a, b) => b.val - a.val);
+    const top3 = topTags.slice(0, 3);
+    if (top3.length > 0) {
+      traitLines.push(`- [${cat}] ${top3.map(t => `${t.tag} (${Math.round(t.val * 100)}%)`).join(', ')}`);
+    }
+  }
+
+  // Per-category alignment scores
+  const alignmentLines = [];
+  const tensionLines = [];
+  for (const cat of cats) {
+    const sim = categorySimilarity(filmVec, fingerprints, cat);
+    const simPct = Math.round(sim * 100) / 100;
+    let label;
+    if (sim >= 0.8) label = 'strong match';
+    else if (sim >= 0.6) label = 'good match';
+    else if (sim >= 0.4) label = 'moderate match';
+    else label = 'tension';
+
+    alignmentLines.push(`- ${cat}: ${simPct.toFixed(2)} (${label})`);
+
+    // Identify tension points — where film diverges from user's category fingerprint
+    if (sim < 0.5) {
+      const fpTags = getTopCategoryTags(fingerprints, cat, tagIndex, 3);
+      const filmHighTags = [];
+      for (let i = 0; i < filmVec.values.length; i++) {
+        if (filmVec.values[i] >= 0.6) {
+          filmHighTags.push({ tag: tagIndex[i]?.tag, val: filmVec.values[i] });
+        }
+      }
+      filmHighTags.sort((a, b) => b.val - a.val);
+      const divergent = filmHighTags.slice(0, 2);
+      if (divergent.length > 0) {
+        const desc = useSoftLanguage
+          ? `your rated films tend away from this (small sample)`
+          : `diverges from your ${cat} preferences`;
+        tensionLines.push(`- [${cat}] ${divergent.map(t => `${t.tag} (film: ${Math.round(t.val * 100)}%)`).join(', ')} — ${desc}`);
+      }
+    }
+  }
+
+  let section = `\nFILM TRAIT PROFILE (structured community data):\nStrongest traits:\n${traitLines.join('\n')}\n\n${confidencePrefix} (based on ${coverage} rated films with data):\n${alignmentLines.join('\n')}`;
+
+  if (tensionLines.length > 0) {
+    section += `\n\nCategory-specific tensions:\n${tensionLines.join('\n')}`;
+  }
+
+  return { section, version: '1.0', coverage };
+}
 
 // Fingerprint of current library state (count + score sum) for refresh gating
 function libraryFingerprint() {
@@ -224,6 +323,9 @@ export function initPredict() {
   // Compute dynamic entity weights
   computeEntityWeights();
 
+  // Preload tag vectors (non-blocking)
+  if (TAG_GENOME_ENABLED()) loadTagVectors();
+
   // Set archetype palette color on pulsing dots
   setForYouDotColor();
 
@@ -319,6 +421,7 @@ function getSourceLabel(r) {
   if (r.source === 'company') return `From ${r.sourceName || ''}`;
   if (r.source === 'discover') return 'For your taste';
   if (r.source === 'discovery') return 'New territory';
+  if (r.source === 'tag_genome') return `Taste match · ${r.sourceName || ''}`;
   return 'Recommended';
 }
 
@@ -607,7 +710,22 @@ function buildTasteProfile() {
     }
   }
 
-  return { stats, top10, bottom5, weightStr, archetype: currentUser?.archetype, archetypeSecondary: currentUser?.archetype_secondary, totalFilms: MOVIES.length, reconciledPredictions, categoryBias, reconciledCount: allReconciled.length };
+  // Tag genome: top per-category tag affinities
+  let tagFingerprint = null;
+  if (TAG_GENOME_ENABLED() && tagVectorsLoaded()) {
+    const fps = getCategoryFingerprints();
+    if (fps && fps._filmsWithCoverage >= 5) {
+      const tagIdx = getAdmissibleTags();
+      tagFingerprint = {};
+      cats.forEach(cat => {
+        tagFingerprint[cat] = getTopCategoryTags(fps, cat, tagIdx, 5)
+          .filter(t => t.weight > 0.01)
+          .map(t => `${t.tag} (${(t.weight * 100).toFixed(0)})`);
+      });
+    }
+  }
+
+  return { stats, top10, bottom5, weightStr, archetype: currentUser?.archetype, archetypeSecondary: currentUser?.archetype_secondary, totalFilms: MOVIES.length, reconciledPredictions, categoryBias, reconciledCount: allReconciled.length, tagFingerprint };
 }
 
 function findComparableFilms(film) {
@@ -808,6 +926,22 @@ function scoreCandidate(film) {
     const predTotal = calcPredictedTotal(cached.prediction);
     if (predTotal >= 85) score += 5;
     else if (predTotal >= 75) score += 3;
+  }
+
+  // ── 8. Tag genome similarity (0–10 pts, ceiling taken from genre/era) ─────
+  if (TAG_GENOME_ENABLED() && tagVectorsLoaded()) {
+    const filmVec = getTagVector(film.tmdbId);
+    if (filmVec) {
+      const fps = getCategoryFingerprints();
+      if (fps) {
+        const sim = overallSimilarity(filmVec, fps, currentUser?.weights);
+        let tagPts = 0;
+        if (sim >= 0.8) tagPts = 10;
+        else if (sim >= 0.6) tagPts = 6;
+        else if (sim >= 0.4) tagPts = 2.5;
+        score += tagPts;
+      }
+    }
   }
 
   return Math.min(score, 100);
@@ -1125,12 +1259,51 @@ async function buildCandidatePool() {
     });
   });
 
+  // ── Stream E: Tag genome discovery (category-specific similarity) ──────────
+  if (TAG_GENOME_ENABLED() && tagVectorsLoaded() && tier.tier !== 'early') {
+    const fps = getCategoryFingerprints();
+    if (fps) {
+      // Find user's top 2 categories by weight
+      const catsByWeight = CATEGORIES.map(c => ({
+        key: c.key,
+        w: currentUser?.weights?.[c.key] ?? c.weight
+      })).sort((a, b) => b.w - a.w).slice(0, 2);
+
+      for (const { key: catKey } of catsByWeight) {
+        const fp = fps[catKey];
+        if (!fp) continue;
+        const similar = findSimilarFilms(fp, catKey, 15);
+        let added = 0;
+        for (const { tmdbId } of similar) {
+          if (added >= 4) break;
+          if (isKnown(tmdbId, '')) continue;
+          seen.add(String(tmdbId));
+          candidates.push({
+            tmdbId: parseInt(tmdbId),
+            title: '',
+            year: '',
+            poster: null,
+            director: '',
+            cast: '',
+            genres: '',
+            overview: '',
+            source: 'tag_genome',
+            sourceName: catKey,
+            _needsDetail: true
+          });
+          added++;
+        }
+      }
+    }
+  }
+
   return candidates;
 }
 
 async function callClaudeForPrediction(film, entityConstraint = null) {
   const profile = buildTasteProfile();
   const comps = findComparableFilms(film);
+  const tagCtx = buildTagContext(film);
 
   const compStr = comps.length
     ? comps.map(m => `- ${m.title} (${m.year||''}): total=${m.total}, story=${m.scores.story}, craft=${m.scores.craft}, performance=${m.scores.performance}, world=${m.scores.world}, experience=${m.scores.experience}, hold=${m.scores.hold}, ending=${m.scores.ending}, singularity=${m.scores.singularity}`).join('\n')
@@ -1186,7 +1359,9 @@ Apply these corrections to your category predictions. If a category runs too low
 ` : ''}
 FILMS WITH SHARED DIRECTOR/CAST (most relevant comparisons):
 ${compStr}
-
+${tagCtx ? `
+${tagCtx.section}
+` : ''}
 FILM TO PREDICT:
 Title: ${film.title}
 Year: ${film.year}
@@ -1270,6 +1445,20 @@ async function runPrediction(film) {
     setCurrentUser({ ...currentUser, predictions });
     saveUserLocally();
     syncToSupabase();
+    // Fire-and-forget prediction log (enriched with tag context if available)
+    const _tagCtx = buildTagContext(film);
+    logPrediction({
+      userId: currentUser?.id,
+      tmdbId: film.tmdbId,
+      title: film.title,
+      predictedScores: prediction.predicted_scores,
+      predictedTotal: calcPredictedTotal(prediction),
+      confidence: prediction.confidence,
+      userFilmsAtPrediction: MOVIES.length,
+      weightsAtPrediction: currentUser?.weights ? { ...currentUser.weights } : null,
+      tagContextVersion: _tagCtx?.version || null,
+      metadata: _tagCtx ? { tag_coverage: _tagCtx.coverage } : null
+    });
     renderPrediction(film, prediction, comps, predictedAt);
   } catch(e) {
     document.getElementById('predict-result').innerHTML = `

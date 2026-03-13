@@ -394,3 +394,43 @@ export function loadUserLocally() {
     if (u) setCurrentUser(JSON.parse(u));
   } catch(e) {}
 }
+
+// ── PREDICTION LOGGING ──
+
+export async function logPrediction(payload) {
+  try {
+    await sb.from('prediction_log').insert({
+      user_id: payload.userId,
+      tmdb_id: payload.tmdbId,
+      title: payload.title,
+      predicted_scores: payload.predictedScores,
+      predicted_total: payload.predictedTotal,
+      confidence: payload.confidence || null,
+      prediction_source: payload.predictionSource || 'claude_v1',
+      tag_context_version: payload.tagContextVersion || null,
+      user_films_at_prediction: payload.userFilmsAtPrediction || null,
+      weights_at_prediction: payload.weightsAtPrediction || null,
+      metadata: payload.metadata || null
+    });
+  } catch(e) {
+    console.warn('prediction_log insert failed:', e);
+  }
+}
+
+export async function reconcilePredictionLog(tmdbId, actualScores, actualTotal, delta) {
+  if (!currentUser?.id) return;
+  try {
+    await sb.from('prediction_log')
+      .update({
+        actual_scores: actualScores,
+        actual_total: actualTotal,
+        delta,
+        rated_at: new Date().toISOString()
+      })
+      .eq('user_id', currentUser.id)
+      .eq('tmdb_id', tmdbId)
+      .is('actual_scores', null);
+  } catch(e) {
+    console.warn('prediction_log reconcile failed:', e);
+  }
+}

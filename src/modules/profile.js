@@ -6,6 +6,8 @@ import { syncToSupabase } from './supabase.js';
 import { updateDisplayName, updateUsername, exportFullData, exportFilmsCSV } from './account.js';
 import { shouldShowHint, renderHint } from './hints.js';
 import { on } from '../events.js';
+import { loadTagVectors, getTagVector, tagVectorsLoaded, getAdmissibleTags } from './tag-genome.js';
+import { computeCategoryFingerprints, getTopCategoryTags, getCoverageCount } from './tag-profile.js';
 
 let profileImportedMovies = null;
 
@@ -311,10 +313,44 @@ function radarLegend(archetype) {
   return '<div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-family:\'DM Mono\',monospace;font-size:9px;color:var(--dim)"><span style="display:flex;align-items:center;gap:5px"><svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke="var(--blue)" stroke-width="1.5"/></svg>yours</span><span style="display:flex;align-items:center;gap:5px"><svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke="var(--dim)" stroke-width="1" stroke-dasharray="3,2"/></svg>archetype</span></div>';
 }
 
+function renderTasteTexture() {
+  if (!tagVectorsLoaded()) return '';
+  const coverage = getCoverageCount(MOVIES, (id) => getTagVector(id));
+  if (coverage < 5) return '';
+
+  const fps = computeCategoryFingerprints(MOVIES, (id) => getTagVector(id));
+  if (!fps) return '';
+
+  const tagIdx = getAdmissibleTags();
+  const sections = CATS.map(cat => {
+    const topTags = getTopCategoryTags(fps, cat, tagIdx, 5).filter(t => t.weight > 0.01);
+    if (!topTags.length) return '';
+    return `
+      <div style="margin-bottom:16px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:8px">${CAT_LABELS[cat]}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${topTags.map(t => `<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--ink);background:var(--cream);padding:4px 10px;border:1px solid var(--rule)">${t.tag}</span>`).join('')}
+        </div>
+      </div>`;
+  }).filter(Boolean).join('');
+
+  if (!sections) return '';
+
+  return `
+    <div style="margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--rule)">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Taste Texture</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--dim);margin-bottom:20px">What the data says you respond to, category by category. Based on ${coverage} films with community trait data.</div>
+      ${sections}
+    </div>`;
+}
+
 export function renderProfile() {
   ensureProfileListeners();
   const el = document.getElementById('profileContent');
   if (!el) return;
+
+  // Preload tag vectors for taste texture display
+  if (localStorage.getItem('pm_tag_genome') !== 'off') loadTagVectors();
 
   const user = currentUser;
   if (!user) { el.innerHTML = '<p style="color:var(--dim)">Sign in to view your profile.</p>'; return; }
@@ -396,6 +432,9 @@ export function renderProfile() {
           </div>` : ''}
         </div>` : ''}
       </div>
+
+      <!-- TASTE TEXTURE (tag genome) -->
+      ${renderTasteTexture()}
 
       <!-- SIGNATURE FILMS -->
       <div style="margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--rule)">

@@ -1,7 +1,7 @@
 import { MOVIES, CATEGORIES, currentUser, setCurrentUser, calcTotal, scoreClass, getLabel } from '../state.js';
 import { saveToStorage } from './storage.js';
 import { renderRankings } from './rankings.js';
-import { saveUserLocally } from './supabase.js';
+import { saveUserLocally, reconcilePredictionLog } from './supabase.js';
 import { removeFromWatchlist } from './watchlist.js';
 import { openPosterPicker } from './posterpicker.js';
 import { fetchTmdbMovieBundle } from './tmdb-movie.js';
@@ -661,6 +661,13 @@ function autoSaveFilm() {
     };
     setCurrentUser({ ...currentUser, predictions: updatedPredictions });
     saveUserLocally();
+    // Fire-and-forget prediction log reconciliation
+    reconcilePredictionLog(
+      parseInt(savedTmdbId),
+      { ...newFilm.scores },
+      actualTotal,
+      delta
+    );
   }
   track('film_rated', {
     tmdb_id: savedTmdbId || null,
