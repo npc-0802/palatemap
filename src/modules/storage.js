@@ -1,5 +1,6 @@
 import { MOVIES, setMovies, currentUser, setCurrentUser, mergeSplitNames } from '../state.js';
 import { OLD_TO_NEW } from './quiz-engine.js';
+import { OWNER_MOVIES } from '../data/movies.js';
 
 const MIGRATIONS_KEY = 'palate_migrations_v1';
 
@@ -62,6 +63,28 @@ export function runMigrations() {
       console.log(`Migration migrate_prediction_keys: migrated ${changed} predictions.`);
     }
     flags.migrate_prediction_keys = true;
+    try { localStorage.setItem(MIGRATIONS_KEY, JSON.stringify(flags)); } catch {}
+  }
+
+  // Backfill _tmdbId on movies that are missing it, using OWNER_MOVIES lookup
+  if (!flags.backfill_tmdb_ids) {
+    const lookup = new Map();
+    for (const om of OWNER_MOVIES) {
+      if (om._tmdbId) lookup.set(`${om.title}::${om.year}`, om._tmdbId);
+    }
+    let changed = 0;
+    for (const m of MOVIES) {
+      if (m.tmdbId || m._tmdbId) continue;
+      const key = `${m.title}::${m.year}`;
+      const id = lookup.get(key);
+      if (id) { m._tmdbId = id; changed++; }
+    }
+    if (changed > 0) {
+      saveToStorage();
+      import('./supabase.js').then(mod => { mod.syncToSupabase().catch(() => {}); });
+      console.log(`Migration backfill_tmdb_ids: added TMDB IDs to ${changed} films.`);
+    }
+    flags.backfill_tmdb_ids = true;
     try { localStorage.setItem(MIGRATIONS_KEY, JSON.stringify(flags)); } catch {}
   }
 }

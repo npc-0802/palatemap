@@ -314,15 +314,14 @@ function radarLegend(archetype) {
 }
 
 function renderTasteTexture() {
-  if (!tagVectorsLoaded()) { console.log('[taste-texture] tag vectors not loaded'); return ''; }
+  if (!tagVectorsLoaded()) return '';
   const coverage = getCoverageCount(MOVIES, (id) => getTagVector(id));
-  if (coverage < 5) { console.log('[taste-texture] insufficient coverage:', coverage); return ''; }
+  if (coverage < 5) return '';
 
   const fps = computeCategoryFingerprints(MOVIES, (id) => getTagVector(id));
-  if (!fps) { console.log('[taste-texture] fingerprints null'); return ''; }
+  if (!fps) return '';
 
   const tagIdx = getAdmissibleTags();
-  console.log('[taste-texture] coverage:', coverage, 'tagIdx length:', tagIdx.length, 'fps keys:', Object.keys(fps).length);
   const sections = CATS.map(cat => {
     const topTags = getTopCategoryTags(fps, cat, tagIdx, 5).filter(t => t.weight > 0.01);
     if (!topTags.length) return '';
@@ -353,9 +352,7 @@ export function renderProfile() {
   // Preload tag vectors for taste texture display — backfill section once loaded
   if (localStorage.getItem('pm_tag_genome') !== 'off') {
     loadTagVectors().then(() => {
-      console.log('[taste-texture] tag vectors loaded, attempting backfill');
       const slot = document.getElementById('tasteTextureSlot');
-      console.log('[taste-texture] slot found:', !!slot, 'slot empty:', !slot?.innerHTML?.trim());
       if (slot && !slot.innerHTML.trim()) slot.innerHTML = renderTasteTexture();
     });
   }
