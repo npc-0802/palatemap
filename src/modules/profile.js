@@ -322,25 +322,59 @@ function renderTasteTexture() {
   if (!fps) return '';
 
   const tagIdx = getAdmissibleTags();
-  const sections = CATS.map(cat => {
-    const topTags = getTopCategoryTags(fps, cat, tagIdx, 5).filter(t => t.weight > 0.01);
-    if (!topTags.length) return '';
-    return `
-      <div style="margin-bottom:16px">
-        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:8px">${CAT_LABELS[cat]}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px">
-          ${topTags.map(t => `<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--ink);background:var(--cream);padding:4px 10px;border:1px solid var(--rule)">${t.tag}</span>`).join('')}
-        </div>
-      </div>`;
-  }).filter(Boolean).join('');
+  if (!tagIdx.length) return '';
 
-  if (!sections) return '';
+  // Compute global fingerprint: weighted average across all category fingerprints
+  const userWeights = currentUser?.weights || {};
+  const n = tagIdx.length;
+  const global = new Float32Array(n);
+  let wsum = 0;
+  for (const cat of CATS) {
+    const fp = fps[cat];
+    if (!fp) continue;
+    const w = userWeights[cat] ?? CATEGORIES.find(c => c.key === cat)?.weight ?? 1;
+    wsum += w;
+    for (let i = 0; i < n; i++) global[i] += (fp[i] || 0) * w;
+  }
+  if (wsum > 0) for (let i = 0; i < n; i++) global[i] /= wsum;
+
+  // Rank tags by global weight, take top 20
+  const ranked = tagIdx.map((t, i) => ({ tag: t.tag, weight: global[i] || 0 }))
+    .filter(t => t.weight > 0.01)
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, 20);
+
+  if (ranked.length < 5) return '';
+
+  // Scale font sizes: map weight range to 11px–24px
+  const maxW = ranked[0].weight;
+  const minW = ranked[ranked.length - 1].weight;
+  const range = maxW - minW || 1;
+  const minFont = 11, maxFont = 24;
+
+  // Shuffle for visual variety (seeded by coverage count for stability)
+  const shuffled = [...ranked];
+  let seed = coverage * 7 + ranked.length * 13;
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    const j = seed % (i + 1);
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  const cloud = shuffled.map(t => {
+    const norm = (t.weight - minW) / range;
+    const fontSize = Math.round(minFont + norm * (maxFont - minFont));
+    const opacity = (0.5 + norm * 0.5).toFixed(2);
+    return `<span style="font-family:'DM Mono',monospace;font-size:${fontSize}px;color:var(--ink);opacity:${opacity};padding:4px 8px;display:inline-block">${t.tag}</span>`;
+  }).join('');
 
   return `
     <div style="margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--rule)">
       <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Taste Texture</div>
-      <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--dim);margin-bottom:20px">What the data says you respond to, category by category. Based on ${coverage} films with community trait data.</div>
-      ${sections}
+      <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--dim);margin-bottom:20px">The traits you respond to most, drawn from ${coverage} films with community data.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:2px 4px;justify-content:center;line-height:1.8">
+        ${cloud}
+      </div>
     </div>`;
 }
 
