@@ -349,8 +349,13 @@ export function renderProfile() {
   const el = document.getElementById('profileContent');
   if (!el) return;
 
-  // Preload tag vectors for taste texture display
-  if (localStorage.getItem('pm_tag_genome') !== 'off') loadTagVectors();
+  // Preload tag vectors for taste texture display — backfill section once loaded
+  if (localStorage.getItem('pm_tag_genome') !== 'off') {
+    loadTagVectors().then(() => {
+      const slot = document.getElementById('tasteTextureSlot');
+      if (slot && !slot.innerHTML.trim()) slot.innerHTML = renderTasteTexture();
+    });
+  }
 
   const user = currentUser;
   if (!user) { el.innerHTML = '<p style="color:var(--dim)">Sign in to view your profile.</p>'; return; }
@@ -434,7 +439,7 @@ export function renderProfile() {
       </div>
 
       <!-- TASTE TEXTURE (tag genome) -->
-      ${renderTasteTexture()}
+      <div id="tasteTextureSlot">${renderTasteTexture()}</div>
 
       <!-- SIGNATURE FILMS -->
       <div style="margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--rule)">
