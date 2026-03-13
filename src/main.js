@@ -195,27 +195,37 @@ async function init() {
       if (currentUser) {
         // Existing local profile — link this auth session to it and load by UUID
         const { sb: supabase } = await import('./modules/supabase.js');
-        await supabase.from('palatemap_users').update({
-          auth_id: session.user.id,
-          email: session.user.email || null
-        }).eq('id', currentUser.id);
+        await supabase.rpc('link_auth_id', { target_user_id: currentUser.id, user_email: currentUser.email || session.user.email || '' });
         setCurrentUser({ ...currentUser, auth_id: session.user.id, email: session.user.email || null });
         saveUserLocally();
         // Load by profile UUID — always reliable, doesn't need auth_id/email to match
         await loadFromSupabase(currentUser.id);
       } else {
-        // No local profile — genuinely new user after Google/magic link sign-up
-        const pendingName = localStorage.getItem('palatemap_pending_name')
-          || session.user.user_metadata?.full_name
-          || session.user.user_metadata?.name
-          || session.user.email?.split('@')[0]
-          || '';
-        localStorage.removeItem('palatemap_pending_name');
-        window._pendingAuthSession = session;
-        renderRankings();
-        updateStorageStatus();
-        launchOnboarding({ skipToQuiz: true, name: pendingName });
-        return;
+        // Session exists but no profile anywhere — show cold landing.
+        // The user may have clicked Google sign-in once without completing
+        // onboarding, or this is a genuinely new user arriving via auth link.
+        // If they came from the landing page (pending name set), go to onboarding.
+        // Otherwise, let them see the cold landing first.
+        const pendingName = localStorage.getItem('palatemap_pending_name');
+        if (pendingName) {
+          const name = pendingName
+            || session.user.user_metadata?.full_name
+            || session.user.user_metadata?.name
+            || session.user.email?.split('@')[0]
+            || '';
+          localStorage.removeItem('palatemap_pending_name');
+          window._pendingAuthSession = session;
+          renderRankings();
+          updateStorageStatus();
+          launchOnboarding({ skipToQuiz: true, name });
+          return;
+        } else {
+          // No pending name — they didn't come from our landing flow.
+          // Show cold landing and let them start fresh.
+          window._pendingAuthSession = session;
+          setCloudStatus('local');
+          setTimeout(() => showColdLanding(), 400);
+        }
       }
     }
   } else {
