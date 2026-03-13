@@ -67,6 +67,94 @@ export function findSimilarFilms(categoryFingerprint, category, n = 8) {
   return scored.slice(0, n);
 }
 
+// ── PCA Coords loader ──
+let _pcaCoords = null;
+let _pcaCoordsLoading = null;
+
+export async function loadPcaCoords() {
+  if (_pcaCoords) return _pcaCoords;
+  if (_pcaCoordsLoading) return _pcaCoordsLoading;
+  _pcaCoordsLoading = (async () => {
+    try {
+      const res = await fetch('/data/film-pca-coords.json');
+      if (!res.ok) throw new Error(`pca-coords fetch failed: ${res.status}`);
+      _pcaCoords = await res.json();
+      return _pcaCoords;
+    } catch (e) {
+      console.warn('PCA coords unavailable:', e.message);
+      _pcaCoordsLoading = null;
+      return null;
+    }
+  })();
+  return _pcaCoordsLoading;
+}
+
+export function getPcaCoords(tmdbId) {
+  if (!_pcaCoords) return null;
+  return _pcaCoords[String(tmdbId)] || null;
+}
+
+export function pcaCoordsLoaded() { return _pcaCoords != null; }
+
+// ── PCA Factors (loadings) loader ──
+let _pcaFactors = null;
+let _pcaFactorsLoading = null;
+
+export async function loadPcaFactors() {
+  if (_pcaFactors) return _pcaFactors;
+  if (_pcaFactorsLoading) return _pcaFactorsLoading;
+  _pcaFactorsLoading = (async () => {
+    try {
+      const res = await fetch('/data/pca-factors.json');
+      if (!res.ok) throw new Error(`pca-factors fetch failed: ${res.status}`);
+      _pcaFactors = await res.json();
+      return _pcaFactors;
+    } catch (e) {
+      console.warn('PCA factors unavailable:', e.message);
+      _pcaFactorsLoading = null;
+      return null;
+    }
+  })();
+  return _pcaFactorsLoading;
+}
+
+export function getPcaLoadings() {
+  return _pcaFactors?.components || null;
+}
+
+// ── Bundle Scores loader ──
+let _bundles = null;
+let _bundlesLoading = null;
+
+export async function loadBundleScores() {
+  if (_bundles) return _bundles;
+  if (_bundlesLoading) return _bundlesLoading;
+  _bundlesLoading = (async () => {
+    try {
+      const res = await fetch('/data/film-bundles.json');
+      if (!res.ok) throw new Error(`bundles fetch failed: ${res.status}`);
+      _bundles = await res.json();
+      return _bundles;
+    } catch (e) {
+      console.warn('Bundle scores unavailable:', e.message);
+      _bundlesLoading = null;
+      return null;
+    }
+  })();
+  return _bundlesLoading;
+}
+
+export function getBundleScores(tmdbId) {
+  if (!_bundles) return null;
+  return _bundles.films?.[String(tmdbId)] || null;
+}
+
+export function getBundleIndex() {
+  return _bundles?.bundleIndex || [];
+}
+
+export function bundlesLoaded() { return _bundles != null; }
+
 function cosineSim(a, b) {
   let dot = 0, magA = 0, magB = 0;
   for (let i = 0; i < a.length; i++) {

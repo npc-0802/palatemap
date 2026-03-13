@@ -12,17 +12,20 @@ const CATS = ['story', 'craft', 'performance', 'world', 'experience', 'hold', 'e
  * @param {Array} userRatings — [{tmdbId, scores: {story, craft, ...}}]
  * @param {object} pooledBaselines — {story: {intercept, coefficients}, ...} per category
  * @param {object} filmCoords — {tmdbId: [coord1, coord2, ...]} — PCA coords or bundle scores
+ * @param {Function} tagVectorFn — (tmdbId) => {values: Float64Array} or null — raw tag vectors for baseline prediction
  * @returns {object|null} — {category: {intercept, coefficients}, _method, _nFilms} or null if insufficient
  */
-export function fitUserResidual(userRatings, pooledBaselines, filmCoords) {
-  if (!pooledBaselines || !filmCoords) return null;
+export function fitUserResidual(userRatings, pooledBaselines, filmCoords, tagVectorFn) {
+  if (!pooledBaselines || !filmCoords || !tagVectorFn) return null;
 
-  // Collect training pairs: (coords, residual = actual - pooled_prediction)
+  // Collect training pairs: (coords for residual regression, raw tag vec for baseline prediction)
   const trainingRows = [];
   for (const rating of userRatings) {
     const coords = filmCoords[String(rating.tmdbId)];
     if (!coords) continue;
-    trainingRows.push({ coords, scores: rating.scores });
+    const tagVec = tagVectorFn(rating.tmdbId);
+    if (!tagVec) continue;
+    trainingRows.push({ coords, scores: rating.scores, tagValues: tagVec.values });
   }
 
   if (trainingRows.length < 15) return null;
@@ -42,10 +45,11 @@ export function fitUserResidual(userRatings, pooledBaselines, filmCoords) {
       const actual = row.scores?.[cat];
       if (actual == null) continue;
 
-      // Pooled baseline prediction for this film
+      // Pooled baseline prediction using full-dimension tag vector (not PCA coords)
       let basePred = baseline.intercept || 0;
-      for (let j = 0; j < nFeatures && j < (baseline.coefficients?.length || 0); j++) {
-        basePred += (row.coords[j] || 0) * baseline.coefficients[j];
+      const coeffLen = baseline.coefficients?.length || 0;
+      for (let j = 0; j < row.tagValues.length && j < coeffLen; j++) {
+        basePred += (row.tagValues[j] || 0) * baseline.coefficients[j];
       }
 
       const residual = actual - basePred;

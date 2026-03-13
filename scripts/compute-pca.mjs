@@ -33,8 +33,9 @@ for (let j = 0; j < tagCount; j++) {
   means[j] /= filmCount;
 }
 
-// Build centered matrix
+// Build centered matrix and compute total variance (trace of covariance matrix)
 const matrix = new Array(filmCount);
+let totalVariance = 0;
 for (let i = 0; i < filmCount; i++) {
   const vec = filmEntries[i][1];
   const row = new Float64Array(tagCount);
@@ -43,6 +44,13 @@ for (let i = 0; i < filmCount; i++) {
   }
   matrix[i] = row;
 }
+// Total variance = sum of squared centered values (sum of column variances × n)
+for (let j = 0; j < tagCount; j++) {
+  for (let i = 0; i < filmCount; i++) {
+    totalVariance += matrix[i][j] * matrix[i][j];
+  }
+}
+console.log(`Total variance (trace): ${totalVariance.toFixed(1)}`);
 
 // Power iteration PCA — extract top N_COMPONENTS via sequential deflation
 // This avoids needing a full SVD library
@@ -113,14 +121,11 @@ for (let comp = 0; comp < N_COMPONENTS; comp++) {
   console.log(`  Component ${comp + 1}: eigenvalue=${eigenvalues[comp].toFixed(1)}`);
 }
 
-// Compute total variance for explained variance ratio
-// Reload original data since matrix is deflated
-const totalVariance = eigenvalues.reduce((s, v) => s + v, 0);
-// This is approximate — total variance would need all eigenvalues
-// For practical purposes, report cumulative of extracted components
+// Explained variance ratio — each eigenvalue as fraction of total variance
 const explainedVariance = eigenvalues.map(e => Math.round((e / totalVariance) * 10000) / 10000);
+const cumulativeExplained = (explainedVariance.reduce((s, v) => s + v, 0) * 100).toFixed(1);
 
-console.log(`Explained variance (top ${N_COMPONENTS}): ${(explainedVariance.reduce((s, v) => s + v, 0) * 100).toFixed(1)}% of extracted`);
+console.log(`Explained variance (top ${N_COMPONENTS}): ${cumulativeExplained}% of total`);
 
 // Compute per-film PCA coordinates using original (un-deflated) data
 // Reload tag vectors for clean projection

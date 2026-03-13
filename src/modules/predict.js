@@ -4,8 +4,10 @@ import { ARCHETYPES } from '../data/archetypes.js';
 import { classifyArchetype } from './quiz-engine.js';
 import { track } from '../analytics.js';
 import { shouldShowHint, renderHint } from './hints.js';
-import { loadTagVectors, getTagVector, tagVectorsLoaded, getAdmissibleTags, findSimilarFilms } from './tag-genome.js';
+import { loadTagVectors, getTagVector, tagVectorsLoaded, getAdmissibleTags, findSimilarFilms, loadPcaCoords, getPcaCoords, pcaCoordsLoaded, loadBundleScores, getBundleScores, bundlesLoaded, getBundleIndex, loadPcaFactors, getPcaLoadings } from './tag-genome.js';
 import { computeCategoryFingerprints, categorySimilarity, overallSimilarity, getTopCategoryTags, tagSimilarity, getCoverageCount } from './tag-profile.js';
+import { fitUserResidual, predictWithResidual, checkPooledBaselineGate, checkResidualGate } from './residual-model.js';
+import { evaluatePredictions } from './eval-framework.js';
 
 const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 const TMDB = 'https://api.themoviedb.org/3';
@@ -1406,6 +1408,18 @@ Respond with this exact JSON structure:
   const text = data.content?.[0]?.text || '';
   const clean = text.replace(/```json|```/g, '').trim();
   const prediction = JSON.parse(clean);
+
+  // Validate prediction has real scores — reject degenerate API responses
+  const scores = prediction.predicted_scores;
+  if (!scores || typeof scores !== 'object') {
+    throw new Error('API returned prediction without predicted_scores');
+  }
+  const scoreValues = ['story','craft','performance','world','experience','hold','ending','singularity']
+    .map(k => scores[k]).filter(v => typeof v === 'number' && v > 0);
+  if (scoreValues.length === 0) {
+    throw new Error('API returned all-zero or missing category scores');
+  }
+
   return { prediction, comps };
 }
 
