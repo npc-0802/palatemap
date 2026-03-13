@@ -63,8 +63,8 @@ export async function loadFromSupabaseByAuth(authId, email = null) {
       const result = await sb.from('palatemap_users').select('*').eq('email', email).single();
       if (result.data) {
         data = result.data;
-        // Link auth_id going forward
-        await sb.from('palatemap_users').update({ auth_id: authId }).eq('id', data.id);
+        // Link auth_id going forward (via RPC to bypass RLS on unlinked row)
+        await sb.rpc('link_auth_id', { target_user_id: data.id, user_email: email });
         data.auth_id = authId;
       }
     }
@@ -274,7 +274,7 @@ export async function confirmFriendInvite(requesterId) {
       addressee_id: currentUser.id,
       status: 'accepted'
     }, { onConflict: 'requester_id,addressee_id', ignoreDuplicates: true });
-    await sb.from('palatemap_users').update({ invite_token: null }).eq('id', requesterId);
+    await sb.rpc('clear_invite_token', { target_user_id: requesterId });
     return true;
   } catch(e) { return false; }
 }
