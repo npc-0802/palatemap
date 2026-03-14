@@ -414,8 +414,8 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-bottom: 14px;
-  margin-bottom: 14px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
   border-bottom: 0.5px solid var(--rule);
 }
 .cold-comp-row:last-of-type { border-bottom: none; margin-bottom: 0; }
@@ -441,44 +441,47 @@ body {
 }
 .cold-demo-slide.active { opacity: 1; }
 .cold-demo-caption {
-  padding: 0 0 20px;
+  padding: 0 0 16px;
   font-family: 'DM Sans', sans-serif;
   font-size: clamp(18px, 2.2vw, 22px);
   color: var(--dim);
   line-height: 1.4;
-  min-height: 36px;
+  min-height: 32px;
 }
 .cold-demo-caption span {
-  transition: opacity 0.3s ease;
+  display: inline-block;
+  transition: opacity 0.35s ease;
 }
 
-/* ── Cold Landing: Arrival ── */
-#cold-arrival {
-  border-left: 3px solid var(--blue);
-  padding-left: 24px;
-  margin-bottom: 0;
+/* ── Cold Landing: Arrival Row ── */
+.cold-arrival-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 0 0;
+  margin-top: 14px;
+  border-top: 2px solid var(--blue);
 }
-.cold-arrival-headline {
-  font-family: 'Playfair Display', serif;
-  font-style: italic;
-  font-weight: 900;
-  font-size: clamp(22px, 3vw, 28px);
-  line-height: 1.25;
-  letter-spacing: -0.5px;
+.cold-arrival-name {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
   color: var(--ink);
-  margin-bottom: 10px;
+  letter-spacing: 0.5px;
+  font-weight: 500;
 }
-.cold-arrival-you {
-  text-decoration: underline;
-  text-decoration-color: var(--blue);
-  text-underline-offset: 4px;
-  text-decoration-thickness: 2.5px;
-}
-.cold-arrival-body {
+.cold-arrival-desc {
   font-family: 'DM Sans', sans-serif;
   font-size: 15px;
-  line-height: 1.6;
-  color: var(--dim);
+  color: var(--ink);
+  margin-left: auto;
+  font-weight: 400;
+}
+.cold-arrival-desc em {
+  font-style: italic;
+  text-decoration: underline;
+  text-decoration-color: var(--blue);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 2px;
 }
 
 /* ── Cold Landing: Section Label ── */
@@ -488,7 +491,7 @@ body {
   letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--dim);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 /* ── Cold Landing: Auth ── */
