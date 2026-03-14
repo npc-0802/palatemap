@@ -442,6 +442,19 @@ body {
 }
 .cold-demo-slide.active { opacity: 1; }
 
+/* ── Cold Landing: Slide Guide Text ── */
+.cold-demo-guide {
+  background: var(--surface-dark);
+  padding: 14px 28px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #a09585;
+  text-align: center;
+  transition: opacity 0.3s ease;
+  border-top: 0.5px solid #1a1916;
+}
+
 /* ── Cold Landing: Auth (side-by-side below demo) ── */
 .cold-auth {
   background: var(--surface-dark);

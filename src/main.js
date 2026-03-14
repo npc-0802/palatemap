@@ -130,19 +130,37 @@ function initColdChoreography(el) {
   const compRows = el.querySelectorAll('.cold-comp-row');
   if (!prefersReduced) {
     compRows.forEach((row, i) => {
-      setTimeout(() => { row.style.opacity = '1'; row.style.transform = 'translateY(0)'; }, 300 + i * 200);
+      setTimeout(() => { row.style.opacity = '1'; row.style.transform = 'translateY(0)'; }, 400 + i * 300);
     });
   }
 
-  // Phase 2: Palate Map arrival EXPANDS above competitors (pushes them down)
-  // Last competitor at 300 + 3*200 = 900ms, then 600ms pause = 1500ms
+  // Phase 2: Palate Map arrival EXPANDS above competitors
+  // Last competitor at 400 + 3*300 = 1300ms, then 1200ms cinematic pause = 2500ms
   setTimeout(() => {
     const arrival = document.getElementById('cold-arrival');
     if (arrival) { arrival.style.maxHeight = '300px'; arrival.style.opacity = '1'; }
-  }, prefersReduced ? 0 : 1500);
+  }, prefersReduced ? 0 : 2500);
 
-  // Phase 3: Demo fades in + starts cycling (1500 + 500 = 2000ms)
-  setTimeout(() => initColdDemo(), prefersReduced ? 0 : 2000);
+  // Phase 3: Demo fades in + starts cycling (2500 + 800 = 3300ms)
+  setTimeout(() => initColdDemo(), prefersReduced ? 0 : 3300);
+}
+
+const SLIDE_GUIDES = [
+  'Score every film across eight dimensions of taste.',
+  'We predict how you\'d score films you haven\'t seen.',
+  'Your taste has modes. We map all of them.',
+  'Discover films matched to your specific palate.',
+  'Compare taste with friends — see where you align and diverge.',
+];
+
+function updateSlideGuide(idx) {
+  const guide = document.getElementById('cold-demo-guide');
+  if (!guide) return;
+  guide.style.opacity = '0';
+  setTimeout(() => {
+    guide.textContent = SLIDE_GUIDES[idx];
+    guide.style.opacity = '1';
+  }, 300);
 }
 
 function initColdDemo() {
@@ -151,6 +169,15 @@ function initColdDemo() {
 
   const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const slides = buildDemoSlides();
+
+  // Insert guide text element after demo (before auth)
+  if (!document.getElementById('cold-demo-guide')) {
+    const guide = document.createElement('div');
+    guide.id = 'cold-demo-guide';
+    guide.className = 'cold-demo-guide';
+    guide.textContent = SLIDE_GUIDES[0];
+    demo.parentNode.insertBefore(guide, demo.nextSibling);
+  }
 
   if (prefersReduced) {
     demo.innerHTML = slides.map((s, i) => `<div class="cold-demo-slide active" id="cold-ds-${i + 1}">${s}</div>`).join('');
@@ -172,6 +199,7 @@ function initColdDemo() {
       s.classList.toggle('active', i === current);
     });
     animateDemoSlide(demo, current);
+    updateSlideGuide(current);
   }, 4200);
 }
 
