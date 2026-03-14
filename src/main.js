@@ -442,7 +442,7 @@ function buildCarouselCards() {
   const recItems = recs.map(r => `
     <div class="carousel-foryou-item">
       <div style="position:relative">
-        ${r.isNew ? `<div class="carousel-rec-new"><svg width="8" height="8" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="#6dbf8b" stroke-width="1.2"/><path d="M7 2.5L8 5.5L11 7L8 8.5L7 11.5L6 8.5L3 7L6 5.5z" fill="#6dbf8b" opacity="0.7"/></svg><span style="font-family:'DM Mono',monospace;font-size:7px;color:#6dbf8b;letter-spacing:0.5px">NEW</span></div>` : ''}
+        ${r.isNew ? `<div class="carousel-rec-new"><svg width="8" height="8" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="#D4A84B" stroke-width="1.2"/><path d="M7 2.5L8 5.5L11 7L8 8.5L7 11.5L6 8.5L3 7L6 5.5z" fill="#D4A84B" opacity="0.7"/></svg><span style="font-family:'DM Mono',monospace;font-size:7px;color:#D4A84B;letter-spacing:0.5px">NEW</span></div>` : ''}
         <div class="carousel-rec-score">${r.score}</div>
         <img src="${r.poster}" alt="${r.title}" loading="lazy">
       </div>

@@ -63,7 +63,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <span class="cold-proof-label">predictions</span>
         </div>
         <div class="cold-cta-stack">
-          <span class="cold-cta-time">Takes about 3 minutes</span>
           <button class="cold-cta-primary" onclick="startFromLanding()">Map my taste →</button>
           <button class="cold-cta-google" onclick="landingGoogle()">
             <svg width="16" height="16" viewBox="0 0 18 18" fill="none" style="flex-shrink:0">
@@ -82,10 +81,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
       </div>
       <div class="cold-carousel" id="cold-carousel">
-        <div class="cold-carousel-track" id="cold-carousel-track">
-          <div class="cold-carousel-card" id="carousel-card-0"></div>
-          <div class="cold-carousel-card" id="carousel-card-1"></div>
-          <div class="cold-carousel-card" id="carousel-card-2"></div>
+        <div class="cold-carousel-track-wrap">
+          <div class="cold-carousel-track" id="cold-carousel-track">
+            <div class="cold-carousel-card" id="carousel-card-0"></div>
+            <div class="cold-carousel-card" id="carousel-card-1"></div>
+            <div class="cold-carousel-card" id="carousel-card-2"></div>
+          </div>
         </div>
         <div class="cold-carousel-nav">
           <button class="cold-carousel-arrow cold-carousel-prev" onclick="goToCardManual((carouselIndex+2)%3)">‹</button>
