@@ -132,14 +132,173 @@ export function showColdLanding() {
           setTimeout(() => darkCard.classList.add('cold-auth-glow'), 1400);
         }
       }
+      // Initialize product demo slideshow
+      setTimeout(() => initColdDemo(), 1000);
     }
   } else {
     launchOnboarding();
   }
 }
 
+// ── Cold landing animated product demo ──
+let _coldDemoInterval = null;
+function initColdDemo() {
+  const demo = document.getElementById('cold-demo');
+  if (!demo) return;
+
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const slides = buildDemoSlides();
+
+  if (prefersReduced) {
+    // Show all slides stacked for accessibility
+    demo.style.opacity = '1';
+    demo.style.aspectRatio = 'auto';
+    demo.innerHTML = slides.map((s, i) => `<div style="padding:24px 28px;${i > 0 ? 'border-top:1px solid rgba(255,255,255,0.06)' : ''}">${s}</div>`).join('');
+    return;
+  }
+
+  // Render all slides, show first
+  demo.innerHTML = slides.map((s, i) =>
+    `<div class="cold-demo-slide" style="position:absolute;inset:0;padding:24px 28px;display:flex;align-items:center;justify-content:center;opacity:${i === 0 ? 1 : 0};transition:opacity 0.6s ease">${s}</div>`
+  ).join('');
+  demo.style.opacity = '1';
+
+  let current = 0;
+  animateDemoSlide(demo, 0);
+
+  _coldDemoInterval = setInterval(() => {
+    current = (current + 1) % slides.length;
+    demo.querySelectorAll('.cold-demo-slide').forEach((s, i) => {
+      s.style.opacity = i === current ? '1' : '0';
+    });
+    animateDemoSlide(demo, current);
+  }, 4000);
+}
+
+function animateDemoSlide(demo, idx) {
+  // Trigger bar fill animations for slide 0
+  if (idx === 0) {
+    const bars = demo.querySelectorAll('.cold-demo-slide:first-child .demo-bar-fill');
+    bars.forEach((b, i) => {
+      b.style.width = '0%';
+      setTimeout(() => { b.style.width = b.dataset.target + '%'; }, 80 * i);
+    });
+    const nums = demo.querySelectorAll('.cold-demo-slide:first-child .demo-bar-num');
+    nums.forEach((n, i) => {
+      n.style.opacity = '0';
+      setTimeout(() => { n.style.opacity = '1'; }, 400 + 80 * i);
+    });
+  }
+}
+
+function buildDemoSlides() {
+  const mono = "font-family:'DM Mono',monospace";
+  const sans = "font-family:'DM Sans',sans-serif";
+  const serif = "font-family:'Playfair Display',serif;font-style:italic";
+  const dim = 'color:var(--on-dark-dim)';
+  const bright = 'color:var(--on-dark)';
+  const blue = 'var(--blue)';
+
+  // Slide 1: Score Breakdown
+  const s1cats = [
+    ['Story', 92], ['Craft', 88], ['Performances', 80], ['World', 70],
+    ['Experience', 85], ['Hold', 90], ['Ending', 97], ['Singularity', 82]
+  ];
+  const s1bars = s1cats.map(([cat, val]) => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+      <div style="${mono};font-size:9px;${dim};width:72px;text-align:right;letter-spacing:0.3px">${cat}</div>
+      <div style="flex:1;height:7px;background:rgba(255,255,255,0.06);position:relative;border-radius:1px">
+        <div class="demo-bar-fill" data-target="${val}" style="position:absolute;left:0;top:0;height:100%;width:0%;background:${blue};border-radius:1px;transition:width 0.6s ease"></div>
+      </div>
+      <div class="demo-bar-num" style="${mono};font-size:10px;${bright};width:22px;opacity:0;transition:opacity 0.3s ease">${val}</div>
+    </div>`).join('');
+  const slide1 = `<div style="width:100%">
+    <div style="${mono};font-size:9px;letter-spacing:2px;text-transform:uppercase;${dim};margin-bottom:16px">your breakdown</div>
+    <div style="display:flex;gap:20px;align-items:center">
+      <div style="width:80px;height:110px;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <div style="text-align:center"><div style="${serif};font-size:12px;${bright}">Parasite</div><div style="${mono};font-size:9px;${dim}">2019</div></div>
+      </div>
+      <div style="flex:1">${s1bars}</div>
+    </div>
+  </div>`;
+
+  // Slide 2: Prediction
+  const slide2 = `<div style="text-align:center;width:100%">
+    <div style="${mono};font-size:9px;letter-spacing:2px;${dim};margin-bottom:20px">— we think you'd give this —</div>
+    <div style="${serif};font-weight:700;font-size:18px;${bright};margin-bottom:8px">Lost in Translation</div>
+    <div style="${serif};font-weight:900;font-size:clamp(48px,8vw,64px);color:${blue};line-height:1;margin-bottom:16px">78</div>
+    <div style="${sans};font-size:12px;line-height:1.6;${dim};max-width:360px;margin:0 auto">Strong World match — you love atmospheric, melancholic films. Lower Story — you need more narrative drive than this one offers.</div>
+  </div>`;
+
+  // Slide 3: Taste Contrast
+  const s3left = [['Story', 92], ['Craft', 72], ['World', 70], ['Experience', 85], ['Ending', 97]];
+  const s3right = [['Story', 55], ['Craft', 95], ['World', 98], ['Experience', 78], ['Ending', 60]];
+  const mkBars = (data, color) => data.map(([cat, val]) => `
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+      <div style="${mono};font-size:8px;${dim};width:55px;text-align:right">${cat}</div>
+      <div style="flex:1;height:5px;background:rgba(255,255,255,0.06);border-radius:1px">
+        <div style="height:100%;width:${val}%;background:${color};border-radius:1px"></div>
+      </div>
+    </div>`).join('');
+  const slide3 = `<div style="width:100%">
+    <div style="display:flex;gap:20px">
+      <div style="flex:1">
+        <div style="${serif};font-size:13px;${bright};margin-bottom:2px">Parasite</div>
+        <div style="${mono};font-size:8px;${dim};margin-bottom:10px">Story-driven</div>
+        ${mkBars(s3left, blue)}
+      </div>
+      <div style="flex:1">
+        <div style="${serif};font-size:13px;${bright};margin-bottom:2px">Blade Runner 2049</div>
+        <div style="${mono};font-size:8px;${dim};margin-bottom:10px">World-driven</div>
+        ${mkBars(s3right, '#c4956a')}
+      </div>
+    </div>
+    <div style="${sans};font-size:12px;line-height:1.6;${dim};text-align:center;margin-top:16px">Two films you love. Two completely different engines. That's your palate.</div>
+  </div>`;
+
+  // Slide 4: For You Recommendations
+  const recs = [
+    { title: 'The Handmaiden', year: '2016', score: 87, badge: true, reason: 'Strong World + Singularity match' },
+    { title: 'Arrival', year: '2016', score: 84, badge: false, reason: 'Director affinity · Denis Villeneuve' },
+    { title: 'In the Mood for Love', year: '2000', score: 82, badge: false, reason: 'High predicted Hold — stays with you' },
+  ];
+  const recCards = recs.map(r => `
+    <div style="flex:1;min-width:0">
+      <div style="background:rgba(255,255,255,0.04);aspect-ratio:2/3;display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:8px">
+        <div style="text-align:center;padding:8px"><div style="${serif};font-size:11px;${bright}">${r.title}</div><div style="${mono};font-size:9px;${dim}">${r.year}</div></div>
+        <div style="position:absolute;bottom:6px;right:6px;${mono};font-size:11px;font-weight:700;color:${blue}">${r.score}</div>
+        ${r.badge ? `<div style="position:absolute;top:6px;left:6px;${mono};font-size:7px;letter-spacing:1px;text-transform:uppercase;background:rgba(61,90,128,0.3);color:${blue};padding:3px 6px">New territory</div>` : ''}
+      </div>
+      <div style="${mono};font-size:8px;${dim};line-height:1.4">${r.reason}</div>
+    </div>`).join('');
+  const slide4 = `<div style="width:100%">
+    <div style="${mono};font-size:9px;letter-spacing:2px;text-transform:uppercase;${dim};margin-bottom:16px;text-align:center">— for you —</div>
+    <div class="cold-demo-recs" style="display:flex;gap:14px">${recCards}</div>
+  </div>`;
+
+  // Slide 5: Friends Compatibility
+  const slide5 = `<div style="text-align:center;width:100%">
+    <div style="${mono};font-size:9px;letter-spacing:2px;${dim};margin-bottom:20px">— taste overlap —</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-bottom:16px">
+      <div style="${sans};font-size:14px;${bright}">You</div>
+      <div style="${serif};font-weight:900;font-size:clamp(40px,7vw,56px);color:${blue};line-height:1">73%</div>
+      <div style="${sans};font-size:14px;${bright}">Sarah</div>
+    </div>
+    <div style="${mono};font-size:9px;${dim};margin-bottom:4px">Weight alignment: 81%</div>
+    <div style="${mono};font-size:9px;${dim};margin-bottom:16px">Score agreement: 64%</div>
+    <div style="display:flex;justify-content:center;gap:24px;margin-bottom:16px">
+      <div style="${mono};font-size:9px;${dim}">Moonlight — You: 88 · Sarah: 91</div>
+      <div style="${mono};font-size:9px;${dim}">Tenet — You: 52 · Sarah: 78</div>
+    </div>
+    <div style="${sans};font-size:12px;line-height:1.6;${dim};max-width:340px;margin:0 auto">You both care about performances. You disagree on whether craft alone is enough.</div>
+  </div>`;
+
+  return [slide1, slide2, slide3, slide4, slide5];
+}
+
 function exitColdLanding(el) {
   if (!el) return;
+  if (_coldDemoInterval) { clearInterval(_coldDemoInterval); _coldDemoInterval = null; }
   el.classList.add('exiting');
   el.addEventListener('animationend', () => {
     el.style.display = 'none';
@@ -148,6 +307,7 @@ function exitColdLanding(el) {
 }
 
 window.startFromLanding = function() {
+  track('cold_landing_email');
   const el = document.getElementById('cold-landing');
   exitColdLanding(el);
   launchOnboarding();
@@ -161,12 +321,14 @@ window._testSkipToQuiz = function(name) {
 };
 
 window.landingGoogle = async function() {
+  track('cold_landing_google');
   localStorage.setItem('palatemap_auth_pending', '1');
   const { signInWithGoogle } = await import('./modules/supabase.js');
   signInWithGoogle();
 };
 
 window.startFromLandingReturning = function() {
+  track('cold_landing_login');
   const el = document.getElementById('cold-landing');
   exitColdLanding(el);
   launchOnboarding();
