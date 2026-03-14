@@ -435,7 +435,7 @@ body {
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 60px 80px 100px;
+  padding: 60px 80px 130px;
   align-items: center;
 }
 
@@ -1326,7 +1326,7 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  background: #efe7d8;
+  background: #e9dfcc;
   border-top: 1px solid var(--rule);
   opacity: 0;
   transform: translateY(8px);
@@ -1440,7 +1440,7 @@ body {
 @media (max-width: 1024px) {
   .cold-hero-inner {
     gap: 48px;
-    padding: 60px 48px 100px;
+    padding: 60px 48px 120px;
   }
   .cold-carousel-card { padding: 24px 28px; }
   .card-bar-label { min-width: 95px; font-size: 11px; }
@@ -1451,7 +1451,7 @@ body {
 @media (max-width: 800px) {
   .cold-hero-inner {
     grid-template-columns: 1fr;
-    padding: 48px 32px 100px;
+    padding: 48px 32px 120px;
     gap: 48px;
   }
   .cold-h1 { font-size: clamp(36px, 10vw, 56px); }
@@ -1474,7 +1474,7 @@ body {
 
 /* ── Small Mobile ── */
 @media (max-width: 480px) {
-  .cold-hero-inner { padding: 40px 20px 100px; }
+  .cold-hero-inner { padding: 40px 20px 120px; }
   .cold-carousel-card { padding: 18px 16px; }
   .card-bar-label { min-width: 75px; font-size: 10px; }
   .card-bar-value { font-size: 10px; }
