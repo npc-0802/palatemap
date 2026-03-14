@@ -59,43 +59,50 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- Two-column body (50/50) -->
     <div class="cold-landing-grid">
 
-      <!-- Left column: comparison + demo -->
+      <!-- Left column: comparison + arrival + demo -->
       <div>
-        <!-- Competitor lines -->
-        <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:20px">
-          <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);flex-shrink:0;min-width:130px;letter-spacing:0.5px">Rotten Tomatoes</div>
-          <div style="font-family:'DM Sans',sans-serif;font-size:15px;color:var(--dim);line-height:1.5">Tells you whether critics liked it.</div>
+        <!-- Section label -->
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:28px">How they see your taste</div>
+
+        <!-- Competitor rows (cascade in via JS) -->
+        <div class="cold-comp-row" style="opacity:0;transform:translateY(8px)">
+          <div class="cold-comp-logo"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M10 2c-.5-1-1.5-1.5-2.5-1.2.3-.8 1-1.3 1.8-1.3.5 0 1 .2 1.3.5L10 2z" fill="currentColor" opacity="0.5"/><circle cx="9" cy="10.5" r="6.5" fill="currentColor" opacity="0.35"/></svg></div>
+          <div class="cold-comp-name">Rotten Tomatoes</div>
+          <div class="cold-comp-desc">Tells you whether critics liked it.</div>
         </div>
-        <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:20px">
-          <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);flex-shrink:0;min-width:130px;letter-spacing:0.5px">IMDb</div>
-          <div style="font-family:'DM Sans',sans-serif;font-size:15px;color:var(--dim);line-height:1.5">Tells you whether everyone liked it.</div>
+        <div class="cold-comp-row" style="opacity:0;transform:translateY(8px)">
+          <div class="cold-comp-logo"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="5" width="16" height="8" rx="2" fill="currentColor" opacity="0.35"/><text x="9" y="11.5" text-anchor="middle" font-family="sans-serif" font-size="5.5" font-weight="700" fill="var(--paper)">IMDb</text></svg></div>
+          <div class="cold-comp-name">IMDb</div>
+          <div class="cold-comp-desc">Tells you whether everyone liked it.</div>
         </div>
-        <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:20px">
-          <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);flex-shrink:0;min-width:130px;letter-spacing:0.5px">Letterboxd</div>
-          <div style="font-family:'DM Sans',sans-serif;font-size:15px;color:var(--dim);line-height:1.5">Tells you whether your friends liked it.</div>
+        <div class="cold-comp-row" style="opacity:0;transform:translateY(8px)">
+          <div class="cold-comp-logo"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="6" cy="9" r="4" fill="currentColor" opacity="0.25"/><circle cx="9" cy="9" r="4" fill="currentColor" opacity="0.25"/><circle cx="12" cy="9" r="4" fill="currentColor" opacity="0.25"/></svg></div>
+          <div class="cold-comp-name">Letterboxd</div>
+          <div class="cold-comp-desc">Tells you whether your friends liked it.</div>
         </div>
-        <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:0">
-          <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);flex-shrink:0;min-width:130px;letter-spacing:0.5px">Netflix</div>
-          <div style="font-family:'DM Sans',sans-serif;font-size:15px;color:var(--dim);line-height:1.5">Tells you what to watch next so you keep watching.</div>
+        <div class="cold-comp-row" style="opacity:0;transform:translateY(8px)">
+          <div class="cold-comp-logo"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M5 3h2.5l3 8V3H13v12h-2.5l-3-8v8H5V3z" fill="currentColor" opacity="0.35"/></svg></div>
+          <div class="cold-comp-name">Netflix</div>
+          <div class="cold-comp-desc">Tells you what to watch next so you keep watching.</div>
         </div>
 
         <!-- Breathing room -->
-        <div style="height:40px"></div>
+        <div style="height:48px"></div>
 
         <!-- Palate Map arrival -->
-        <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:16px">
-          <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:14px;color:var(--ink);flex-shrink:0;min-width:130px">Palate Map</div>
-          <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:18px;color:var(--ink);line-height:1.4">Tells you why <em style="font-style:italic;text-decoration:underline;text-decoration-color:var(--blue);text-underline-offset:3px">you</em> like what you like — and finds more of it.</div>
+        <div class="cold-arrival" id="cold-arrival" style="opacity:0;transform:translateY(12px)">
+          <div style="width:40px;height:2px;background:var(--blue);margin-bottom:24px"></div>
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(22px,3vw,26px);line-height:1.25;letter-spacing:-0.5px;color:var(--ink);margin-bottom:10px">Palate Map tells you why <span style="text-decoration:underline;text-decoration-color:var(--blue);text-underline-offset:4px;text-decoration-thickness:2px">you</span> like what you like.</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.65;color:var(--dim);max-width:400px">Eight dimensions. Your actual taste — not a star rating, not an algorithm optimized for someone else's goals. A map of what moves you and why.</div>
         </div>
 
         <!-- Animated product demo -->
-        <div class="cold-demo" id="cold-demo" style="background:var(--surface-dark-3);overflow:hidden;opacity:0;transition:opacity 0.8s ease;margin-top:8px;aspect-ratio:16/10;position:relative">
-        </div>
+        <div class="cold-demo" id="cold-demo"></div>
       </div>
 
       <!-- Auth card (sticky on desktop) -->
       <div class="cold-landing-sticky" style="display:flex;flex-direction:column;position:sticky;top:24px;align-self:start">
-        <div style="background:var(--surface-dark-3);padding:36px 32px;display:flex;flex-direction:column">
+        <div style="background:var(--surface-dark-3);padding:36px 32px;flex:1;display:flex;flex-direction:column">
           <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:16px">— start here —</div>
           <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(22px,2.5vw,28px);color:var(--on-dark);line-height:1.15;letter-spacing:-0.5px;margin-bottom:12px">Your taste has a shape.<br>Let's find it.</div>
           <div style="font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.65;color:var(--on-dark-dim);margin-bottom:28px">Rate five films you have strong feelings about. After each one, discover something about your taste you didn't know. By the fifth film, the system knows you.</div>
@@ -127,18 +134,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <span style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(244,239,230,0.45);letter-spacing:0.5px">On Letterboxd? <span style="color:rgba(244,239,230,0.85);cursor:pointer;text-decoration:underline" onclick="startFromLanding()">Import your ratings →</span></span>
           </div>
         </div>
+
+        <div style="margin-top:20px;font-family:'DM Mono',monospace;font-size:10px;color:var(--rule-dark);letter-spacing:1px;text-align:center">Starting with film. Expanding to everything.</div>
+        <div style="margin-top:8px;margin-bottom:48px;text-align:center">
+          <a href="/tos.html" target="_blank" rel="noopener noreferrer" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--rule-dark);letter-spacing:1px;text-decoration:none;opacity:0.7" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Terms</a>
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--rule-dark);opacity:0.4">&nbsp;·&nbsp;</span>
+          <a href="/privacy.html" target="_blank" rel="noopener noreferrer" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--rule-dark);letter-spacing:1px;text-decoration:none;opacity:0.7" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Privacy</a>
+        </div>
       </div>
 
-    </div>
-
-    <!-- Footer (full width, below grid) -->
-    <div style="margin-top:48px;text-align:center">
-      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:1px;opacity:0.5">Starting with film. Expanding to everything.</div>
-      <div style="margin-top:8px;margin-bottom:24px">
-        <a href="/tos.html" target="_blank" rel="noopener noreferrer" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:1px;text-decoration:none;opacity:0.5" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='0.5'">Terms</a>
-        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);opacity:0.3">&nbsp;·&nbsp;</span>
-        <a href="/privacy.html" target="_blank" rel="noopener noreferrer" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:1px;text-decoration:none;opacity:0.5" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='0.5'">Privacy</a>
-      </div>
     </div>
   </div>
 </div>

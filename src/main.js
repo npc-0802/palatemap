@@ -112,36 +112,51 @@ export function showColdLanding() {
           child.style.animationDelay = `${d}ms`;
         }
       });
-      // Stagger value props within the grid
-      const propCol = el.querySelector('.cold-landing-grid > div:first-child');
-      if (propCol) {
-        Array.from(propCol.children).forEach((prop, i) => {
-          prop.classList.add('cold-reveal');
-          prop.style.animationDelay = `${600 + i * 100}ms`;
-        });
-      }
       // Auth card
       const authCard = el.querySelector('.cold-landing-sticky');
       if (authCard) {
         authCard.classList.add('cold-reveal');
         authCard.style.animationDelay = '800ms';
         authCard.style.animationDuration = '0.5s';
-        // Add glow after entrance completes
         const darkCard = authCard.querySelector('[style*="surface-dark"]');
         if (darkCard) {
           setTimeout(() => darkCard.classList.add('cold-auth-glow'), 1400);
         }
       }
-      // Initialize product demo slideshow
-      setTimeout(() => initColdDemo(), 1000);
+      // Choreographed left column reveal
+      initColdChoreography(el);
     }
   } else {
     launchOnboarding();
   }
 }
 
-// ── Cold landing animated product demo ──
+// ── Cold landing choreography + demo ──
 let _coldDemoInterval = null;
+
+function initColdChoreography(el) {
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Phase 1: Competitor rows cascade in
+  const compRows = el.querySelectorAll('.cold-comp-row');
+  if (!prefersReduced) {
+    compRows.forEach((row, i) => {
+      setTimeout(() => { row.style.opacity = '1'; row.style.transform = 'translateY(0)'; }, 300 + i * 200);
+    });
+  }
+
+  // Phase 2: Arrival enters after last competitor
+  const arrivalDelay = prefersReduced ? 0 : 300 + (compRows.length - 1) * 200 + 400;
+  setTimeout(() => {
+    const arrival = document.getElementById('cold-arrival');
+    if (arrival) { arrival.style.opacity = '1'; arrival.style.transform = 'translateY(0)'; }
+  }, arrivalDelay);
+
+  // Phase 3: Demo fades in
+  const demoDelay = prefersReduced ? 0 : arrivalDelay + 500;
+  setTimeout(() => initColdDemo(), demoDelay);
+}
+
 function initColdDemo() {
   const demo = document.getElementById('cold-demo');
   if (!demo) return;
@@ -150,18 +165,14 @@ function initColdDemo() {
   const slides = buildDemoSlides();
 
   if (prefersReduced) {
-    // Show all slides stacked for accessibility
-    demo.style.opacity = '1';
-    demo.style.aspectRatio = 'auto';
-    demo.innerHTML = slides.map((s, i) => `<div style="padding:24px 28px;${i > 0 ? 'border-top:1px solid rgba(255,255,255,0.06)' : ''}">${s}</div>`).join('');
+    demo.innerHTML = slides.map((s, i) => `<div class="cold-demo-slide active">${s}</div>`).join('');
     return;
   }
 
-  // Render all slides, show first
   demo.innerHTML = slides.map((s, i) =>
-    `<div class="cold-demo-slide" style="position:absolute;inset:0;padding:24px 28px;display:flex;align-items:center;justify-content:center;opacity:${i === 0 ? 1 : 0};transition:opacity 0.6s ease">${s}</div>`
+    `<div class="cold-demo-slide${i === 0 ? ' active' : ''}">${s}</div>`
   ).join('');
-  demo.style.opacity = '1';
+  demo.classList.add('visible');
 
   let current = 0;
   animateDemoSlide(demo, 0);
@@ -169,24 +180,25 @@ function initColdDemo() {
   _coldDemoInterval = setInterval(() => {
     current = (current + 1) % slides.length;
     demo.querySelectorAll('.cold-demo-slide').forEach((s, i) => {
-      s.style.opacity = i === current ? '1' : '0';
+      s.classList.toggle('active', i === current);
     });
     animateDemoSlide(demo, current);
-  }, 4000);
+  }, 4200);
 }
 
 function animateDemoSlide(demo, idx) {
-  // Trigger bar fill animations for slide 0
   if (idx === 0) {
-    const bars = demo.querySelectorAll('.cold-demo-slide:first-child .demo-bar-fill');
+    const slide = demo.querySelectorAll('.cold-demo-slide')[0];
+    if (!slide) return;
+    const bars = slide.querySelectorAll('.demo-bar-fill');
     bars.forEach((b, i) => {
       b.style.width = '0%';
-      setTimeout(() => { b.style.width = b.dataset.target + '%'; }, 80 * i);
+      setTimeout(() => { b.style.width = b.dataset.target + '%'; }, 70 * i);
     });
-    const nums = demo.querySelectorAll('.cold-demo-slide:first-child .demo-bar-num');
+    const nums = slide.querySelectorAll('.demo-bar-num');
     nums.forEach((n, i) => {
       n.style.opacity = '0';
-      setTimeout(() => { n.style.opacity = '1'; }, 400 + 80 * i);
+      setTimeout(() => { n.style.opacity = '1'; }, 350 + 70 * i);
     });
   }
 }
@@ -195,9 +207,10 @@ function buildDemoSlides() {
   const mono = "font-family:'DM Mono',monospace";
   const sans = "font-family:'DM Sans',sans-serif";
   const serif = "font-family:'Playfair Display',serif;font-style:italic";
-  const dim = 'color:var(--on-dark-dim)';
-  const bright = 'color:var(--on-dark)';
+  const dim = 'color:#555';
+  const bright = 'color:#999';
   const blue = 'var(--blue)';
+  const gold = '#D4A84B';
 
   // Slide 1: Score Breakdown
   const s1cats = [
@@ -205,18 +218,18 @@ function buildDemoSlides() {
     ['Experience', 85], ['Hold', 90], ['Ending', 97], ['Singularity', 82]
   ];
   const s1bars = s1cats.map(([cat, val]) => `
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
-      <div style="${mono};font-size:9px;${dim};width:72px;text-align:right;letter-spacing:0.3px">${cat}</div>
-      <div style="flex:1;height:7px;background:rgba(255,255,255,0.06);position:relative;border-radius:1px">
-        <div class="demo-bar-fill" data-target="${val}" style="position:absolute;left:0;top:0;height:100%;width:0%;background:${blue};border-radius:1px;transition:width 0.6s ease"></div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+      <div style="${mono};font-size:8px;color:#555;width:68px;text-align:right;letter-spacing:0.3px">${cat}</div>
+      <div style="flex:1;height:3px;background:#222;position:relative">
+        <div class="demo-bar-fill" data-target="${val}" style="position:absolute;left:0;top:0;height:100%;width:0%;background:${blue};transition:width 0.6s ease"></div>
       </div>
-      <div class="demo-bar-num" style="${mono};font-size:10px;${bright};width:22px;opacity:0;transition:opacity 0.3s ease">${val}</div>
+      <div class="demo-bar-num" style="${mono};font-size:9px;color:#888;width:20px;opacity:0;transition:opacity 0.3s ease">${val}</div>
     </div>`).join('');
   const slide1 = `<div style="width:100%">
-    <div style="${mono};font-size:9px;letter-spacing:2px;text-transform:uppercase;${dim};margin-bottom:16px">your breakdown</div>
-    <div style="display:flex;gap:20px;align-items:center">
-      <div style="width:80px;height:110px;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <div style="text-align:center"><div style="${serif};font-size:12px;${bright}">Parasite</div><div style="${mono};font-size:9px;${dim}">2019</div></div>
+    <div style="${mono};font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#555;margin-bottom:14px">your breakdown</div>
+    <div style="display:flex;gap:16px;align-items:center">
+      <div style="width:80px;height:115px;border:0.5px solid #333;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <div style="text-align:center"><div style="${serif};font-size:11px;color:#888">Parasite</div><div style="${mono};font-size:9px;color:#555">2019</div></div>
       </div>
       <div style="flex:1">${s1bars}</div>
     </div>
@@ -224,73 +237,79 @@ function buildDemoSlides() {
 
   // Slide 2: Prediction
   const slide2 = `<div style="text-align:center;width:100%">
-    <div style="${mono};font-size:9px;letter-spacing:2px;${dim};margin-bottom:20px">— we think you'd give this —</div>
-    <div style="${serif};font-weight:700;font-size:18px;${bright};margin-bottom:8px">Lost in Translation</div>
-    <div style="${serif};font-weight:900;font-size:clamp(48px,8vw,64px);color:${blue};line-height:1;margin-bottom:16px">78</div>
-    <div style="${sans};font-size:12px;line-height:1.6;${dim};max-width:360px;margin:0 auto">Strong World match — you love atmospheric, melancholic films. Lower Story — you need more narrative drive than this one offers.</div>
+    <div style="${mono};font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#555;margin-bottom:18px">— we think you'd give this —</div>
+    <div style="${serif};font-size:11px;color:#888;margin-bottom:8px">Lost in Translation</div>
+    <div style="${serif};font-weight:900;font-size:clamp(48px,8vw,56px);color:${blue};line-height:1;letter-spacing:-3px;margin-bottom:14px">78</div>
+    <div style="${sans};font-size:12px;line-height:1.55;color:#777;max-width:300px;margin:0 auto">Strong World match — you love atmospheric, melancholic films. Lower Story — you need more narrative drive than this offers.</div>
   </div>`;
 
   // Slide 3: Taste Contrast
-  const s3left = [['Story', 92], ['Craft', 72], ['World', 70], ['Experience', 85], ['Ending', 97]];
-  const s3right = [['Story', 55], ['Craft', 95], ['World', 98], ['Experience', 78], ['Ending', 60]];
-  const mkBars = (data, color) => data.map(([cat, val]) => `
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-      <div style="${mono};font-size:8px;${dim};width:55px;text-align:right">${cat}</div>
-      <div style="flex:1;height:5px;background:rgba(255,255,255,0.06);border-radius:1px">
-        <div style="height:100%;width:${val}%;background:${color};border-radius:1px"></div>
-      </div>
+  const s3all = ['Story','Craft','Perf','World','Exp','Hold','End','Sing'];
+  const s3L = [92,88,80,70,85,90,97,82];
+  const s3R = [55,95,65,98,72,88,60,90];
+  const mkBars3 = (vals, color) => s3all.map((cat, i) => `
+    <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">
+      <div style="${mono};font-size:7px;color:#555;width:30px;text-align:right">${cat}</div>
+      <div style="flex:1;height:3px;background:#222"><div style="height:100%;width:${vals[i]}%;background:${color}"></div></div>
     </div>`).join('');
   const slide3 = `<div style="width:100%">
-    <div style="display:flex;gap:20px">
+    <div style="${mono};font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#555;margin-bottom:14px;text-align:center">your taste isn't one thing</div>
+    <div style="display:flex;gap:16px">
       <div style="flex:1">
-        <div style="${serif};font-size:13px;${bright};margin-bottom:2px">Parasite</div>
-        <div style="${mono};font-size:8px;${dim};margin-bottom:10px">Story-driven</div>
-        ${mkBars(s3left, blue)}
+        <div style="${serif};font-size:11px;color:#888;margin-bottom:2px">Parasite</div>
+        <div style="${mono};font-size:9px;color:#555;margin-bottom:8px">story-driven</div>
+        ${mkBars3(s3L, blue)}
       </div>
+      <div style="width:0.5px;background:#333"></div>
       <div style="flex:1">
-        <div style="${serif};font-size:13px;${bright};margin-bottom:2px">Blade Runner 2049</div>
-        <div style="${mono};font-size:8px;${dim};margin-bottom:10px">World-driven</div>
-        ${mkBars(s3right, '#c4956a')}
+        <div style="${serif};font-size:11px;color:#888;margin-bottom:2px">Blade Runner 2049</div>
+        <div style="${mono};font-size:9px;color:#555;margin-bottom:8px">world-driven</div>
+        ${mkBars3(s3R, gold)}
       </div>
     </div>
-    <div style="${sans};font-size:12px;line-height:1.6;${dim};text-align:center;margin-top:16px">Two films you love. Two completely different engines. That's your palate.</div>
+    <div style="${sans};font-size:12px;line-height:1.55;color:#777;text-align:center;margin-top:14px">Two films you love. Two completely different engines.</div>
   </div>`;
 
-  // Slide 4: For You Recommendations
+  // Slide 4: For You
   const recs = [
-    { title: 'The Handmaiden', year: '2016', score: 87, badge: true, reason: 'Strong World + Singularity match' },
-    { title: 'Arrival', year: '2016', score: 84, badge: false, reason: 'Director affinity · Denis Villeneuve' },
-    { title: 'In the Mood for Love', year: '2000', score: 82, badge: false, reason: 'High predicted Hold — stays with you' },
+    { title: 'The Handmaiden', year: '2016', score: 87, badge: true, reason: 'World + Singularity' },
+    { title: 'Arrival', year: '2016', score: 84, badge: false, reason: 'Director affinity' },
+    { title: 'In the Mood for Love', year: '2000', score: 82, badge: false, reason: 'High predicted Hold' },
   ];
-  const recCards = recs.map(r => `
-    <div style="flex:1;min-width:0">
-      <div style="background:rgba(255,255,255,0.04);aspect-ratio:2/3;display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:8px">
-        <div style="text-align:center;padding:8px"><div style="${serif};font-size:11px;${bright}">${r.title}</div><div style="${mono};font-size:9px;${dim}">${r.year}</div></div>
-        <div style="position:absolute;bottom:6px;right:6px;${mono};font-size:11px;font-weight:700;color:${blue}">${r.score}</div>
-        ${r.badge ? `<div style="position:absolute;top:6px;left:6px;${mono};font-size:7px;letter-spacing:1px;text-transform:uppercase;background:rgba(61,90,128,0.3);color:${blue};padding:3px 6px">New territory</div>` : ''}
+  const recCards = recs.map((r, i) => `
+    <div class="cold-ds4-card" style="flex:1;min-width:0">
+      <div style="border:0.5px solid #333;aspect-ratio:2/3;display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:6px">
+        <div style="text-align:center;padding:6px"><div style="${serif};font-size:11px;color:#888">${r.title}</div><div style="${mono};font-size:9px;color:#555">${r.year}</div></div>
+        <div style="position:absolute;top:5px;right:5px;${mono};font-size:9px;color:${blue};background:rgba(61,90,128,0.15);border:0.5px solid rgba(61,90,128,0.3);padding:2px 5px">${r.score}</div>
+        ${r.badge ? `<div style="position:absolute;top:5px;left:5px;display:flex;align-items:center;gap:3px;${mono};font-size:7px;letter-spacing:0.5px;text-transform:uppercase;color:#6dbf8b"><svg width="8" height="8" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="#6dbf8b" stroke-width="1.2"/><path d="M7 2.5L8 5.5L11 7L8 8.5L7 11.5L6 8.5L3 7L6 5.5z" fill="#6dbf8b" opacity="0.7"/></svg>NEW</div>` : ''}
       </div>
-      <div style="${mono};font-size:8px;${dim};line-height:1.4">${r.reason}</div>
+      <div style="${mono};font-size:7px;color:#555;line-height:1.4">${r.reason}</div>
     </div>`).join('');
   const slide4 = `<div style="width:100%">
-    <div style="${mono};font-size:9px;letter-spacing:2px;text-transform:uppercase;${dim};margin-bottom:16px;text-align:center">— for you —</div>
-    <div class="cold-demo-recs" style="display:flex;gap:14px">${recCards}</div>
+    <div style="${mono};font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#555;margin-bottom:14px;text-align:center">— for you —</div>
+    <div style="display:flex;gap:12px">${recCards}</div>
   </div>`;
 
-  // Slide 5: Friends Compatibility
+  // Slide 5: Friends
   const slide5 = `<div style="text-align:center;width:100%">
-    <div style="${mono};font-size:9px;letter-spacing:2px;${dim};margin-bottom:20px">— taste overlap —</div>
-    <div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-bottom:16px">
-      <div style="${sans};font-size:14px;${bright}">You</div>
-      <div style="${serif};font-weight:900;font-size:clamp(40px,7vw,56px);color:${blue};line-height:1">73%</div>
-      <div style="${sans};font-size:14px;${bright}">Sarah</div>
+    <div style="${mono};font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#555;margin-bottom:18px">— taste overlap —</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:14px">
+      <div>
+        <div style="width:36px;height:36px;border-radius:50%;border:0.5px solid #555;display:flex;align-items:center;justify-content:center;margin:0 auto 4px"><span style="${mono};font-size:10px;color:#999">Y</span></div>
+        <div style="${mono};font-size:10px;color:#999">You</div>
+      </div>
+      <div><span style="${serif};font-weight:900;font-size:48px;color:${blue};letter-spacing:-2px">73</span><span style="${serif};font-size:24px;color:#555">%</span></div>
+      <div>
+        <div style="width:36px;height:36px;border-radius:50%;border:0.5px solid #555;display:flex;align-items:center;justify-content:center;margin:0 auto 4px"><span style="${mono};font-size:10px;color:#666">S</span></div>
+        <div style="${mono};font-size:9px;color:#666">Sarah</div>
+      </div>
     </div>
-    <div style="${mono};font-size:9px;${dim};margin-bottom:4px">Weight alignment: 81%</div>
-    <div style="${mono};font-size:9px;${dim};margin-bottom:16px">Score agreement: 64%</div>
-    <div style="display:flex;justify-content:center;gap:24px;margin-bottom:16px">
-      <div style="${mono};font-size:9px;${dim}">Moonlight — You: 88 · Sarah: 91</div>
-      <div style="${mono};font-size:9px;${dim}">Tenet — You: 52 · Sarah: 78</div>
+    <div style="${mono};font-size:9px;color:#666;margin-bottom:12px">Weights: 81% · Scores: 64%</div>
+    <div style="display:flex;justify-content:center;gap:20px;margin-bottom:14px">
+      <div style="${mono};font-size:9px;color:#666">Moonlight — <span style="color:${blue}">88</span> · <span style="color:${gold}">91</span></div>
+      <div style="${mono};font-size:9px;color:#666">Tenet — <span style="color:${blue}">52</span> · <span style="color:${gold}">78</span></div>
     </div>
-    <div style="${sans};font-size:12px;line-height:1.6;${dim};max-width:340px;margin:0 auto">You both care about performances. You disagree on whether craft alone is enough.</div>
+    <div style="${sans};font-size:11px;line-height:1.55;color:#777;max-width:300px;margin:0 auto">You both care about performances. You disagree on whether craft alone is enough.</div>
   </div>`;
 
   return [slide1, slide2, slide3, slide4, slide5];
