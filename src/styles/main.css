@@ -441,17 +441,12 @@ body {
 }
 .cold-demo-slide.active { opacity: 1; }
 .cold-demo-caption {
-  background: #0c0b09;
-  padding: 14px 28px 18px;
+  padding: 0 0 20px;
   font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  color: rgba(244, 239, 230, 0.5);
-  line-height: 1.5;
-  text-align: center;
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-size: clamp(18px, 2.2vw, 22px);
+  color: var(--dim);
+  line-height: 1.4;
+  min-height: 36px;
 }
 .cold-demo-caption span {
   transition: opacity 0.3s ease;
