@@ -519,7 +519,7 @@ body {
   flex-direction: column;
   gap: 10px;
   max-width: 300px;
-  margin-bottom: 28px;
+  margin-bottom: 48px;
 }
 .cold-cta-primary {
   font-family: 'DM Mono', monospace;
