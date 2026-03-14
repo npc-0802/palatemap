@@ -319,6 +319,27 @@ function buildCarouselCards() {
     </div>
     <div class="carousel-score-explain">
       <div class="carousel-score-explain-body">Your palate weights Experience and Story highest — that's why your total is higher than a straight average.</div>
+    </div>
+    <div class="carousel-taste-tags">
+      <div class="carousel-taste-tags-label">What your scores say about this film</div>
+      <div class="carousel-taste-tags-grid">
+        <div class="carousel-taste-tag high">
+          <div class="carousel-taste-tag-header"><span class="carousel-taste-tag-cat">Ending</span><span class="carousel-taste-tag-score">97</span></div>
+          <div class="carousel-taste-tag-insight">This ending changed how you feel about the whole film.</div>
+        </div>
+        <div class="carousel-taste-tag high">
+          <div class="carousel-taste-tag-header"><span class="carousel-taste-tag-cat">Story</span><span class="carousel-taste-tag-score">92</span></div>
+          <div class="carousel-taste-tag-insight">The narrative carries everything for you here.</div>
+        </div>
+        <div class="carousel-taste-tag low">
+          <div class="carousel-taste-tag-header"><span class="carousel-taste-tag-cat">World</span><span class="carousel-taste-tag-score">70</span></div>
+          <div class="carousel-taste-tag-insight">The atmosphere isn't what pulls you into this one.</div>
+        </div>
+        <div class="carousel-taste-tag low">
+          <div class="carousel-taste-tag-header"><span class="carousel-taste-tag-cat">Performance</span><span class="carousel-taste-tag-score">80</span></div>
+          <div class="carousel-taste-tag-insight">Strong cast, but not why this film is an 86 for you.</div>
+        </div>
+      </div>
     </div>`;
 
   // ── Card 2: Friends Overlap ──
@@ -423,8 +444,7 @@ function buildCarouselCards() {
   if (card2) card2.innerHTML = `
     <div class="carousel-headline">Recommendations that explain themselves.</div>
     <div class="carousel-foryou-context">Based on your palate: Studied Narrativist</div>
-    <div class="carousel-foryou-grid">${recItems}</div>
-    <div class="carousel-foryou-footer">Every pick is matched to your specific taste profile — not trending, not popular, yours.</div>`;
+    <div class="carousel-foryou-grid">${recItems}</div>`;
 }
 
 function buildSystemVisuals() {
