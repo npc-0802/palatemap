@@ -107,14 +107,6 @@ export function showColdLanding() {
 let _coldDemoInterval = null;
 let _coldCurrentSlide = 0;
 
-const SLIDE_CAPTIONS = [
-  'Score any film across eight dimensions \u2014 see exactly how it hits you.',
-  'Predict your score for films you haven\u2019t seen \u2014 with reasoning.',
-  'Your taste has modes \u2014 see how different films activate different parts of your palate.',
-  'Personalized recommendations matched to your specific taste profile.',
-  'Compare taste with friends \u2014 see where you align and diverge.',
-];
-
 function initColdDemo() {
   const demo = document.getElementById('cold-demo');
   if (!demo) return;
@@ -141,7 +133,7 @@ function initColdDemo() {
       clearInterval(_coldDemoInterval);
       _coldDemoInterval = null;
     }
-  }, 4500);
+  }, 6000);
 }
 
 // Manual nav dot click — stops autoplay
@@ -165,20 +157,12 @@ function showColdSlide(demo, n) {
   document.querySelectorAll('.cold-demo-dot').forEach((d, i) => {
     d.classList.toggle('active', i === n);
   });
-  // Fade caption out
-  const caption = document.getElementById('cold-demo-caption');
-  const capSpan = caption?.querySelector('span');
-  if (capSpan) capSpan.style.opacity = '0';
-  // Brief black pause, then show new slide + update caption
+  // Brief black pause, then show new slide
   setTimeout(() => {
     const slide = document.getElementById(`cold-ds-${n + 1}`);
     if (slide) {
       slide.classList.add('active');
       slide.style.opacity = '1';
-    }
-    if (capSpan) {
-      capSpan.textContent = SLIDE_CAPTIONS[n];
-      capSpan.style.opacity = '1';
     }
     animateDemoSlide(demo, n);
   }, 200);

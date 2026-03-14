@@ -32,8 +32,8 @@
 
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-DJBTxvOc.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-CYmrxUEm.css">
+  <script type="module" crossorigin src="/assets/index-BfDEkrds.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DJYU2rio.css">
 </head>
 <body>
 <!-- GTM noscript fallback -->
@@ -42,101 +42,97 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <!-- ══════════════ COLD LANDING ══════════════ -->
 <div id="cold-landing" style="display:none;position:fixed;inset:0;background:var(--paper);z-index:200;overflow-y:auto">
-  <div style="min-height:100%;display:flex;flex-direction:column;justify-content:flex-start;padding:24px 48px 120px;max-width:1200px;margin:0 auto;box-sizing:border-box">
+  <div style="min-height:100%;display:flex;flex-direction:column;align-items:center;padding:24px 48px 80px;max-width:900px;margin:0 auto;box-sizing:border-box">
 
     <!-- Wordmark -->
-    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:40px;text-align:center">palate map</div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:32px;text-align:center">palate map</div>
 
     <!-- Hero — centered -->
-    <div style="text-align:center;margin-bottom:48px">
-      <h1 style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(44px,7vw,72px);line-height:1.05;letter-spacing:-2px;color:var(--ink);margin:0 0 16px">Taste is everything.</h1>
-      <p style="font-family:'DM Sans',sans-serif;font-size:clamp(15px,1.6vw,18px);line-height:1.6;color:var(--dim);font-weight:300;margin:0 auto;max-width:560px">Rate five films. See your taste mapped across eight dimensions — then get predictions and recommendations that actually know you.</p>
+    <div style="text-align:center;margin-bottom:24px">
+      <h1 style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(40px,6.5vw,64px);line-height:1.05;letter-spacing:-2px;color:var(--ink);margin:0 0 14px">Taste is everything.</h1>
+      <p style="font-family:'DM Sans',sans-serif;font-size:clamp(14px,1.5vw,17px);line-height:1.6;color:var(--dim);font-weight:300;margin:0 auto;max-width:480px">Your taste mapped across eight dimensions. Predictions and recommendations built around your palate — not someone else's algorithm.</p>
     </div>
 
-    <!-- Rule -->
-    <div style="border-top:1px solid var(--rule);margin-bottom:48px"></div>
+    <!-- CTA row — centered -->
+    <div class="cold-cta-row">
+      <button class="cold-cta-primary" onclick="startFromLanding()">Map my taste →</button>
+      <button class="cold-cta-secondary" onclick="landingGoogle()">
+        <svg width="16" height="16" viewBox="0 0 18 18" fill="none" style="flex-shrink:0">
+          <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/>
+          <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853"/>
+          <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05"/>
+          <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58Z" fill="#EA4335"/>
+        </svg>
+        Continue with Google
+      </button>
+    </div>
+    <div class="cold-cta-sub">Rate 5 films. That's all it takes.</div>
+    <div class="cold-tertiary-links">
+      <span>Been here before? <a onclick="startFromLandingReturning()">Log in →</a></span>
+      <span style="color:var(--rule-dark)">·</span>
+      <span>On Letterboxd? <a onclick="startFromLanding()">Import →</a></span>
+    </div>
 
-    <!-- Two-column body: Demo (left) · Copy + CTA (right) -->
-    <div class="cold-landing-grid">
-
-      <!-- Left column: Caption + Demo + Nav dots -->
-      <div>
-        <div class="cold-demo-caption" id="cold-demo-caption"><span>Score any film across eight dimensions — see exactly how it hits you.</span></div>
-        <div class="cold-demo" id="cold-demo"></div>
-        <div class="cold-demo-nav" id="cold-demo-nav">
-          <button class="cold-demo-dot active" onclick="goToSlide(0)"></button>
-          <button class="cold-demo-dot" onclick="goToSlide(1)"></button>
-          <button class="cold-demo-dot" onclick="goToSlide(2)"></button>
-          <button class="cold-demo-dot" onclick="goToSlide(3)"></button>
-          <button class="cold-demo-dot" onclick="goToSlide(4)"></button>
-        </div>
+    <!-- Full-width proof panel -->
+    <div class="cold-proof-panel">
+      <div class="cold-demo" id="cold-demo"></div>
+      <div class="cold-demo-nav" id="cold-demo-nav">
+        <button class="cold-demo-dot active" onclick="goToSlide(0)"></button>
+        <button class="cold-demo-dot" onclick="goToSlide(1)"></button>
+        <button class="cold-demo-dot" onclick="goToSlide(2)"></button>
+        <button class="cold-demo-dot" onclick="goToSlide(3)"></button>
+        <button class="cold-demo-dot" onclick="goToSlide(4)"></button>
       </div>
+    </div>
 
-      <!-- Right column: Pitch → CTA → Competitors -->
-      <div>
-        <!-- Value proposition -->
-        <div id="cold-arrival">
-          <div class="cold-arrival-headline">Tells you why <span class="cold-arrival-you">you</span> like what you like — and finds more of it.</div>
-        </div>
-
-        <!-- Expanded pitch -->
-        <div class="cold-pitch">Not what critics think. Not what the crowd thinks. What your taste is actually responding to — across eight dimensions, with predictions and recommendations built around your palate.</div>
-
-        <!-- Primary CTA -->
-        <button class="cold-cta-primary" onclick="startFromLanding()">Map my taste →</button>
-        <div class="cold-cta-sub">Rate 5 films. That's all it takes.</div>
-
-        <!-- Secondary CTA -->
-        <button class="cold-cta-secondary" onclick="landingGoogle()">
-          <svg width="16" height="16" viewBox="0 0 18 18" fill="none" style="flex-shrink:0">
-            <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/>
-            <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853"/>
-            <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05"/>
-            <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58Z" fill="#EA4335"/>
-          </svg>
-          Continue with Google
-        </button>
-
-        <!-- Tertiary links -->
-        <div class="cold-tertiary-links">
-          <span>Been here before? <a onclick="startFromLandingReturning()">Log in →</a></span>
-          <span style="color:var(--rule-dark)">·</span>
-          <span>On Letterboxd? <a onclick="startFromLanding()">Import →</a></span>
-        </div>
-
-        <!-- Rule -->
-        <div style="border-top:1px solid var(--rule);margin:32px 0 24px"></div>
-
-        <!-- Compressed competitors -->
-        <div class="cold-comp-section">
-          <div class="cold-comp-label">How they see your taste</div>
-          <div class="cold-comp-row">
-            <svg width="16" height="16" viewBox="0 0 20 20"><circle cx="10" cy="11" r="7.5" fill="#FA320A"/><ellipse cx="10" cy="4.5" rx="3" ry="2.5" fill="#3A8B26"/></svg>
-            <span class="cold-comp-name">Rotten Tomatoes</span>
-            <span class="cold-comp-desc">Tells you what critics think.</span>
-          </div>
-          <div class="cold-comp-row">
-            <svg width="16" height="16" viewBox="0 0 20 20"><rect x="1" y="5" width="18" height="10" rx="2" fill="#F5C518"/><text x="10" y="13" text-anchor="middle" font-family="Impact,sans-serif" font-size="7" font-weight="700" fill="#000">IMDb</text></svg>
-            <span class="cold-comp-name">IMDb</span>
-            <span class="cold-comp-desc">Tells you what the crowd thinks.</span>
-          </div>
-          <div class="cold-comp-row">
-            <svg width="16" height="16" viewBox="0 0 20 20"><circle cx="7" cy="10" r="4.5" fill="#00E054" opacity="0.85"/><circle cx="10" cy="10" r="4.5" fill="#40BCF4" opacity="0.85"/><circle cx="13" cy="10" r="4.5" fill="#FF8000" opacity="0.85"/></svg>
-            <span class="cold-comp-name">Letterboxd</span>
-            <span class="cold-comp-desc">Tells you what your friends think.</span>
-          </div>
-          <div class="cold-comp-row">
-            <svg width="16" height="16" viewBox="0 0 20 20"><path d="M5 3h2.5l3 8.5V3H13v14h-2.5l-3-8.5V17H5V3z" fill="#E50914"/></svg>
-            <span class="cold-comp-name">Netflix</span>
-            <span class="cold-comp-desc">Picks what keeps you watching.</span>
-          </div>
-        </div>
+    <!-- Micro-proof strip -->
+    <div class="cold-proof-strip">
+      <div class="cold-proof-chip">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1L10 5.5L15 6.5L11.5 10L12.5 15L8 12.5L3.5 15L4.5 10L1 6.5L6 5.5L8 1Z" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+        Taste profile
       </div>
+      <div class="cold-proof-chip">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 12L5 4L8 9L11 2L14 12" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+        Predictions
+      </div>
+      <div class="cold-proof-chip">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1" fill="none"/><path d="M8 4V8L11 10" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+        Recommendations
+      </div>
+    </div>
 
+    <!-- Compressed competitor strip -->
+    <div class="cold-comp-strip">
+      <div class="cold-comp-item">
+        <svg width="14" height="14" viewBox="0 0 20 20"><circle cx="10" cy="11" r="7.5" fill="#FA320A"/><ellipse cx="10" cy="4.5" rx="3" ry="2.5" fill="#3A8B26"/></svg>
+        <span class="cold-comp-name">RT</span>
+        <span class="cold-comp-cat">critics</span>
+      </div>
+      <div class="cold-comp-item">
+        <svg width="14" height="14" viewBox="0 0 20 20"><rect x="1" y="5" width="18" height="10" rx="2" fill="#F5C518"/><text x="10" y="13" text-anchor="middle" font-family="Impact,sans-serif" font-size="7" font-weight="700" fill="#000">IMDb</text></svg>
+        <span class="cold-comp-name">IMDb</span>
+        <span class="cold-comp-cat">crowd</span>
+      </div>
+      <div class="cold-comp-item">
+        <svg width="14" height="14" viewBox="0 0 20 20"><circle cx="7" cy="10" r="4.5" fill="#00E054" opacity="0.85"/><circle cx="10" cy="10" r="4.5" fill="#40BCF4" opacity="0.85"/><circle cx="13" cy="10" r="4.5" fill="#FF8000" opacity="0.85"/></svg>
+        <span class="cold-comp-name">Letterboxd</span>
+        <span class="cold-comp-cat">social</span>
+      </div>
+      <div class="cold-comp-item">
+        <svg width="14" height="14" viewBox="0 0 20 20"><path d="M5 3h2.5l3 8.5V3H13v14h-2.5l-3-8.5V17H5V3z" fill="#E50914"/></svg>
+        <span class="cold-comp-name">Netflix</span>
+        <span class="cold-comp-cat">retention</span>
+      </div>
+      <div class="cold-comp-divider"></div>
+      <div class="cold-comp-item cold-comp-pm">
+        <svg width="14" height="14" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" stroke="#3d5a80" stroke-width="1.5" fill="none"/><path d="M10 5V10L13 12" stroke="#3d5a80" stroke-width="1.2" fill="none"/></svg>
+        <span class="cold-comp-name">Palate Map</span>
+        <span class="cold-comp-cat">taste intelligence</span>
+      </div>
     </div>
 
     <!-- Footer -->
-    <div style="margin-top:32px;text-align:center">
+    <div style="margin-top:40px;text-align:center">
       <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--rule-dark);letter-spacing:1px">Starting with film. Expanding to everything.</div>
       <div style="margin-top:8px;margin-bottom:48px">
         <a href="/tos.html" target="_blank" rel="noopener noreferrer" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--rule-dark);letter-spacing:1px;text-decoration:none;opacity:0.7" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Terms</a>
