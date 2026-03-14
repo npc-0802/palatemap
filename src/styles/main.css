@@ -412,49 +412,115 @@ body {
 /* ── Cold Landing: Competitor Rows ── */
 .cold-comp-row {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-bottom: 16px;
-  margin-bottom: 16px;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 14px;
+  margin-bottom: 14px;
   border-bottom: 0.5px solid var(--rule);
   transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .cold-comp-row:last-of-type { border-bottom: none; margin-bottom: 0; }
-.cold-comp-logo { flex-shrink: 0; width: 18px; height: 18px; color: var(--dim); }
-.cold-comp-name { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--dim); flex-shrink: 0; min-width: 110px; letter-spacing: 0.5px; }
-.cold-comp-desc { font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--dim); line-height: 1.5; }
+.cold-comp-header { display: flex; align-items: center; gap: 8px; }
+.cold-comp-name { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--dim); letter-spacing: 0.5px; }
+.cold-comp-desc { font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--dim); line-height: 1.5; padding-left: 28px; }
 
 /* ── Cold Landing: Arrival ── */
-.cold-arrival { transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1); }
+.cold-arrival { margin-top: 36px; transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1); }
 
 /* ── Cold Landing: Demo ── */
 .cold-demo {
   background: var(--surface-dark-3);
   overflow: hidden;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 4 / 5;
   position: relative;
-  margin-top: 32px;
-  opacity: 0;
   transition: opacity 0.8s ease;
 }
-.cold-demo.visible { opacity: 1; }
 .cold-demo-slide {
   position: absolute;
   inset: 0;
+  padding: 20px 22px;
   opacity: 0;
   transition: opacity 0.6s ease;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px 28px;
+  flex-direction: column;
 }
 .cold-demo-slide.active { opacity: 1; }
 
+/* ── Cold Landing: Auth (unified dark block below demo) ── */
+.cold-auth {
+  background: var(--surface-dark-3);
+  padding: 20px 24px;
+  margin-top: 1px;
+}
+.cold-auth-google {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 1px;
+  background: white;
+  color: var(--ink);
+  border: none;
+  padding: 12px 20px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: opacity 0.2s;
+}
+.cold-auth-google:hover { opacity: 0.9; }
+.cold-auth-email {
+  width: 100%;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: var(--action);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.cold-auth-email:hover { opacity: 0.85; }
+.cold-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.cold-auth-divider-line { flex: 1; height: 0.5px; background: #333; }
+.cold-auth-divider span { font-family: 'DM Mono', monospace; font-size: 9px; color: #555; letter-spacing: 1px; }
+.cold-auth-links {
+  margin-top: 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cold-auth-links span { font-family: 'DM Mono', monospace; font-size: 10px; color: #555; }
+.cold-auth-links a { color: #999; text-decoration: underline; cursor: pointer; }
+
 @media (prefers-reduced-motion: reduce) {
-  .cold-demo-slide { transition: none; opacity: 1 !important; position: static; }
-  .cold-demo { aspect-ratio: auto; display: flex; flex-direction: column; gap: 24px; padding: 24px; opacity: 1; }
-  .cold-comp-row { transition: none; opacity: 1 !important; transform: none !important; }
-  .cold-arrival { transition: none; opacity: 1 !important; transform: none !important; }
+  .cold-comp-row, .cold-arrival {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .cold-demo {
+    opacity: 1 !important;
+    transition: none !important;
+    aspect-ratio: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .cold-demo-slide {
+    transition: none !important;
+    opacity: 1 !important;
+    position: static !important;
+  }
 }
 
 @media (max-width: 760px) {
@@ -463,8 +529,9 @@ body {
     gap: 40px;
   }
   .cold-landing-sticky { position: static !important; }
-  .cold-comp-name { min-width: 90px; font-size: 10px; }
-  .cold-comp-desc { font-size: 13px; }
+  .cold-comp-name { font-size: 10px; }
+  .cold-comp-desc { font-size: 13px; padding-left: 28px; }
+  .cold-demo { aspect-ratio: 3 / 4; }
 }
 @media (max-width: 420px) {
   .cold-ds4-card:nth-child(3) { display: none; }
