@@ -592,6 +592,8 @@ body {
   overflow: hidden;
   border-radius: 8px;
   min-height: 0;
+  max-height: min(580px, calc(100vh - 220px));
+  align-self: center;
   box-shadow:
     0 1px 2px rgba(0,0,0,0.06),
     0 8px 24px rgba(0,0,0,0.1),
@@ -1297,6 +1299,7 @@ body {
 /* ── Competitor Ticker ── */
 .cold-ticker {
   flex-shrink: 0;
+  margin-top: auto;
   background: #edddca;
   border-top: 1px solid var(--rule);
   opacity: 0;
