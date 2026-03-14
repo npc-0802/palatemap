@@ -1126,7 +1126,9 @@ body {
   font-style: italic;
   font-size: 13px;
   color: var(--on-dark-dim);
-  margin-top: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 0.5px solid rgba(244, 239, 230, 0.08);
   line-height: 1.5;
 }
 
