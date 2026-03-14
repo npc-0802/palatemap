@@ -97,70 +97,32 @@ export function showColdLanding() {
   if (el) {
     el.style.display = 'flex';
     track('landing_view', { referrer: document.referrer });
-    // Staggered reveal animation
-    const children = el.querySelector(':scope > div')?.children;
-    if (children) {
-      const delays = [0, 150, 300, 450, 600]; // wordmark, hero, rule, grid(props), grid continued
-      Array.from(children).forEach((child, i) => {
-        const d = delays[Math.min(i, delays.length - 1)];
-        // Rule gets a different animation
-        if (child.style.borderTop) {
-          child.classList.add('cold-rule-reveal');
-          child.style.animationDelay = '450ms';
-        } else {
-          child.classList.add('cold-reveal');
-          child.style.animationDelay = `${d}ms`;
-        }
-      });
-      // Choreographed left column + demo reveal
-      initColdChoreography(el);
-    }
+    initColdDemo();
   } else {
     launchOnboarding();
   }
 }
 
-// ── Cold landing choreography + demo ──
+// ── Cold landing demo ──
 let _coldDemoInterval = null;
 
-function initColdChoreography(el) {
-  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  // Phase 1: Competitor rows cascade in
-  const compRows = el.querySelectorAll('.cold-comp-row');
-  if (!prefersReduced) {
-    compRows.forEach((row, i) => {
-      setTimeout(() => { row.style.opacity = '1'; row.style.transform = 'translateY(0)'; }, 400 + i * 300);
-    });
-  }
-
-  // Phase 2: Palate Map arrival EXPANDS above competitors
-  // Last competitor at 400 + 3*300 = 1300ms, then 1200ms cinematic pause = 2500ms
-  setTimeout(() => {
-    const arrival = document.getElementById('cold-arrival');
-    if (arrival) { arrival.style.maxHeight = '300px'; arrival.style.opacity = '1'; }
-  }, prefersReduced ? 0 : 2500);
-
-  // Phase 3: Demo fades in + starts cycling (2500 + 800 = 3300ms)
-  setTimeout(() => initColdDemo(), prefersReduced ? 0 : 3300);
-}
-
 const SLIDE_GUIDES = [
-  'Score every film across eight dimensions of taste.',
-  'We predict how you\'d score films you haven\'t seen.',
-  'Your taste has modes. We map all of them.',
-  'Discover films matched to your specific palate.',
-  'Compare taste with friends — see where you align and diverge.',
+  'Score any film across eight dimensions \u2014 see exactly how it hits you.',
+  'Predict your score for films you haven\u2019t seen \u2014 with reasoning.',
+  'Your taste has modes \u2014 see how different films activate different parts of your palate.',
+  'Personalized recommendations matched to your specific taste profile.',
+  'Compare taste with friends \u2014 see where you align and diverge.',
 ];
 
 function updateSlideGuide(idx) {
-  const guide = document.getElementById('cold-demo-guide');
-  if (!guide) return;
-  guide.style.opacity = '0';
+  const caption = document.getElementById('cold-demo-caption');
+  if (!caption) return;
+  const span = caption.querySelector('span') || caption;
+  span.style.opacity = '0';
   setTimeout(() => {
-    guide.textContent = SLIDE_GUIDES[idx];
-    guide.style.opacity = '1';
-  }, 300);
+    span.textContent = SLIDE_GUIDES[idx];
+    span.style.opacity = '1';
+  }, 250);
 }
 
 function initColdDemo() {
@@ -170,37 +132,54 @@ function initColdDemo() {
   const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const slides = buildDemoSlides();
 
-  // Insert guide text element after demo (before auth)
-  if (!document.getElementById('cold-demo-guide')) {
-    const guide = document.createElement('div');
-    guide.id = 'cold-demo-guide';
-    guide.className = 'cold-demo-guide';
-    guide.textContent = SLIDE_GUIDES[0];
-    demo.parentNode.insertBefore(guide, demo.nextSibling);
-  }
-
   if (prefersReduced) {
     demo.innerHTML = slides.map((s, i) => `<div class="cold-demo-slide active" id="cold-ds-${i + 1}">${s}</div>`).join('');
-    demo.style.opacity = '1';
     return;
   }
 
   demo.innerHTML = slides.map((s, i) =>
-    `<div class="cold-demo-slide${i === 0 ? ' active' : ''}" id="cold-ds-${i + 1}">${s}</div>`
+    `<div class="cold-demo-slide" id="cold-ds-${i + 1}">${s}</div>`
   ).join('');
-  demo.style.opacity = '1';
 
+  // Show first slide with cut effect
   let current = 0;
-  animateDemoSlide(demo, 0);
+  showColdSlide(demo, 0);
 
   _coldDemoInterval = setInterval(() => {
     current = (current + 1) % slides.length;
-    demo.querySelectorAll('.cold-demo-slide').forEach((s, i) => {
-      s.classList.toggle('active', i === current);
-    });
-    animateDemoSlide(demo, current);
-    updateSlideGuide(current);
-  }, 4200);
+    showColdSlide(demo, current);
+  }, 4500);
+}
+
+function showColdSlide(demo, n) {
+  // Hide all slides immediately
+  demo.querySelectorAll('.cold-demo-slide').forEach(s => {
+    s.classList.remove('active');
+    s.style.opacity = '0';
+  });
+  // Fade caption out
+  const caption = document.getElementById('cold-demo-caption');
+  if (caption) {
+    const span = caption.querySelector('span');
+    if (span) span.style.opacity = '0';
+  }
+  // Brief black pause, then show new slide
+  setTimeout(() => {
+    const slide = document.getElementById(`cold-ds-${n + 1}`);
+    if (slide) {
+      slide.classList.add('active');
+      slide.style.opacity = '1';
+    }
+    // Update caption text and fade in
+    if (caption) {
+      const span = caption.querySelector('span');
+      if (span) {
+        span.textContent = SLIDE_GUIDES[n];
+        span.style.opacity = '1';
+      }
+    }
+    animateDemoSlide(demo, n);
+  }, 250);
 }
 
 function animateDemoSlide(demo, idx) {
