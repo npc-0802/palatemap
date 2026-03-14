@@ -283,8 +283,8 @@ function buildCarouselCards() {
 
   // ── Card 1: Score ──
   const scoreCats = [
-    ['The Story', 92], ['The Craft', 88], ['The Performances', 80], ['The World', 70],
-    ['The Experience', 85], ['The Hold', 90], ['The Ending', 97], ['The Singularity', 82]
+    ['Story', 92], ['Craft', 88], ['Perf', 80], ['World', 70],
+    ['Exp', 85], ['Hold', 90], ['End', 97], ['Sing', 82]
   ];
   const scoreBars = scoreCats.map(([l, v]) => `
     <div class="card-bar-row">
@@ -296,20 +296,21 @@ function buildCarouselCards() {
   const card0 = document.getElementById('carousel-card-0');
   if (card0) card0.innerHTML = `
     <div class="carousel-headline">See exactly how a film hits you — not one number, eight.</div>
-    <div class="card-film-header">
-      <img class="card-poster" src="${posters.parasite}" alt="Parasite" width="80" height="120" loading="lazy">
-      <div>
+    <div class="card1-layout">
+      <div class="card1-left">
+        <img class="card-poster" src="${posters.parasite}" alt="Parasite" width="64" height="96" loading="lazy">
         <div class="card-film-title">Parasite</div>
         <div class="card-film-meta">2019 · Bong Joon-ho</div>
       </div>
+      <div class="card1-right">
+        <div class="card-bars">${scoreBars}</div>
+      </div>
     </div>
-    <div class="card-rule"></div>
-    <div class="card-bars">${scoreBars}</div>
     <div class="card-rule"></div>
     <div class="card-summary">
       <div>
         <div class="card-archetype">Studied Narrativist</div>
-        <div class="card-tags">story-driven · high hold · atmospheric</div>
+        <div class="card-tags">story-driven · high hold</div>
       </div>
       <div style="text-align:right">
         <div class="card-total">86</div>
@@ -317,8 +318,7 @@ function buildCarouselCards() {
       </div>
     </div>
     <div class="carousel-score-explain">
-      <div class="carousel-score-explain-label">How your 86 is calculated</div>
-      <div class="carousel-score-explain-body">Your palate weights Experience and Story highest. This film scores well on both — that's why your total is higher than a straight average of the eight categories.</div>
+      <div class="carousel-score-explain-body">Your palate weights Experience and Story highest — that's why your total is higher than a straight average.</div>
     </div>`;
 
   // ── Card 2: Friends Overlap ──
@@ -366,35 +366,39 @@ function buildCarouselCards() {
           <div class="card-avatar-name">Sarah</div>
         </div>
       </div>
-      <div class="card-overlap-radar">
-        <svg viewBox="0 0 200 200" width="200" height="200" class="card-overlap-svg">
-          ${oRings}${oAxes}${oLabels}
-          <polygon class="card-overlap-you" points="${youCenter}" data-target="${youTarget}" fill="rgba(61,90,128,0.12)" stroke="#3d5a80" stroke-width="1.5"/>
-          <polygon class="card-overlap-sarah" points="${youCenter}" data-target="${sarahTarget}" fill="rgba(212,168,75,0.12)" stroke="#D4A84B" stroke-width="1.5" stroke-dasharray="4 3"/>
-        </svg>
-      </div>
-      <div class="card-overlap-stats">Weights: 81% · Scores: 64%</div>
-      <div class="card-corated">
-        <span class="card-corated-title">Moonlight</span>
-        <span>You: <span class="card-corated-you">88</span> Sarah: <span class="card-corated-them">91</span></span>
-      </div>
-      <div class="card-corated">
-        <span class="card-corated-title">Tenet</span>
-        <span>You: <span class="card-corated-you">52</span> Sarah: <span class="card-corated-them">78</span></span>
-      </div>
-      <div class="card-insight">You both care about performances. You disagree on whether craft alone is enough.</div>
-      <div class="carousel-overlap-predict">
-        <div class="carousel-overlap-predict-label">— overlap predict —</div>
-        <div class="carousel-overlap-predict-header">
-          <img src="https://image.tmdb.org/t/p/w154/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg" alt="Oppenheimer" class="carousel-overlap-predict-poster">
-          <div class="carousel-overlap-predict-film">Oppenheimer</div>
+      <div class="card2-columns">
+        <div class="card2-left">
+          <div class="card-overlap-radar">
+            <svg viewBox="0 0 200 200" width="160" height="160" class="card-overlap-svg">
+              ${oRings}${oAxes}${oLabels}
+              <polygon class="card-overlap-you" points="${youCenter}" data-target="${youTarget}" fill="rgba(61,90,128,0.12)" stroke="#3d5a80" stroke-width="1.5"/>
+              <polygon class="card-overlap-sarah" points="${youCenter}" data-target="${sarahTarget}" fill="rgba(212,168,75,0.12)" stroke="#D4A84B" stroke-width="1.5" stroke-dasharray="4 3"/>
+            </svg>
+          </div>
+          <div class="card-overlap-stats">Weights: 81% · Scores: 64%</div>
+          <div class="card-corated">
+            <span class="card-corated-title">Moonlight</span>
+            <span>You: <span class="card-corated-you">88</span> Sarah: <span class="card-corated-them">91</span></span>
+          </div>
+          <div class="card-corated">
+            <span class="card-corated-title">Tenet</span>
+            <span>You: <span class="card-corated-you">52</span> Sarah: <span class="card-corated-them">78</span></span>
+          </div>
         </div>
-        <div class="carousel-overlap-predict-scores">
-          <div class="carousel-overlap-predict-user"><span class="carousel-overlap-predict-name">You'd give it</span><span class="carousel-overlap-predict-score" style="color:var(--blue)">84</span></div>
-          <div class="carousel-overlap-predict-user"><span class="carousel-overlap-predict-name">Sarah'd give it</span><span class="carousel-overlap-predict-score" style="color:#D4A84B">71</span></div>
+        <div class="card2-right">
+          <div class="carousel-overlap-predict-label">overlap predict</div>
+          <div class="carousel-overlap-predict-header">
+            <img src="https://image.tmdb.org/t/p/w154/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg" alt="Oppenheimer" class="carousel-overlap-predict-poster">
+            <div class="carousel-overlap-predict-film">Oppenheimer</div>
+          </div>
+          <div class="carousel-overlap-predict-scores">
+            <div class="carousel-overlap-predict-user"><span class="carousel-overlap-predict-name">You'd give it</span><span class="carousel-overlap-predict-score" style="color:var(--blue)">84</span></div>
+            <div class="carousel-overlap-predict-user"><span class="carousel-overlap-predict-name">Sarah'd give it</span><span class="carousel-overlap-predict-score" style="color:#D4A84B">71</span></div>
+          </div>
+          <div class="carousel-overlap-predict-reason">You'd love the Craft and World. Sarah would find it slow — low Experience for her palate.</div>
         </div>
-        <div class="carousel-overlap-predict-reason">You'd love the Craft and World. Sarah would find it slow — low Experience for her palate.</div>
-      </div>`;
+      </div>
+      <div class="card-insight">You both care about performances. You disagree on whether craft alone is enough.</div>`;
   }
 
   // ── Card 3: For You Recommendations ──
@@ -418,7 +422,7 @@ function buildCarouselCards() {
   const card2 = document.getElementById('carousel-card-2');
   if (card2) card2.innerHTML = `
     <div class="carousel-headline">Recommendations that explain themselves.</div>
-    <div class="carousel-foryou-context">Based on your palate: Studied Narrativist · story-driven · high hold</div>
+    <div class="carousel-foryou-context">Based on your palate: Studied Narrativist</div>
     <div class="carousel-foryou-grid">${recItems}</div>
     <div class="carousel-foryou-footer">Every pick is matched to your specific taste profile — not trending, not popular, yours.</div>`;
 }

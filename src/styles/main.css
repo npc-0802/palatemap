@@ -569,8 +569,6 @@ body {
   color: var(--dim);
   align-items: center;
   justify-content: center;
-  max-width: 300px;
-  margin-top: 12px;
 }
 .cold-links a {
   color: var(--dim);
@@ -649,12 +647,26 @@ body {
 }
 .carousel-headline.visible { opacity: 1; }
 
-/* Shared card elements */
-.card-film-header {
+/* Card 1 layout: poster+title left, bars right */
+.card1-layout {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  gap: 20px;
+  align-items: flex-start;
 }
+.card1-left {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+.card1-left .card-poster {
+  margin-bottom: 8px;
+}
+.card1-right {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Shared card elements */
 .card-poster {
   object-fit: cover;
   border-radius: 2px;
@@ -664,43 +676,43 @@ body {
   font-family: 'Playfair Display', serif;
   font-style: italic;
   font-weight: 700;
-  font-size: 22px;
+  font-size: 16px;
   color: #F4EFE6;
   letter-spacing: -0.5px;
 }
 .card-film-meta {
   font-family: 'DM Mono', monospace;
-  font-size: 11px;
+  font-size: 10px;
   color: #837A6A;
   letter-spacing: 0.5px;
-  margin-top: 4px;
+  margin-top: 3px;
 }
 .card-rule {
   height: 1px;
   background: rgba(244, 239, 230, 0.08);
-  margin: 14px 0;
+  margin: 10px 0;
 }
 .card-bars {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
 }
 .card-bar-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 .card-bar-label {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
   color: #837A6A;
-  min-width: 110px;
+  min-width: 36px;
   text-align: right;
   flex-shrink: 0;
 }
 .card-bar-track {
   flex: 1;
-  height: 5px;
+  height: 4px;
   background: rgba(244, 239, 230, 0.06);
   border-radius: 2px;
 }
@@ -714,9 +726,9 @@ body {
 .card-bar-fill.predicted { background: rgba(61,90,128,0.7); }
 .card-bar-value {
   font-family: 'DM Mono', monospace;
-  font-size: 12px;
+  font-size: 10px;
   color: #F4EFE6;
-  min-width: 24px;
+  min-width: 20px;
   text-align: right;
   opacity: 0;
   transition: opacity 0.4s ease;
@@ -775,11 +787,11 @@ body {
 }
 .card-insight {
   font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   font-style: italic;
   color: #837A6A;
-  line-height: 1.55;
-  margin-top: 16px;
+  line-height: 1.5;
+  margin-top: 10px;
   opacity: 0;
   transition: opacity 0.6s ease;
 }
@@ -920,10 +932,26 @@ body {
   font-size: 20px;
   color: #555;
 }
+/* Card 2 two-column layout */
+.card2-columns {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.card2-left {
+  flex: 1;
+  min-width: 0;
+}
+.card2-right {
+  flex: 0 0 45%;
+  min-width: 0;
+  padding-left: 12px;
+  border-left: 0.5px solid rgba(244, 239, 230, 0.08);
+}
 .card-overlap-radar {
   display: flex;
   justify-content: center;
-  margin: 8px 0 12px;
+  margin: 0 0 6px;
 }
 .card-overlap-stats {
   font-family: 'DM Mono', monospace;
@@ -949,11 +977,11 @@ body {
   font-family: 'DM Mono', monospace;
   font-size: 11px;
   color: var(--on-dark-dim);
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 .carousel-foryou-grid {
   display: flex;
-  gap: 14px;
+  gap: 10px;
 }
 .carousel-foryou-item {
   flex: 1;
@@ -976,26 +1004,26 @@ body {
 .carousel-foryou-title {
   font-family: 'Playfair Display', serif;
   font-style: italic;
-  font-size: 12px;
+  font-size: 11px;
   color: #ccc;
-  margin-top: 8px;
-  margin-bottom: 4px;
+  margin-top: 6px;
+  margin-bottom: 3px;
 }
 .carousel-foryou-reason {
   font-family: 'DM Sans', sans-serif;
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: 10px;
+  line-height: 1.4;
   color: var(--on-dark-dim);
 }
 .carousel-foryou-footer {
-  margin-top: 16px;
-  padding-top: 14px;
+  margin-top: 12px;
+  padding-top: 10px;
   border-top: 0.5px solid rgba(244, 239, 230, 0.08);
   font-family: 'DM Sans', sans-serif;
   font-style: italic;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--on-dark-dim);
-  line-height: 1.5;
+  line-height: 1.45;
 }
 .carousel-rec-score {
   position: absolute;
@@ -1021,35 +1049,20 @@ body {
 
 /* Card 1: Score explanation */
 .carousel-score-explain {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 0.5px solid rgba(244, 239, 230, 0.08);
-}
-.carousel-score-explain-label {
-  font-family: 'DM Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--on-dark-dim);
-  margin-bottom: 8px;
+  margin-top: 8px;
 }
 .carousel-score-explain-body {
   font-family: 'DM Sans', sans-serif;
   font-style: italic;
-  font-size: 13px;
-  line-height: 1.55;
+  font-size: 12px;
+  line-height: 1.45;
   color: var(--on-dark-dim);
 }
 
 /* Card 2: Overlap Predict */
-.carousel-overlap-predict {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 0.5px solid rgba(244, 239, 230, 0.08);
-}
 .carousel-overlap-predict-label {
   font-family: 'DM Mono', monospace;
-  font-size: 9px;
+  font-size: 8px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--on-dark-dim);
@@ -1058,12 +1071,12 @@ body {
 .carousel-overlap-predict-header {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 12px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 .carousel-overlap-predict-poster {
-  width: 48px;
-  height: 72px;
+  width: 40px;
+  height: 60px;
   object-fit: cover;
   border-radius: 2px;
   flex-shrink: 0;
@@ -1072,36 +1085,37 @@ body {
   font-family: 'Playfair Display', serif;
   font-style: italic;
   font-weight: 700;
-  font-size: 18px;
+  font-size: 15px;
   color: var(--on-dark);
 }
 .carousel-overlap-predict-scores {
   display: flex;
-  gap: 32px;
-  margin-bottom: 12px;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
 }
 .carousel-overlap-predict-user {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 6px;
 }
 .carousel-overlap-predict-name {
   font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
+  font-size: 11px;
   color: var(--on-dark-dim);
 }
 .carousel-overlap-predict-score {
   font-family: 'Playfair Display', serif;
   font-style: italic;
-  font-size: 28px;
+  font-size: 22px;
   letter-spacing: -1px;
   line-height: 1;
 }
 .carousel-overlap-predict-reason {
   font-family: 'DM Sans', sans-serif;
   font-style: italic;
-  font-size: 13px;
-  line-height: 1.55;
+  font-size: 11px;
+  line-height: 1.45;
   color: var(--on-dark-dim);
 }
 
@@ -1417,7 +1431,6 @@ body {
     padding: 48px 48px 16px;
   }
   .cold-carousel-card { padding: 20px 24px; }
-  .card-bar-label { min-width: 95px; font-size: 11px; }
   .cold-system-inner { padding: 0 48px; }
 }
 
@@ -1437,9 +1450,8 @@ body {
   .cold-h1 { font-size: clamp(36px, 10vw, 56px); }
   .cold-cta-stack { max-width: 100%; }
   .cold-carousel-card { padding: 22px 20px; }
-  .card-bar-label { min-width: 85px; font-size: 11px; }
-  .card-film-title { font-size: 19px; }
-  .card-poster { max-width: 56px; max-height: 84px; }
+  .card2-columns { flex-direction: column; gap: 12px; }
+  .card2-right { flex: none; padding-left: 0; border-left: none; padding-top: 10px; border-top: 0.5px solid rgba(244, 239, 230, 0.08); }
   .cold-system { padding: 64px 0; }
   .cold-system-inner { padding: 0 32px; }
   .cold-system-grid {
