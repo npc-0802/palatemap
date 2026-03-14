@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
 <title>Privacy Policy — Palate Map</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -58,6 +59,13 @@
     color: var(--dim);
     margin: 40px 0 12px;
   }
+  h3 {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+    margin: 20px 0 6px;
+  }
   p { margin-bottom: 16px; color: var(--ink); }
   ul { padding-left: 20px; margin-bottom: 16px; }
   li { margin-bottom: 6px; }
@@ -71,6 +79,7 @@
     color: var(--dim);
     letter-spacing: 0.5px;
   }
+  .footer a { color: var(--dim); }
 </style>
 </head>
 <body>
@@ -78,44 +87,88 @@
   <a class="wordmark" href="/">palate map</a>
 
   <h1>Privacy Policy</h1>
-  <div class="updated">Last updated: March 2026</div>
+  <div class="updated">Effective date: March 13, 2026 &nbsp;·&nbsp; Last updated: March 13, 2026</div>
 
-  <p>Palate Map is a personal taste intelligence platform. This policy explains what data we collect, how we use it, and your rights. We keep it simple because we keep it minimal.</p>
+  <p>This Privacy Policy explains how NPC Labs LLC ("Palate Map," "we," "us," or "our") collects, uses, and protects your information when you use the Palate Map website and services (the "Service").</p>
 
-  <h2>What we collect</h2>
+  <h2>1. Information We Collect</h2>
+  <h3>Information you provide</h3>
   <ul>
-    <li><strong>Account information:</strong> your display name and email address, provided when you sign in via Google or magic link.</li>
-    <li><strong>Taste data:</strong> your film ratings, scoring weights, archetype results, and preferences — the data you explicitly create.</li>
-    <li><strong>Auth data:</strong> session tokens managed by Supabase, our backend provider. We do not store passwords.</li>
-  </ul>
-  <p>We do not collect analytics, tracking pixels, or behavioral data beyond what you directly enter into the app.</p>
-
-  <h2>How we use it</h2>
-  <ul>
-    <li>To sync your data across devices so you can pick up where you left off.</li>
-    <li>To derive your palate type from your quiz answers and scoring patterns.</li>
-    <li>To generate AI-powered film predictions via Claude (Anthropic), using only your taste data — no personally identifiable information is sent.</li>
-  </ul>
-  <p>We do not sell your data. We do not use it for advertising.</p>
-
-  <h2>Third-party services</h2>
-  <ul>
-    <li><strong>Supabase</strong> — database and authentication. Data is stored in US-based servers. <a href="https://supabase.com/privacy" target="_blank">Supabase Privacy Policy</a>.</li>
-    <li><strong>Google OAuth</strong> — optional sign-in. We receive only your name and email. <a href="https://policies.google.com/privacy" target="_blank">Google Privacy Policy</a>.</li>
-    <li><strong>TMDB (The Movie Database)</strong> — film metadata and poster images. No personal data is shared.</li>
-    <li><strong>Anthropic (Claude)</strong> — AI predictions. Only anonymized taste fingerprints are sent, not your name or email.</li>
+    <li><strong>Account information:</strong> name, email address, and authentication credentials (via Google sign-in or email magic link)</li>
+    <li><strong>Taste data:</strong> film ratings, scores across 8 categories, quiz responses, and weighting preferences</li>
+    <li><strong>Social data:</strong> friend connections and shared taste comparisons</li>
+    <li><strong>Watchlist data:</strong> films you save, mark as seen, or queue for later</li>
   </ul>
 
-  <h2>Data retention & deletion</h2>
-  <p>Your data is stored as long as your account exists. You can sign out and request deletion at any time by emailing us. We will delete your profile and all associated data within 30 days.</p>
+  <h3>Information collected automatically</h3>
+  <ul>
+    <li><strong>Usage data:</strong> pages visited, features used, predictions requested, and interactions with the Service</li>
+    <li><strong>Device data:</strong> browser type, operating system, and screen size</li>
+    <li><strong>Performance data:</strong> Core Web Vitals (page load times, interaction responsiveness) to improve the Service</li>
+  </ul>
 
-  <h2>Your rights</h2>
-  <p>You can export your film data at any time from the app (Profile → Export). You can request access to, correction of, or deletion of any personal data we hold.</p>
+  <h3>Information from third parties</h3>
+  <ul>
+    <li><strong>Google:</strong> if you sign in with Google, we receive your name and email address from your Google account</li>
+    <li><strong>TMDB:</strong> film metadata (titles, posters, cast, crew) from The Movie Database API</li>
+  </ul>
 
-  <h2>Contact</h2>
-  <p>Questions? Email <a href="mailto:noah@palatemap.com">noah@palatemap.com</a>.</p>
+  <h2>2. How We Use Your Information</h2>
+  <p>We use your information to:</p>
+  <ul>
+    <li>Provide, maintain, and improve the Service</li>
+    <li>Generate personalized predictions, analysis, and recommendations</li>
+    <li>Compute your taste profile, palate type, and scoring formula</li>
+    <li>Enable social features (friend connections, taste comparisons)</li>
+    <li>Send transactional emails (magic links, account notifications)</li>
+    <li>Analyze aggregate usage patterns to improve the product</li>
+    <li>Process payments and manage subscriptions (when applicable)</li>
+  </ul>
 
-  <div class="footer">Palate Map &nbsp;·&nbsp; palatemap.com &nbsp;·&nbsp; Taste is everything.</div>
+  <h2>3. How We Share Your Information</h2>
+  <h3>We do not sell your personal data.</h3>
+  <p>We share information only with the following service providers, solely to operate the Service:</p>
+  <ul>
+    <li><strong>Supabase:</strong> database hosting and authentication (US-hosted)</li>
+    <li><strong>Anthropic:</strong> AI model provider for predictions and analysis. Your taste data is sent to generate predictions; Anthropic does not retain it for training.</li>
+    <li><strong>Stripe:</strong> payment processing (when applicable)</li>
+    <li><strong>Resend:</strong> transactional email delivery</li>
+    <li><strong>Google Analytics / GTM:</strong> anonymized usage analytics</li>
+    <li><strong>Netlify:</strong> website hosting</li>
+  </ul>
+  <p>We may also disclose information if required by law or to protect our rights.</p>
+
+  <h2>4. Data Storage and Security</h2>
+  <p>Your data is stored on Supabase infrastructure hosted in the United States. We use row-level security policies to ensure users can only access their own data. All connections use HTTPS/TLS encryption in transit.</p>
+  <p>No method of transmission or storage is 100% secure. While we use commercially reasonable measures to protect your data, we cannot guarantee absolute security.</p>
+
+  <h2>5. Your Rights and Choices</h2>
+  <h3>Access and export</h3>
+  <p>You can view and export your taste data at any time through the Service.</p>
+  <h3>Deletion</h3>
+  <p>You may delete your account at any time. Upon deletion, we will remove your personal data within 30 days, except where required by law.</p>
+  <h3>Correction</h3>
+  <p>You can update your ratings, scores, and profile information at any time within the Service.</p>
+
+  <h2>6. Cookies and Local Storage</h2>
+  <p>Palate Map uses browser local storage to cache your taste profile and preferences for performance. We use Google Analytics cookies for anonymized usage tracking. We do not use advertising cookies or tracking pixels.</p>
+
+  <h2>7. Children's Privacy</h2>
+  <p>The Service is not intended for children under 13. We do not knowingly collect personal information from children under 13. If we learn we have collected such information, we will delete it promptly.</p>
+
+  <h2>8. International Users</h2>
+  <p>The Service is operated from the United States. If you access the Service from outside the US, your information will be transferred to and processed in the United States. By using the Service, you consent to this transfer.</p>
+
+  <h2>9. Changes to This Policy</h2>
+  <p>We may update this Privacy Policy from time to time. For material changes, we will notify you by email or via a prominent in-app notice. The current version is always available at <a href="/privacy.html">palatemap.com/privacy.html</a>.</p>
+
+  <h2>10. Contact</h2>
+  <p>For questions about this Privacy Policy, contact us at:</p>
+  <p>NPC Labs LLC<br>Email: <a href="mailto:noahparikhcott@gmail.com">noahparikhcott@gmail.com</a><br>Website: <a href="/">palatemap.com</a></p>
+
+  <div class="footer">
+    <a href="/">Palate Map</a> &nbsp;·&nbsp; <a href="/tos.html">Terms of Service</a> &nbsp;·&nbsp; Taste is everything.
+  </div>
 </div>
 </body>
 </html>

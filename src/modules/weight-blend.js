@@ -250,8 +250,15 @@ export function updateEffectiveWeights() {
   recordWeightSnapshot('rating');
   saveUserLocally();
 
-  // Popup on archetype change (delay so screen transitions complete first)
-  if (prevArchetype && classification.archetype !== prevArchetype) {
+  // Deferred archetype reveal: users who completed the new guided onboarding
+  // (no quiz reveal) see their archetype for the first time at 8+ films.
+  if (filmsRated >= 8 && !currentUser.archetype_revealed) {
+    setCurrentUser({ ...currentUser, archetype_revealed: true });
+    saveUserLocally();
+    setTimeout(() => showArchetypeReveal(classification), 600);
+  }
+  // Popup on archetype change (only after reveal has been seen)
+  else if (currentUser.archetype_revealed && prevArchetype && classification.archetype !== prevArchetype) {
     setTimeout(() => showArchetypeChangePopup(prevArchetype, classification.archetype, classification.fullName), 400);
   }
 }
@@ -315,6 +322,37 @@ function showArchetypeChangePopup(from, to, fullName) {
       <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);margin-bottom:20px">previously ${from}</div>
       <div style="font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.7;color:var(--on-dark);opacity:0.85;margin-bottom:24px;text-align:left">${copy}</div>
       <button style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;background:transparent;color:var(--on-dark);border:1.5px solid var(--on-dark);padding:10px 24px;cursor:pointer" onclick="this.closest('div[style*=fixed]').remove()">Got it</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+// ── Deferred archetype reveal (new onboarding, shown at 8+ films) ──
+
+import { ARCHETYPE_DESCRIPTIONS, ADJECTIVE_DESCRIPTIONS } from './quiz-engine.js';
+
+function showArchetypeReveal(classification) {
+  const archDesc = ARCHETYPE_DESCRIPTIONS[classification.archetypeKey] || ARCHETYPE_DESCRIPTIONS.balanced;
+  const palColor = classification.color || '#3d5a80';
+  const displayName = classification.fullName || classification.archetype;
+  const adjectiveDesc = classification.adjective ? (ADJECTIVE_DESCRIPTIONS[classification.adjective] || '') : '';
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(12,11,9,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn 0.3s ease';
+  overlay.innerHTML = `
+    <div style="background:var(--surface-dark);max-width:460px;width:100%;padding:40px 32px;text-align:center;box-shadow:0 20px 60px rgba(12,11,9,0.5);opacity:0;transform:scale(0.96);animation:obRevealCard 0.5s cubic-bezier(0.22,1,0.36,1) 0.2s both">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:16px;opacity:0;animation:fadeIn 0.3s ease 0.4s both">your palate has a name</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:10px;opacity:0;animation:fadeIn 0.3s ease 0.6s both">you are —</div>
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(28px,6vw,42px);line-height:1.05;letter-spacing:-1px;color:${palColor};margin-bottom:8px;opacity:0;animation:fadeIn 0.4s ease 0.8s both">${displayName}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);letter-spacing:1px;margin-bottom:20px;opacity:0;animation:fadeIn 0.3s ease 1s both">${archDesc.tagline || ''}</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.75;color:var(--on-dark);margin-bottom:12px;opacity:0.85;text-align:left;opacity:0;animation:fadeIn 0.3s ease 1.2s both">${archDesc.description || ''}</div>
+      ${archDesc.quote ? `<div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--on-dark-dim);letter-spacing:0.5px;font-style:italic;margin-bottom:16px;opacity:0;animation:fadeIn 0.3s ease 1.4s both">${archDesc.quote}</div>` : ''}
+      ${adjectiveDesc ? `
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(244,239,230,0.1);text-align:left;opacity:0;animation:fadeIn 0.3s ease 1.5s both">
+        <div style="font-family:'DM Sans',sans-serif;font-size:12.5px;line-height:1.65;color:var(--on-dark-dim)">${adjectiveDesc}</div>
+      </div>` : ''}
+      <div style="margin-top:24px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--on-dark-dim);line-height:1.6;opacity:0;animation:fadeIn 0.3s ease 1.6s both">Based on your first ${MOVIES.length} films. This will evolve as you rate more.</div>
+      <button style="margin-top:20px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;background:transparent;color:var(--on-dark);border:1.5px solid var(--on-dark);padding:12px 28px;cursor:pointer;opacity:0;animation:fadeIn 0.3s ease 1.8s both" onclick="this.closest('div[style*=fixed]').remove()">Got it</button>
     </div>
   `;
   document.body.appendChild(overlay);
