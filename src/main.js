@@ -367,7 +367,7 @@ function buildCarouselCards() {
         </div>
       </div>
       <div class="card-overlap-radar">
-        <svg viewBox="0 0 200 200" width="170" height="170" class="card-overlap-svg">
+        <svg viewBox="0 0 200 200" width="200" height="200" class="card-overlap-svg">
           ${oRings}${oAxes}${oLabels}
           <polygon class="card-overlap-you" points="${youCenter}" data-target="${youTarget}" fill="rgba(61,90,128,0.12)" stroke="#3d5a80" stroke-width="1.5"/>
           <polygon class="card-overlap-sarah" points="${youCenter}" data-target="${sarahTarget}" fill="rgba(212,168,75,0.12)" stroke="#D4A84B" stroke-width="1.5" stroke-dasharray="4 3"/>
