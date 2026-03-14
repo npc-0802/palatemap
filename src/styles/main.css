@@ -409,19 +409,6 @@ body {
   gap: 56px;
   align-items: start;
 }
-/* ── Cold Landing: Competitor Rows ── */
-.cold-comp-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-bottom: 12px;
-  margin-bottom: 12px;
-  border-bottom: 0.5px solid var(--rule);
-}
-.cold-comp-row:last-of-type { border-bottom: none; margin-bottom: 0; }
-.cold-comp-name { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--dim); letter-spacing: 0.5px; }
-.cold-comp-desc { font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--dim); margin-left: auto; }
-
 /* ── Cold Landing: Demo ── */
 .cold-demo {
   background: #0c0b09;
@@ -440,67 +427,81 @@ body {
   flex-direction: column;
 }
 .cold-demo-slide.active { opacity: 1; }
-.cold-demo-caption {
-  padding: 0 0 16px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: clamp(18px, 2.2vw, 22px);
-  color: var(--dim);
-  line-height: 1.4;
-  min-height: 32px;
+.cold-demo-nav {
+  background: #0c0b09;
+  padding: 14px 28px 18px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
 }
-.cold-demo-caption span {
-  display: inline-block;
-  transition: opacity 0.35s ease;
+.cold-demo-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid rgba(244, 239, 230, 0.3);
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.cold-demo-dot.active {
+  background: var(--blue);
+  border-color: var(--blue);
+}
+.cold-demo-dot:hover {
+  border-color: rgba(244, 239, 230, 0.6);
 }
 
-/* ── Cold Landing: Arrival Row ── */
-.cold-arrival-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 16px 0 0;
-  margin-top: 14px;
-  border-top: 2px solid var(--blue);
+/* ── Cold Landing: Value Proposition ── */
+#cold-arrival {
+  border-left: 3px solid var(--blue);
+  padding-left: 24px;
+  margin-bottom: 20px;
 }
-.cold-arrival-name {
-  font-family: 'DM Mono', monospace;
-  font-size: 11px;
-  color: var(--ink);
-  letter-spacing: 0.5px;
-  font-weight: 500;
-}
-.cold-arrival-desc {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 15px;
-  color: var(--ink);
-  margin-left: auto;
-  font-weight: 400;
-}
-.cold-arrival-desc em {
+.cold-arrival-headline {
+  font-family: 'Playfair Display', serif;
   font-style: italic;
+  font-weight: 900;
+  font-size: clamp(22px, 3vw, 28px);
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+  color: var(--ink);
+}
+.cold-arrival-you {
   text-decoration: underline;
   text-decoration-color: var(--blue);
-  text-underline-offset: 3px;
-  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2.5px;
 }
 
-/* ── Cold Landing: Section Label ── */
-.cold-section-label {
+/* ── Cold Landing: Pitch ── */
+.cold-pitch {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--dim);
+  margin-bottom: 28px;
+  max-width: 420px;
+}
+
+/* ── Cold Landing: CTAs ── */
+.cold-cta-primary {
+  width: 100%;
   font-family: 'DM Mono', monospace;
-  font-size: 9px;
+  font-size: 13px;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--dim);
-  margin-bottom: 16px;
+  background: var(--action);
+  color: white;
+  border: none;
+  padding: 15px 20px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: opacity 0.2s;
 }
-
-/* ── Cold Landing: Auth ── */
-.cold-auth {
-  display: flex;
-  gap: 12px;
-}
-.cold-auth-google {
-  flex: 1;
+.cold-cta-primary:hover { opacity: 0.85; }
+.cold-cta-secondary {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -511,40 +512,54 @@ body {
   background: white;
   color: var(--ink);
   border: 1px solid var(--rule);
-  padding: 13px 16px;
+  padding: 13px 20px;
   cursor: pointer;
+  margin-bottom: 14px;
   transition: opacity 0.2s;
 }
-.cold-auth-google:hover { opacity: 0.85; }
-.cold-auth-email {
-  flex: 1;
-  font-family: 'DM Mono', monospace;
-  font-size: 12px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  background: var(--action);
-  color: white;
-  border: none;
-  padding: 13px 16px;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-.cold-auth-email:hover { opacity: 0.85; }
-.cold-auth-links {
+.cold-cta-secondary:hover { opacity: 0.85; }
+.cold-tertiary-links {
   display: flex;
   justify-content: center;
-  gap: 20px;
-  margin-top: 14px;
+  gap: 10px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--dim);
 }
-.cold-auth-links span { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim); }
-.cold-auth-links a { color: var(--dim); text-decoration: underline; cursor: pointer; }
-.cold-auth-pitch {
+.cold-tertiary-links a {
+  color: var(--dim);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ── Cold Landing: Compressed Competitors ── */
+.cold-comp-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--rule-dark);
+  margin-bottom: 16px;
+}
+.cold-comp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.cold-comp-row:last-child { margin-bottom: 0; }
+.cold-comp-row svg { flex-shrink: 0; }
+.cold-comp-name {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--rule-dark);
+  letter-spacing: 0.5px;
+}
+.cold-comp-desc {
   font-family: 'DM Sans', sans-serif;
   font-size: 13px;
-  color: var(--dim);
-  text-align: center;
-  margin-top: 14px;
-  line-height: 1.5;
+  color: var(--rule-dark);
+  margin-left: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -568,10 +583,7 @@ body {
     grid-template-columns: 1fr;
     gap: 40px;
   }
-  .cold-comp-desc { font-size: 13px; }
   .cold-demo { aspect-ratio: 4 / 3; }
-  .cold-auth { flex-direction: column; }
-  .cold-auth-google, .cold-auth-email { width: 100%; }
 }
 @media (max-width: 420px) {
   .cold-ds4-card:nth-child(4) { display: none; }

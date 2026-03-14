@@ -105,25 +105,7 @@ export function showColdLanding() {
 
 // ── Cold landing demo ──
 let _coldDemoInterval = null;
-
-const SLIDE_GUIDES = [
-  'Score any film across eight dimensions \u2014 see exactly how it hits you.',
-  'Predict your score for films you haven\u2019t seen \u2014 with reasoning.',
-  'Your taste has modes \u2014 see how different films activate different parts of your palate.',
-  'Personalized recommendations matched to your specific taste profile.',
-  'Compare taste with friends \u2014 see where you align and diverge.',
-];
-
-function updateSlideGuide(idx) {
-  const caption = document.getElementById('cold-demo-caption');
-  if (!caption) return;
-  const span = caption.querySelector('span') || caption;
-  span.style.opacity = '0';
-  setTimeout(() => {
-    span.textContent = SLIDE_GUIDES[idx];
-    span.style.opacity = '1';
-  }, 250);
-}
+let _coldCurrentSlide = 0;
 
 function initColdDemo() {
   const demo = document.getElementById('cold-demo');
@@ -141,28 +123,40 @@ function initColdDemo() {
     `<div class="cold-demo-slide" id="cold-ds-${i + 1}">${s}</div>`
   ).join('');
 
-  // Show first slide with cut effect
-  let current = 0;
+  // Show first slide, then auto-advance once through all 5
   showColdSlide(demo, 0);
-
   _coldDemoInterval = setInterval(() => {
-    current = (current + 1) % slides.length;
-    showColdSlide(demo, current);
+    _coldCurrentSlide = (_coldCurrentSlide + 1) % slides.length;
+    showColdSlide(demo, _coldCurrentSlide);
+    // Stop after one full cycle (back to slide 0)
+    if (_coldCurrentSlide === 0) {
+      clearInterval(_coldDemoInterval);
+      _coldDemoInterval = null;
+    }
   }, 4500);
 }
 
+// Manual nav dot click — stops autoplay
+window.goToSlide = function(n) {
+  if (_coldDemoInterval) {
+    clearInterval(_coldDemoInterval);
+    _coldDemoInterval = null;
+  }
+  const demo = document.getElementById('cold-demo');
+  if (demo) showColdSlide(demo, n);
+};
+
 function showColdSlide(demo, n) {
-  // Hide all slides immediately
+  _coldCurrentSlide = n;
+  // Hide all slides
   demo.querySelectorAll('.cold-demo-slide').forEach(s => {
     s.classList.remove('active');
     s.style.opacity = '0';
   });
-  // Fade caption out
-  const caption = document.getElementById('cold-demo-caption');
-  if (caption) {
-    const span = caption.querySelector('span');
-    if (span) span.style.opacity = '0';
-  }
+  // Update nav dots
+  document.querySelectorAll('.cold-demo-dot').forEach((d, i) => {
+    d.classList.toggle('active', i === n);
+  });
   // Brief black pause, then show new slide
   setTimeout(() => {
     const slide = document.getElementById(`cold-ds-${n + 1}`);
@@ -170,16 +164,8 @@ function showColdSlide(demo, n) {
       slide.classList.add('active');
       slide.style.opacity = '1';
     }
-    // Update caption text and fade in
-    if (caption) {
-      const span = caption.querySelector('span');
-      if (span) {
-        span.textContent = SLIDE_GUIDES[n];
-        span.style.opacity = '1';
-      }
-    }
     animateDemoSlide(demo, n);
-  }, 250);
+  }, 200);
 }
 
 function animateDemoSlide(demo, idx) {
