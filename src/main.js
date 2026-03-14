@@ -134,25 +134,15 @@ function initColdChoreography(el) {
     });
   }
 
-  // Phase 2: Palate Map row appears as 5th competitor (300 + 4*200 = 1100ms)
-  const pmDelay = prefersReduced ? 0 : 1100;
+  // Phase 2: Palate Map arrival EXPANDS above competitors (pushes them down)
+  // Last competitor at 300 + 3*200 = 900ms, then 600ms pause = 1500ms
   setTimeout(() => {
     const arrival = document.getElementById('cold-arrival');
-    if (arrival) { arrival.style.opacity = '1'; arrival.style.transform = 'translateY(0)'; }
-  }, pmDelay);
+    if (arrival) { arrival.style.maxHeight = '300px'; arrival.style.opacity = '1'; }
+  }, prefersReduced ? 0 : 1500);
 
-  // Phase 3: PM row transforms — text elevates, expand reveals (1100 + 600 = 1700ms)
-  setTimeout(() => {
-    const arrival = document.getElementById('cold-arrival');
-    if (arrival) {
-      arrival.classList.add('revealed');
-      const expand = arrival.querySelector('.cold-pm-expand');
-      if (expand) { expand.style.maxHeight = '80px'; expand.style.opacity = '1'; }
-    }
-  }, prefersReduced ? 0 : 1700);
-
-  // Phase 4: Demo fades in + starts cycling (1700 + 400 = 2100ms)
-  setTimeout(() => initColdDemo(), prefersReduced ? 0 : 2100);
+  // Phase 3: Demo fades in + starts cycling (1500 + 500 = 2000ms)
+  setTimeout(() => initColdDemo(), prefersReduced ? 0 : 2000);
 }
 
 function initColdDemo() {
@@ -253,6 +243,7 @@ function buildDemoSlides() {
     handmaiden: 'https://image.tmdb.org/t/p/w154/dLlH4aNHdnmf62umnInL8xPlPzw.jpg',
     arrival: 'https://image.tmdb.org/t/p/w154/x2FJsf1ElAgr63Y3PNPtJrcmpoe.jpg',
     mood: 'https://image.tmdb.org/t/p/w154/iYypPT4bhqXfq1b6EnmxvRt6b2Y.jpg',
+    moonlight: 'https://image.tmdb.org/t/p/w154/qLnfEmPrDjJfPyyddLJPkXmshkp.jpg',
   };
 
   // Slide 1: Score Breakdown
@@ -269,26 +260,30 @@ function buildDemoSlides() {
       <div class="demo-bar-num" style="${mono};font-size:9px;color:#888;width:18px;text-align:right;opacity:0;transition:opacity 0.3s ease">${val}</div>
     </div>`).join('');
   const slide1 = `
-    <div style="${mono};font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#555;margin-bottom:14px">your breakdown</div>
-    <div style="display:flex;gap:16px;align-items:flex-start;flex:1">
-      <div style="flex-shrink:0">${posterImg(posters.parasite, 'Parasite', 72, 108)}</div>
-      <div style="flex:1">
-        <div style="${serif};font-size:15px;color:#e8e2d6;margin-bottom:2px">Parasite</div>
-        <div style="${mono};font-size:9px;color:#666;margin-bottom:12px">2019 · Bong Joon-ho</div>
-        ${s1bars}
+    <div style="${mono};font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#555;margin-bottom:12px">your breakdown</div>
+    <div style="display:flex;gap:20px;align-items:flex-start;flex:1">
+      <div style="flex-shrink:0">
+        ${posterImg(posters.parasite, 'Parasite', 100, 150)}
+        <div style="${serif};font-size:13px;color:#e8e2d6;margin-top:6px">Parasite</div>
+        <div style="${mono};font-size:9px;color:#666">2019 · Bong Joon-ho</div>
       </div>
+      <div style="flex:1;padding-top:4px">${s1bars}</div>
     </div>`;
 
-  // Slide 2: Prediction
+  // Slide 2: Prediction (poster left, score+reasoning right)
   const slide2 = `
-    <div style="text-align:center;display:flex;flex-direction:column;align-items:center;flex:1;justify-content:center">
-      <div style="${mono};font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#555;margin-bottom:18px">— we predict you'd give this —</div>
-      <div style="margin-bottom:12px">${posterImg(posters.lost, 'Lost in Translation', 72, 108)}</div>
-      <div style="${serif};font-size:15px;color:#e8e2d6;margin-bottom:2px">Lost in Translation</div>
-      <div style="${mono};font-size:9px;color:#666;margin-bottom:16px">2003 · Sofia Coppola</div>
-      <div class="ds2-score" style="${serif};font-weight:900;font-size:52px;color:${blue};line-height:1;letter-spacing:-3px;margin-bottom:6px;transition:opacity 0.5s ease">78</div>
-      <div style="${mono};font-size:10px;color:#666;margin-bottom:14px">predicted score</div>
-      <div class="ds2-reason" style="${sans};font-size:12px;line-height:1.55;color:#888;max-width:300px;transition:opacity 0.5s ease">Strong World match — you love atmospheric, melancholic films. Lower Story — you need more narrative drive.</div>
+    <div style="${mono};font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#555;margin-bottom:12px">— we predict you'd give this —</div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex:1">
+      <div style="flex-shrink:0">
+        ${posterImg(posters.lost, 'Lost in Translation', 100, 150)}
+        <div style="${serif};font-size:13px;color:#e8e2d6;margin-top:6px">Lost in Translation</div>
+        <div style="${mono};font-size:9px;color:#666">2003 · Sofia Coppola</div>
+      </div>
+      <div style="flex:1;text-align:center;padding-top:8px">
+        <div class="ds2-score" style="${serif};font-weight:900;font-size:52px;color:${blue};line-height:1;letter-spacing:-3px;margin-bottom:6px;transition:opacity 0.5s ease">78</div>
+        <div style="${mono};font-size:10px;color:#666;margin-bottom:14px">predicted score</div>
+        <div class="ds2-reason" style="${sans};font-size:12px;line-height:1.55;color:#888;max-width:300px;margin:0 auto;transition:opacity 0.5s ease">Strong World match — you love atmospheric, melancholic films. Lower Story — you need more narrative drive.</div>
+      </div>
     </div>`;
 
   // Slide 3: Taste Contrast
@@ -302,7 +297,7 @@ function buildDemoSlides() {
     </div>`).join('');
   const slide3 = `
     <div style="${mono};font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#555;margin-bottom:14px;text-align:center">your taste isn't one thing</div>
-    <div style="display:flex;gap:12px;flex:1">
+    <div style="display:flex;gap:32px;flex:1">
       <div style="flex:1;text-align:center">
         <div style="margin:0 auto 6px">${posterImg(posters.parasite, 'Parasite', 56, 84)}</div>
         <div style="${mono};font-size:8px;color:#888;margin-bottom:2px">Parasite</div>
@@ -324,6 +319,7 @@ function buildDemoSlides() {
     { title: 'The Handmaiden', year: '2016', score: 87, badge: true, reason: 'World + Singularity', poster: posters.handmaiden },
     { title: 'Arrival', year: '2016', score: 84, badge: false, reason: 'Director affinity', poster: posters.arrival },
     { title: 'In the Mood for Love', year: '2000', score: 82, badge: false, reason: 'High predicted Hold', poster: posters.mood },
+    { title: 'Moonlight', year: '2016', score: 89, badge: false, reason: 'Performance match', poster: posters.moonlight },
   ];
   const recCards = recs.map((r) => `
     <div class="cold-ds4-card" style="flex:1;min-width:0;transition:all 0.4s ease">

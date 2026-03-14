@@ -32,8 +32,8 @@
 
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-C876e_Pw.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-D4ArsbCA.css">
+  <script type="module" crossorigin src="/assets/index-BQJgoBUV.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BCJyduLy.css">
 </head>
 <body>
 <!-- GTM noscript fallback -->
@@ -42,7 +42,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <!-- ══════════════ COLD LANDING ══════════════ -->
 <div id="cold-landing" style="display:none;position:fixed;inset:0;background:var(--paper);z-index:200;overflow-y:auto">
-  <div style="min-height:100%;display:flex;flex-direction:column;justify-content:flex-start;padding:24px 40px 220px;max-width:1280px;margin:0 auto;box-sizing:border-box">
+  <div style="min-height:100%;display:flex;flex-direction:column;justify-content:flex-start;padding:24px 40px 220px;max-width:1100px;margin:0 auto;box-sizing:border-box">
 
     <!-- Wordmark -->
     <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:40px;text-align:center">palate map</div>
@@ -56,68 +56,56 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- Rule -->
     <div style="border-top:1px solid var(--rule);margin-bottom:48px"></div>
 
-    <!-- Two-column body (50/50) -->
+    <!-- Two-column body -->
     <div class="cold-landing-grid">
 
-      <!-- Left column: comparison + Palate Map reveal -->
+      <!-- Left column: arrival (expands above) + competitors -->
       <div>
+        <!-- Arrival block — initially collapsed, expands above competitors -->
+        <div id="cold-arrival" style="opacity:0;max-height:0;overflow:hidden;transition:max-height 0.8s cubic-bezier(0.22,1,0.36,1),opacity 0.6s ease">
+          <div style="width:40px;height:2px;background:var(--blue);margin-bottom:20px"></div>
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(20px,2.8vw,24px);line-height:1.25;letter-spacing:-0.5px;color:var(--ink);margin-bottom:10px">Palate Map tells you why <span style="text-decoration:underline;text-decoration-color:var(--blue);text-underline-offset:4px;text-decoration-thickness:2px">you</span> like what you like — and finds more of it.</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.6;color:var(--dim);max-width:380px">Eight dimensions. Your actual taste — not a star rating, not an algorithm optimized for someone else's goals.</div>
+          <div style="height:32px"></div>
+          <div style="border-top:1px solid var(--rule);margin-bottom:24px"></div>
+        </div>
+
         <!-- Section label -->
         <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:24px">How they see your taste</div>
 
-        <!-- Competitor rows (cascade in via JS) -->
+        <!-- Competitor rows (single line: logo + name + description) -->
         <div class="cold-comp-row" style="opacity:0;transform:translateY(6px)">
-          <div class="cold-comp-header">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="11" r="7.5" fill="#FA320A"/><ellipse cx="10" cy="4.5" rx="3" ry="2.5" fill="#3A8B26"/><path d="M10 2c.8-1.2 2.2-1.5 3-.8" stroke="#3A8B26" stroke-width="1" fill="none" stroke-linecap="round"/></svg>
-            <span class="cold-comp-name">Rotten Tomatoes</span>
-          </div>
-          <div class="cold-comp-desc">Tells you whether critics liked it.</div>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="11" r="7.5" fill="#FA320A"/><ellipse cx="10" cy="4.5" rx="3" ry="2.5" fill="#3A8B26"/></svg>
+          <span class="cold-comp-name">Rotten Tomatoes</span>
+          <span class="cold-comp-desc">Critics liked it.</span>
         </div>
         <div class="cold-comp-row" style="opacity:0;transform:translateY(6px)">
-          <div class="cold-comp-header">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="5" width="18" height="10" rx="2" fill="#F5C518"/><text x="10" y="13" text-anchor="middle" font-family="Impact,sans-serif" font-size="7" font-weight="700" fill="#000">IMDb</text></svg>
-            <span class="cold-comp-name">IMDb</span>
-          </div>
-          <div class="cold-comp-desc">Tells you whether everyone liked it.</div>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="5" width="18" height="10" rx="2" fill="#F5C518"/><text x="10" y="13" text-anchor="middle" font-family="Impact,sans-serif" font-size="7" font-weight="700" fill="#000">IMDb</text></svg>
+          <span class="cold-comp-name">IMDb</span>
+          <span class="cold-comp-desc">Everyone liked it.</span>
         </div>
         <div class="cold-comp-row" style="opacity:0;transform:translateY(6px)">
-          <div class="cold-comp-header">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="7" cy="10" r="4.5" fill="#00E054" opacity="0.85"/><circle cx="10" cy="10" r="4.5" fill="#40BCF4" opacity="0.85"/><circle cx="13" cy="10" r="4.5" fill="#FF8000" opacity="0.85"/></svg>
-            <span class="cold-comp-name">Letterboxd</span>
-          </div>
-          <div class="cold-comp-desc">Tells you whether your friends liked it.</div>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="7" cy="10" r="4.5" fill="#00E054" opacity="0.85"/><circle cx="10" cy="10" r="4.5" fill="#40BCF4" opacity="0.85"/><circle cx="13" cy="10" r="4.5" fill="#FF8000" opacity="0.85"/></svg>
+          <span class="cold-comp-name">Letterboxd</span>
+          <span class="cold-comp-desc">Friends liked it.</span>
         </div>
         <div class="cold-comp-row" style="opacity:0;transform:translateY(6px)">
-          <div class="cold-comp-header">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 3h2.5l3 8.5V3H13v14h-2.5l-3-8.5V17H5V3z" fill="#E50914"/></svg>
-            <span class="cold-comp-name">Netflix</span>
-          </div>
-          <div class="cold-comp-desc">Tells you what to watch next so you keep watching.</div>
-        </div>
-
-        <!-- Palate Map: appears as 5th competitor row, then transforms -->
-        <div class="cold-comp-row cold-pm-row" id="cold-arrival" style="opacity:0;transform:translateY(6px);border-bottom:none">
-          <div class="cold-comp-header">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect width="20" height="20" rx="2" fill="#3d5a80"/><text x="10" y="14" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-weight="900" font-size="9" fill="white">PM</text></svg>
-            <span class="cold-comp-name cold-pm-name">Palate Map</span>
-          </div>
-          <div class="cold-comp-desc cold-pm-desc">Tells you why <span style="text-decoration:underline;text-decoration-color:var(--blue);text-underline-offset:3px;text-decoration-thickness:1.5px">you</span> like what you like.</div>
-          <div class="cold-pm-expand" style="overflow:hidden;max-height:0;opacity:0;transition:max-height 0.6s cubic-bezier(0.22,1,0.36,1),opacity 0.5s ease 0.1s">
-            <div style="padding-top:8px;font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.6;color:var(--dim);padding-left:28px;max-width:360px">Eight dimensions. Your actual taste — not a star rating, not an algorithm optimized for someone else's goals.</div>
-          </div>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 3h2.5l3 8.5V3H13v14h-2.5l-3-8.5V17H5V3z" fill="#E50914"/></svg>
+          <span class="cold-comp-name">Netflix</span>
+          <span class="cold-comp-desc">Keeps you watching.</span>
         </div>
       </div>
 
-      <!-- Right column: Demo + Auth unified dark block -->
+      <!-- Right column: Demo + Auth -->
       <div class="cold-landing-sticky" style="display:flex;flex-direction:column">
 
         <!-- Demo area -->
         <div class="cold-demo" id="cold-demo" style="opacity:0"></div>
 
-        <!-- Auth area (seamless continuation of dark block) -->
+        <!-- Auth area (side-by-side buttons) -->
         <div class="cold-auth">
-          <!-- Google -->
           <button class="cold-auth-google" onclick="landingGoogle()">
-            <svg width="16" height="16" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+            <svg width="16" height="16" viewBox="0 0 18 18" fill="none" style="flex-shrink:0">
               <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/>
               <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853"/>
               <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05"/>
@@ -125,22 +113,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </svg>
             Continue with Google
           </button>
-
-          <!-- Divider -->
-          <div class="cold-auth-divider">
-            <div class="cold-auth-divider-line"></div>
-            <span>or</span>
-            <div class="cold-auth-divider-line"></div>
-          </div>
-
-          <!-- Email CTA -->
           <button class="cold-auth-email" onclick="startFromLanding()">Continue with email →</button>
-
-          <!-- Links -->
-          <div class="cold-auth-links">
-            <span>Been here before? <a onclick="startFromLandingReturning()">Log in →</a></span>
-            <span>On Letterboxd? <a onclick="startFromLanding()">Import ratings →</a></span>
-          </div>
+        </div>
+        <div class="cold-auth-links">
+          <span>Been here before? <a onclick="startFromLandingReturning()">Log in →</a></span>
+          <span>On Letterboxd? <a onclick="startFromLanding()">Import →</a></span>
         </div>
 
       </div>
