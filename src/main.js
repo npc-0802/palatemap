@@ -227,7 +227,7 @@ function buildSystemVisuals() {
     const labels = ['Story', 'Craft', 'Perf', 'World', 'Exp', 'Hold', 'End', 'Sing'];
     const values = [0.87, 0.92, 0.68, 0.55, 0.85, 0.90, 0.75, 0.62];
     const crowd =  [0.72, 0.74, 0.76, 0.70, 0.78, 0.65, 0.70, 0.58];
-    const cx = 130, cy = 130, r = 100;
+    const cx = 150, cy = 150, r = 110;
     const n = 8;
 
     function polarPoint(index, val) {
@@ -268,7 +268,7 @@ function buildSystemVisuals() {
 
     mapEl.innerHTML = `
       <div class="sys-radar-wrap">
-        <svg viewBox="0 0 260 260" class="sys-radar-svg">
+        <svg viewBox="0 0 300 300" class="sys-radar-svg">
           ${rings}${axes}${labelEls}
           <polygon class="sys-radar-crowd" points="${crowdPts}" fill="none" stroke="rgba(244,239,230,0.2)" stroke-width="1" stroke-dasharray="4,3" opacity="0"/>
           <polygon class="sys-radar-poly" points="${centerPts}" data-target="${userPts}" fill="rgba(61,90,128,0.15)" stroke="${blue}" stroke-width="1.5"/>

@@ -772,7 +772,7 @@ body {
 /* ── Rate: Scrolling category showcase ── */
 .sys-rate-scroll {
   overflow: hidden;
-  height: 220px;
+  height: 300px;
   position: relative;
   mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%);
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%);
@@ -802,7 +802,7 @@ body {
   font-size: 11.5px;
   color: #777;
   line-height: 1.4;
-  margin-bottom: 10px;
+  margin-bottom: 14px;
 }
 .sys-rate-slider {
   display: flex;
@@ -833,8 +833,8 @@ body {
   align-items: center;
 }
 .sys-radar-svg {
-  width: 240px;
-  height: 240px;
+  width: 280px;
+  height: 280px;
 }
 .sys-radar-dot {
   transition: opacity 0.4s ease;
@@ -855,7 +855,7 @@ body {
 .sys-discover-stack {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 .sys-discover-card {
   background: #1a1916;
@@ -886,6 +886,21 @@ body {
   color: #777;
   line-height: 1.55;
 }
+
+/* ── System CTA ── */
+.cold-system-cta {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: var(--action);
+  color: white;
+  border: none;
+  padding: 16px 48px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.cold-system-cta:hover { opacity: 0.85; }
 
 /* ── Compare Strip ── */
 .cold-compare {
@@ -1030,8 +1045,8 @@ body {
     padding: 0 32px;
     gap: 16px;
   }
-  .sys-radar-svg { width: 200px; height: 200px; }
-  .sys-rate-scroll { height: 200px; }
+  .sys-radar-svg { width: 240px; height: 240px; }
+  .sys-rate-scroll { height: 260px; }
 }
 
 /* ── Small Mobile ── */
