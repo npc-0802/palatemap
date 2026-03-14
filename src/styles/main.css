@@ -571,138 +571,145 @@ body {
 .cold-links a:hover { color: var(--dim); }
 .cold-links span { opacity: 0.4; }
 
-/* ── Product Tableau ── */
+/* ── Hero Product Card ── */
 .cold-tableau {
-  position: relative;
-  min-height: 640px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-/* Atmospheric staging — deep cinematic halo */
-.cold-tableau::before {
-  content: '';
-  position: absolute;
-  top: 42%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 170%;
-  height: 180%;
-  background:
-    radial-gradient(ellipse at 55% 38%,
-      rgba(0,0,0,0.15) 0%,
-      rgba(0,0,0,0.09) 28%,
-      rgba(0,0,0,0.04) 50%,
-      transparent 68%),
-    radial-gradient(ellipse at 35% 60%,
-      rgba(61,90,128,0.04) 0%,
-      transparent 45%);
-  pointer-events: none;
-  z-index: 0;
-}
-/* Secondary light wash — warm accent */
-.cold-tableau::after {
-  content: '';
-  position: absolute;
-  top: 5%;
-  right: 10%;
-  width: 350px;
-  height: 350px;
-  background:
-    radial-gradient(circle, rgba(61,90,128,0.05) 0%, transparent 60%),
-    radial-gradient(circle at 60% 80%, rgba(212,168,75,0.02) 0%, transparent 50%);
-  pointer-events: none;
-  z-index: 0;
-}
-.tab-panel {
-  position: absolute;
-  overflow: hidden;
-  opacity: 0;
-  transition:
-    opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* ── PRIMARY: Your Palate (dominant, iconic) ── */
-.tab-main {
-  width: 460px;
-  right: -20px;
-  top: -10px;
-  padding: 36px 36px 30px;
-  background: linear-gradient(168deg, #100f0d 0%, #070605 100%);
-  border: 1px solid rgba(255,255,255,0.07);
-  transform: translateY(70px) rotate(1deg);
+.hero-product-card {
+  background: #0c0b09;
+  border-radius: 8px;
+  padding: 28px 32px;
+  max-width: 520px;
+  width: 100%;
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.06),
-    inset 0 -1px 0 rgba(255,255,255,0.02),
     0 1px 2px rgba(0,0,0,0.06),
-    0 4px 8px rgba(0,0,0,0.1),
-    0 16px 40px rgba(0,0,0,0.16),
-    0 48px 96px rgba(0,0,0,0.18),
-    0 80px 140px rgba(0,0,0,0.1),
-    0 120px 180px rgba(0,0,0,0.05);
-  z-index: 2;
-}
-.tab-main.visible {
-  opacity: 1;
-  transform: translateY(0) rotate(1deg);
+    0 8px 24px rgba(0,0,0,0.1),
+    0 32px 64px rgba(0,0,0,0.08);
 }
 
-/* ── SECONDARY: Prediction (bites aggressively into main panel) ── */
-.tab-predict {
-  width: 260px;
-  right: -30px;
-  bottom: 10px;
-  padding: 26px 26px 22px;
-  background: linear-gradient(165deg, #131620 0%, #0d0f16 100%);
-  border: 1px solid rgba(61,90,128,0.15);
-  transform: translateY(60px) rotate(-2.5deg);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.04),
-    0 1px 2px rgba(0,0,0,0.05),
-    0 8px 24px rgba(0,0,0,0.14),
-    0 32px 64px rgba(0,0,0,0.18),
-    0 64px 110px rgba(0,0,0,0.1);
-  z-index: 3;
+/* Film header */
+.hero-film-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
-.tab-predict.visible {
-  opacity: 1;
-  transform: translateY(0) rotate(-2.5deg);
+.hero-film-poster {
+  width: 64px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 2px;
+  flex-shrink: 0;
 }
-
-/* ── TERTIARY: Recommendation (buried deeper in the stack) ── */
-.tab-reco {
-  width: 125px;
-  right: 170px;
-  bottom: -8px;
-  background: #0c0b09;
-  border: 1px solid rgba(255,255,255,0.06);
-  transform: translateY(40px) rotate(3deg);
-  box-shadow:
-    0 4px 12px rgba(0,0,0,0.1),
-    0 24px 56px rgba(0,0,0,0.16),
-    0 48px 80px rgba(0,0,0,0.08);
-  z-index: 1;
+.hero-film-title {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 22px;
+  color: #F4EFE6;
+  letter-spacing: -0.5px;
 }
-.tab-reco.visible {
-  opacity: 1;
-  transform: translateY(0) rotate(3deg);
+.hero-film-meta {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: #837A6A;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
 }
 
-/* ── INPUT: Anchor film (tight against main panel — causal link) ── */
-.tab-anchor {
-  width: 140px;
-  left: 30px;
-  top: 40px;
-  background: #0c0b09;
-  border: 1px solid rgba(255,255,255,0.06);
-  transform: translateY(30px) rotate(-2.5deg);
-  box-shadow:
-    0 4px 12px rgba(0,0,0,0.08),
-    0 20px 48px rgba(0,0,0,0.14),
-    0 40px 64px rgba(0,0,0,0.08);
-  z-index: 4;
+/* Rule divider */
+.hero-rule {
+  height: 1px;
+  background: rgba(244, 239, 230, 0.08);
+  margin: 20px 0;
 }
-.tab-anchor.visible {
-  opacity: 1;
-  transform: translateY(0) rotate(-2.5deg);
+
+/* Category bars */
+.hero-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hero-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.hero-bar-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: #837A6A;
+  min-width: 110px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.hero-bar-track {
+  flex: 1;
+  height: 5px;
+  background: rgba(244, 239, 230, 0.06);
+  border-radius: 2px;
+}
+.hero-bar-fill {
+  height: 100%;
+  background: #3D5A80;
+  border-radius: 2px;
+  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hero-bar-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: #F4EFE6;
+  min-width: 24px;
+  text-align: right;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.hero-bar-value.visible { opacity: 1; }
+
+/* Summary footer */
+.hero-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.hero-archetype {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 18px;
+  color: #F4EFE6;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.hero-archetype.visible { opacity: 1; }
+.hero-tags {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: #837A6A;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+.hero-total-score {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 900;
+  font-size: 42px;
+  color: #C4922A;
+  line-height: 1;
+  letter-spacing: -1px;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.hero-total-score.visible { opacity: 1; }
+.hero-total-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: #837A6A;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: right;
+  margin-top: 2px;
 }
 
 /* ── System Section ── */
@@ -981,14 +988,8 @@ body {
 
 /* ── Reduced Motion ── */
 @media (prefers-reduced-motion: reduce) {
-  .tab-panel {
-    opacity: 1 !important;
-    transition: none !important;
-  }
-  .tab-main { transform: rotate(0.8deg) !important; }
-  .tab-predict { transform: rotate(-1.5deg) !important; }
-  .tab-reco { transform: rotate(1.8deg) !important; }
-  .tab-anchor { transform: rotate(-2deg) !important; }
+  .hero-bar-fill { transition: none; }
+  .hero-bar-value, .hero-archetype, .hero-total-score { opacity: 1; transition: none; }
   .sys-rate-inner { animation: none; }
   .sys-rate-scroll { height: auto; mask-image: none; -webkit-mask-image: none; }
   .sys-discover-card { opacity: 1; transform: none; }
@@ -1000,11 +1001,8 @@ body {
     gap: 48px;
     padding: 80px 48px 60px;
   }
-  .tab-main { width: 360px; padding: 24px; right: -10px; }
-  .tab-predict { width: 220px; right: -20px; bottom: -10px; }
-  .tab-reco { width: 110px; right: 150px; }
-  .tab-anchor { left: 10px; top: 35px; width: 120px; }
-  .cold-tableau { min-height: 560px; }
+  .hero-product-card { padding: 24px 28px; }
+  .hero-bar-label { min-width: 95px; font-size: 11px; }
   .cold-system-inner { padding: 0 48px; }
   .cold-compare-inner { padding: 0 48px; }
 }
@@ -1018,14 +1016,10 @@ body {
   }
   .cold-h1 { font-size: clamp(36px, 10vw, 56px); }
   .cold-cta-stack { max-width: 100%; }
-  .cold-tableau {
-    min-height: 460px;
-    margin: 0 -16px;
-  }
-  .tab-main { width: 290px; right: 10px; top: 0; padding: 18px; }
-  .tab-predict { width: 200px; right: -10px; bottom: 10px; padding: 16px; }
-  .tab-reco { width: 100px; right: 130px; bottom: -4px; }
-  .tab-anchor { left: 5px; top: 20px; width: 105px; }
+  .hero-product-card { padding: 22px 24px; }
+  .hero-bar-label { min-width: 85px; font-size: 11px; }
+  .hero-film-title { font-size: 19px; }
+  .hero-film-poster { width: 56px; height: 84px; }
   .cold-system { padding: 64px 0; }
   .cold-system-inner { padding: 0 32px; }
   .cold-system-grid {
@@ -1043,11 +1037,11 @@ body {
 /* ── Small Mobile ── */
 @media (max-width: 480px) {
   .cold-hero-inner { padding: 48px 20px 32px; }
-  .cold-tableau { min-height: 400px; }
-  .tab-main { width: 240px; padding: 14px; }
-  .tab-predict { width: 180px; padding: 14px; }
-  .tab-reco { display: none; }
-  .tab-anchor { display: none; }
+  .hero-product-card { padding: 20px; }
+  .hero-bar-label { min-width: 75px; font-size: 10px; }
+  .hero-bar-value { font-size: 10px; }
+  .hero-total-score { font-size: 36px; }
+  .hero-archetype { font-size: 16px; }
   .cold-system-inner { padding: 0 20px; }
   .cold-compare-inner { padding: 0 20px; }
   .cold-compare-sep { display: none; }
