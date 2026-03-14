@@ -519,7 +519,7 @@ body {
   flex-direction: column;
   gap: 10px;
   max-width: 300px;
-  margin-bottom: 64px;
+  margin-bottom: 80px;
 }
 .cold-cta-primary {
   font-family: 'DM Mono', monospace;
@@ -589,6 +589,9 @@ body {
   position: relative;
   border-radius: 8px;
   min-height: 0;
+  max-height: min(560px, calc(100vh - 240px));
+  display: flex;
+  flex-direction: column;
   align-self: center;
   background: #0c0b09;
   box-shadow:
@@ -598,6 +601,8 @@ body {
 }
 .cold-carousel-track-wrap {
   overflow: hidden;
+  flex: 1;
+  min-height: 0;
 }
 .cold-carousel-track {
   display: flex;
