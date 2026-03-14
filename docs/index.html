@@ -32,8 +32,8 @@
 
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-CMmuC-_e.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-5FEo1mMc.css">
+  <script type="module" crossorigin src="/assets/index-C876e_Pw.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-D4ArsbCA.css">
 </head>
 <body>
 <!-- GTM noscript fallback -->
@@ -59,7 +59,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- Two-column body (50/50) -->
     <div class="cold-landing-grid">
 
-      <!-- Left column: comparison + arrival -->
+      <!-- Left column: comparison + Palate Map reveal -->
       <div>
         <!-- Section label -->
         <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:24px">How they see your taste</div>
@@ -94,14 +94,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="cold-comp-desc">Tells you what to watch next so you keep watching.</div>
         </div>
 
-        <!-- Breathing room -->
-        <div style="height:36px"></div>
-
-        <!-- Palate Map arrival -->
-        <div class="cold-arrival" id="cold-arrival" style="opacity:0;transform:translateY(10px)">
-          <div style="width:36px;height:2px;background:var(--blue);margin-bottom:20px"></div>
-          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(20px,2.8vw,24px);line-height:1.25;letter-spacing:-0.5px;color:var(--ink);margin-bottom:8px">Palate Map tells you why <span style="text-decoration:underline;text-decoration-color:var(--blue);text-underline-offset:4px;text-decoration-thickness:2px">you</span> like what you like.</div>
-          <div style="font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.6;color:var(--dim);max-width:360px">Eight dimensions. Your actual taste — not a star rating, not an algorithm optimized for someone else's goals.</div>
+        <!-- Palate Map: appears as 5th competitor row, then transforms -->
+        <div class="cold-comp-row cold-pm-row" id="cold-arrival" style="opacity:0;transform:translateY(6px);border-bottom:none">
+          <div class="cold-comp-header">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect width="20" height="20" rx="2" fill="#3d5a80"/><text x="10" y="14" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-weight="900" font-size="9" fill="white">PM</text></svg>
+            <span class="cold-comp-name cold-pm-name">Palate Map</span>
+          </div>
+          <div class="cold-comp-desc cold-pm-desc">Tells you why <span style="text-decoration:underline;text-decoration-color:var(--blue);text-underline-offset:3px;text-decoration-thickness:1.5px">you</span> like what you like.</div>
+          <div class="cold-pm-expand" style="overflow:hidden;max-height:0;opacity:0;transition:max-height 0.6s cubic-bezier(0.22,1,0.36,1),opacity 0.5s ease 0.1s">
+            <div style="padding-top:8px;font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.6;color:var(--dim);padding-left:28px;max-width:360px">Eight dimensions. Your actual taste — not a star rating, not an algorithm optimized for someone else's goals.</div>
+          </div>
         </div>
       </div>
 

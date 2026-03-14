@@ -134,14 +134,25 @@ function initColdChoreography(el) {
     });
   }
 
-  // Phase 2: Arrival enters (300 + 3*200 + 400 = 1500ms)
+  // Phase 2: Palate Map row appears as 5th competitor (300 + 4*200 = 1100ms)
+  const pmDelay = prefersReduced ? 0 : 1100;
   setTimeout(() => {
     const arrival = document.getElementById('cold-arrival');
     if (arrival) { arrival.style.opacity = '1'; arrival.style.transform = 'translateY(0)'; }
-  }, prefersReduced ? 0 : 1500);
+  }, pmDelay);
 
-  // Phase 3: Demo fades in + starts cycling (1500 + 400 = 1900ms)
-  setTimeout(() => initColdDemo(), prefersReduced ? 0 : 1900);
+  // Phase 3: PM row transforms — text elevates, expand reveals (1100 + 600 = 1700ms)
+  setTimeout(() => {
+    const arrival = document.getElementById('cold-arrival');
+    if (arrival) {
+      arrival.classList.add('revealed');
+      const expand = arrival.querySelector('.cold-pm-expand');
+      if (expand) { expand.style.maxHeight = '80px'; expand.style.opacity = '1'; }
+    }
+  }, prefersReduced ? 0 : 1700);
+
+  // Phase 4: Demo fades in + starts cycling (1700 + 400 = 2100ms)
+  setTimeout(() => initColdDemo(), prefersReduced ? 0 : 2100);
 }
 
 function initColdDemo() {
@@ -239,9 +250,9 @@ function buildDemoSlides() {
     parasite: 'https://image.tmdb.org/t/p/w154/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg',
     lost: 'https://image.tmdb.org/t/p/w154/4GDy0PHYX3VRXUtwK5ysFbg3kEx.jpg',
     blade: 'https://image.tmdb.org/t/p/w154/gajva2L0rPYkEWjzgFlBXCAVBE5.jpg',
-    handmaiden: 'https://image.tmdb.org/t/p/w154/gCgt1WARPmhOwiMEpLDqU59vfAn.jpg',
+    handmaiden: 'https://image.tmdb.org/t/p/w154/dLlH4aNHdnmf62umnInL8xPlPzw.jpg',
     arrival: 'https://image.tmdb.org/t/p/w154/x2FJsf1ElAgr63Y3PNPtJrcmpoe.jpg',
-    mood: 'https://image.tmdb.org/t/p/w154/iYypPT4bhqXfq1b6sFBxMNEHlTp.jpg',
+    mood: 'https://image.tmdb.org/t/p/w154/iYypPT4bhqXfq1b6EnmxvRt6b2Y.jpg',
   };
 
   // Slide 1: Score Breakdown

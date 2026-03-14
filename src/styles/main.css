@@ -424,14 +424,26 @@ body {
 .cold-comp-name { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--dim); letter-spacing: 0.5px; }
 .cold-comp-desc { font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--dim); line-height: 1.5; padding-left: 28px; }
 
-/* ── Cold Landing: Arrival ── */
-.cold-arrival { margin-top: 36px; transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1); }
+/* ── Cold Landing: Palate Map reveal row ── */
+.cold-pm-row.revealed .cold-pm-name {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+}
+.cold-pm-row.revealed .cold-pm-desc {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 400;
+}
+.cold-pm-name, .cold-pm-desc {
+  transition: color 0.5s ease, font-size 0.5s ease;
+}
 
 /* ── Cold Landing: Demo ── */
 .cold-demo {
   background: var(--surface-dark-3);
   overflow: hidden;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 1 / 1;
   position: relative;
   transition: opacity 0.8s ease;
 }
@@ -503,9 +515,14 @@ body {
 .cold-auth-links a { color: #999; text-decoration: underline; cursor: pointer; }
 
 @media (prefers-reduced-motion: reduce) {
-  .cold-comp-row, .cold-arrival {
+  .cold-comp-row {
     opacity: 1 !important;
     transform: none !important;
+    transition: none !important;
+  }
+  .cold-pm-expand {
+    max-height: 80px !important;
+    opacity: 1 !important;
     transition: none !important;
   }
   .cold-demo {
@@ -531,7 +548,7 @@ body {
   .cold-landing-sticky { position: static !important; }
   .cold-comp-name { font-size: 10px; }
   .cold-comp-desc { font-size: 13px; padding-left: 28px; }
-  .cold-demo { aspect-ratio: 3 / 4; }
+  .cold-demo { aspect-ratio: 4 / 5; }
 }
 @media (max-width: 420px) {
   .cold-ds4-card:nth-child(3) { display: none; }
