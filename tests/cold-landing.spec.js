@@ -40,8 +40,8 @@ test.describe('Cold landing page', () => {
     // Verify card 3 was populated by JS (content exists even if off-screen)
     const headline = page.locator('#carousel-card-2 .carousel-headline');
     await expect(headline).toHaveCount(1);
-    const recCards = page.locator('#carousel-card-2 .carousel-rec-card');
-    await expect(recCards).toHaveCount(4);
+    const recItems = page.locator('#carousel-card-2 .carousel-foryou-item');
+    await expect(recItems).toHaveCount(4);
   });
 
   test('ticker headline and scroll track render', async ({ page }) => {

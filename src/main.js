@@ -188,17 +188,17 @@ function animateCard(n) {
   }
 
   if (n === 2) {
-    // Card 3: For You — stagger rec cards
-    const recCards = card.querySelectorAll('.carousel-rec-card');
-    recCards.forEach(c => c.classList.remove('visible'));
+    // Card 3: For You — stagger items
+    const foryouItems = card.querySelectorAll('.carousel-foryou-item');
+    foryouItems.forEach(c => c.classList.remove('visible'));
 
     if (prefersReduced) {
-      recCards.forEach(c => c.classList.add('visible'));
+      foryouItems.forEach(c => c.classList.add('visible'));
       if (headline) headline.classList.add('visible');
       return;
     }
 
-    recCards.forEach((c, i) => {
+    foryouItems.forEach((c, i) => {
       setTimeout(() => c.classList.add('visible'), 300 + i * 150);
     });
     setTimeout(() => { if (headline) headline.classList.add('visible'); }, 300 + 4 * 150 + 200);
@@ -399,38 +399,28 @@ function buildCarouselCards() {
 
   // ── Card 3: For You Recommendations ──
   const recs = [
-    { title: 'The Handmaiden', poster: 'https://image.tmdb.org/t/p/w342/dLlH4aNHdnmf62umnInL8xPlPzw.jpg', score: 87, source: 'World + Singularity', isNew: true },
-    { title: 'Arrival', poster: 'https://image.tmdb.org/t/p/w342/pEzNVQfdzYDzVK0XqxERIw2x2se.jpg', score: 84, source: 'Director affinity' },
-    { title: 'In the Mood for Love', poster: 'https://image.tmdb.org/t/p/w342/iYypPT4bhqXfq1b6EnmxvRt6b2Y.jpg', score: 82, source: 'High predicted Hold' },
-    { title: 'Moonlight', poster: 'https://image.tmdb.org/t/p/w342/qLnfEmPrDjJfPyyddLJPkXmshkp.jpg', score: 89, source: 'Performance + Ending' },
+    { title: 'The Handmaiden', poster: 'https://image.tmdb.org/t/p/w342/dLlH4aNHdnmf62umnInL8xPlPzw.jpg', score: 87, reason: 'Strong World + Singularity match — a genre you haven\'t explored.', isNew: true },
+    { title: 'Arrival', poster: 'https://image.tmdb.org/t/p/w342/pEzNVQfdzYDzVK0XqxERIw2x2se.jpg', score: 84, reason: 'Villeneuve films match your Craft + World profile.' },
+    { title: 'In the Mood for Love', poster: 'https://image.tmdb.org/t/p/w342/iYypPT4bhqXfq1b6EnmxvRt6b2Y.jpg', score: 82, reason: 'Atmospheric films with high Hold score well for you.' },
+    { title: 'Moonlight', poster: 'https://image.tmdb.org/t/p/w342/qLnfEmPrDjJfPyyddLJPkXmshkp.jpg', score: 89, reason: 'You care deeply about Performance + Ending. This has both.' },
   ];
-  const recCards = recs.map(r => `
-    <div class="carousel-rec-card">
+  const recItems = recs.map(r => `
+    <div class="carousel-foryou-item">
       <div style="position:relative">
         ${r.isNew ? `<div class="carousel-rec-new"><svg width="8" height="8" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="#6dbf8b" stroke-width="1.2"/><path d="M7 2.5L8 5.5L11 7L8 8.5L7 11.5L6 8.5L3 7L6 5.5z" fill="#6dbf8b" opacity="0.7"/></svg><span style="font-family:'DM Mono',monospace;font-size:7px;color:#6dbf8b;letter-spacing:0.5px">NEW</span></div>` : ''}
         <div class="carousel-rec-score">${r.score}</div>
         <img src="${r.poster}" alt="${r.title}" loading="lazy">
       </div>
-      <div class="carousel-rec-title">${r.title}</div>
-      <div class="carousel-rec-source">${r.source}</div>
+      <div class="carousel-foryou-title">${r.title}</div>
+      <div class="carousel-foryou-reason">${r.reason}</div>
     </div>`).join('');
 
   const card2 = document.getElementById('carousel-card-2');
   if (card2) card2.innerHTML = `
     <div class="carousel-headline">Recommendations that explain themselves.</div>
-    <div class="card-foryou-context">Based on your palate: Studied Narrativist · story-driven · high hold</div>
-    <div class="card-rec-grid">${recCards}</div>
-    <div class="carousel-foryou-detail">
-      <div class="carousel-foryou-detail-label">Why we picked <em>The Handmaiden</em> for you</div>
-      <div class="carousel-foryou-detail-bars">
-        <div class="carousel-foryou-bar"><span class="carousel-foryou-bar-label">World</span><div class="carousel-foryou-bar-track"><div class="carousel-foryou-bar-fill" style="width:93%"></div></div><span class="carousel-foryou-bar-value">93</span></div>
-        <div class="carousel-foryou-bar"><span class="carousel-foryou-bar-label">Singularity</span><div class="carousel-foryou-bar-track"><div class="carousel-foryou-bar-fill" style="width:89%"></div></div><span class="carousel-foryou-bar-value">89</span></div>
-        <div class="carousel-foryou-bar"><span class="carousel-foryou-bar-label">Craft</span><div class="carousel-foryou-bar-track"><div class="carousel-foryou-bar-fill" style="width:85%"></div></div><span class="carousel-foryou-bar-value">85</span></div>
-        <div class="carousel-foryou-bar"><span class="carousel-foryou-bar-label">Story</span><div class="carousel-foryou-bar-track"><div class="carousel-foryou-bar-fill" style="width:81%"></div></div><span class="carousel-foryou-bar-value">81</span></div>
-        <div class="carousel-foryou-bar"><span class="carousel-foryou-bar-label">Experience</span><div class="carousel-foryou-bar-track"><div class="carousel-foryou-bar-fill" style="width:78%"></div></div><span class="carousel-foryou-bar-value">78</span></div>
-      </div>
-      <div class="carousel-foryou-detail-reason">Your palate rewards immersive worlds and one-of-a-kind films. This has both.</div>
-    </div>`;
+    <div class="carousel-foryou-context">Based on your palate: Studied Narrativist · story-driven · high hold</div>
+    <div class="carousel-foryou-grid">${recItems}</div>
+    <div class="carousel-foryou-footer">Every pick is matched to your specific taste profile — not trending, not popular, yours.</div>`;
 }
 
 function buildSystemVisuals() {
