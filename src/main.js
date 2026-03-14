@@ -137,25 +137,30 @@ function initTableau() {
 }
 
 function animateTableauDetails(tableau) {
-  // Bars fill with stagger
+  // Bars fill with stagger — slow, confident
   const bars = tableau.querySelectorAll('.tab-bar-fill');
   bars.forEach((b, i) => {
-    setTimeout(() => { b.style.width = b.dataset.target + '%'; }, 80 * i);
+    setTimeout(() => { b.style.width = b.dataset.target + '%'; }, 100 * i);
   });
-  // Score numbers fade in
+  // Score numbers resolve
   const nums = tableau.querySelectorAll('.tab-bar-num');
   nums.forEach((n, i) => {
-    setTimeout(() => { n.style.opacity = '1'; }, 250 + 80 * i);
+    setTimeout(() => { n.style.opacity = '1'; }, 300 + 100 * i);
   });
-  // Total score
+  // Palate type + total score
+  const palateType = tableau.querySelector('.tab-palate-type');
+  if (palateType) setTimeout(() => { palateType.style.opacity = '1'; }, 1000);
   const total = tableau.querySelector('.tab-total');
-  if (total) setTimeout(() => { total.style.opacity = '1'; }, 900);
+  if (total) setTimeout(() => { total.style.opacity = '1'; }, 1100);
+  // Insight line
+  const insightLine = tableau.querySelector('.tab-insight-line');
+  if (insightLine) setTimeout(() => { insightLine.style.opacity = '1'; }, 1400);
   // Prediction score resolves
   const predScore = tableau.querySelector('.tab-pred-score');
-  if (predScore) setTimeout(() => { predScore.style.opacity = '1'; }, 1100);
-  // Prediction reasoning
+  if (predScore) setTimeout(() => { predScore.style.opacity = '1'; }, 1300);
+  // Prediction reason
   const predReason = tableau.querySelector('.tab-pred-reason');
-  if (predReason) setTimeout(() => { predReason.style.opacity = '1'; }, 1600);
+  if (predReason) setTimeout(() => { predReason.style.opacity = '1'; }, 1700);
 }
 
 function buildTableau() {
@@ -170,82 +175,86 @@ function buildTableau() {
     handmaiden: 'https://image.tmdb.org/t/p/w154/dLlH4aNHdnmf62umnInL8xPlPzw.jpg',
   };
 
+  // ── Category data ──
   const cats = [
     ['Story', 92], ['Craft', 88], ['Performances', 80], ['World', 70],
     ['Experience', 85], ['Hold', 90], ['Ending', 97], ['Singularity', 82]
   ];
 
   const bars = cats.map(([cat, val]) => `
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-      <div style="${mono};font-size:8px;color:#555;width:74px;text-align:right;letter-spacing:0.3px">${cat}</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">
+      <div style="${mono};font-size:8px;color:#555;width:78px;text-align:right;letter-spacing:0.4px">${cat}</div>
       <div style="flex:1;height:2px;background:#1a1a18;position:relative">
-        <div class="tab-bar-fill" data-target="${val}" style="position:absolute;left:0;top:0;height:100%;width:0%;background:${blue};transition:width 0.9s cubic-bezier(0.16,1,0.3,1)"></div>
+        <div class="tab-bar-fill" data-target="${val}" style="position:absolute;left:0;top:0;height:100%;width:0%;background:${blue};transition:width 1s cubic-bezier(0.16,1,0.3,1)"></div>
       </div>
-      <div class="tab-bar-num" style="${mono};font-size:9px;color:#777;width:20px;text-align:right;opacity:0;transition:opacity 0.4s ease">${val}</div>
+      <div class="tab-bar-num" style="${mono};font-size:9px;color:#777;width:20px;text-align:right;opacity:0;transition:opacity 0.5s ease">${val}</div>
     </div>`).join('');
 
-  // ── Main panel: Score breakdown ──
+  // ══ PRIMARY: Your Palate — dominant luxury surface ══
   const main = `
     <div class="tab-panel tab-main">
-      <div style="${mono};font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#444;margin-bottom:18px">Your breakdown</div>
-      <div style="display:flex;gap:16px;margin-bottom:20px">
-        <div style="flex-shrink:0">
-          ${posterImg(posters.parasite, 'Parasite', 80, 120)}
-        </div>
-        <div>
-          <div style="${serif};font-size:17px;color:#e8e2d6;margin-bottom:3px">Parasite</div>
-          <div style="${mono};font-size:9px;color:#555">2019 · Bong Joon-ho</div>
-        </div>
-      </div>
+      <div style="${mono};font-size:8px;letter-spacing:2.5px;text-transform:uppercase;color:#555;margin-bottom:6px">Your palate</div>
+      <div style="border-top:1px solid #1e1e1c;margin-bottom:22px"></div>
       ${bars}
-      <div style="border-top:1px solid #1a1a18;margin-top:14px;padding-top:12px;display:flex;justify-content:space-between;align-items:baseline">
-        <div style="${mono};font-size:8px;letter-spacing:1px;text-transform:uppercase;color:#444">Total</div>
-        <div class="tab-total" style="${serif};font-weight:900;font-size:32px;color:${blue};letter-spacing:-1px;opacity:0;transition:opacity 0.5s ease">86</div>
+      <div style="border-top:1px solid #1e1e1c;margin-top:16px;padding-top:16px;display:flex;justify-content:space-between;align-items:flex-end">
+        <div>
+          <div class="tab-palate-type" style="${serif};font-size:16px;color:#e8e2d6;margin-bottom:5px;opacity:0;transition:opacity 0.6s ease">Studied Narrativist</div>
+          <div style="${mono};font-size:8px;color:#555;letter-spacing:0.3px">story-driven · high hold · atmospheric</div>
+        </div>
+        <div style="text-align:right">
+          <div class="tab-total" style="${serif};font-weight:900;font-size:52px;color:${blue};letter-spacing:-3px;line-height:0.85;opacity:0;transition:opacity 0.7s ease">86</div>
+          <div style="${mono};font-size:7px;color:#444;letter-spacing:1px;text-transform:uppercase;margin-top:6px">weighted total</div>
+        </div>
       </div>
+      <div style="border-top:1px solid #1e1e1c;margin-top:14px"></div>
+      <div class="tab-insight-line" style="${sans};font-size:11px;color:#666;margin-top:14px;line-height:1.55;opacity:0;transition:opacity 0.6s ease">You care most about Story and Hold. You forgive a lot when Experience is high.</div>
     </div>`;
 
-  // ── Prediction panel ──
+  // ══ SECONDARY: Prediction — overlapping, cooler surface ══
   const predict = `
     <div class="tab-panel tab-predict">
-      <div style="${mono};font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:#444;margin-bottom:14px">We predict you'd give</div>
-      <div style="display:flex;gap:14px;align-items:flex-start">
-        <div style="flex-shrink:0">
-          ${posterImg(posters.lost, 'Lost in Translation', 64, 96)}
-        </div>
-        <div style="flex:1">
-          <div style="${serif};font-size:14px;color:#e8e2d6;margin-bottom:2px">Lost in Translation</div>
-          <div style="${mono};font-size:8px;color:#555;margin-bottom:14px">2003 · Sofia Coppola</div>
-          <div class="tab-pred-score" style="${serif};font-weight:900;font-size:44px;color:${blue};letter-spacing:-2px;line-height:1;opacity:0;transition:opacity 0.7s ease">78</div>
-          <div style="${mono};font-size:8px;color:#555;margin-top:3px">predicted score</div>
+      <div style="${mono};font-size:7px;letter-spacing:2px;text-transform:uppercase;color:#555;margin-bottom:6px">Predicted</div>
+      <div style="border-top:1px solid rgba(61,90,128,0.15);margin-bottom:16px"></div>
+      <div style="${serif};font-size:15px;color:#e8e2d6;margin-bottom:2px">Lost in Translation</div>
+      <div style="${mono};font-size:8px;color:#555;margin-bottom:18px">2003 · Sofia Coppola</div>
+      <div class="tab-pred-score" style="${serif};font-weight:900;font-size:56px;color:${blue};letter-spacing:-3px;line-height:0.85;opacity:0;transition:opacity 0.8s ease">78</div>
+      <div style="${mono};font-size:7px;color:#444;letter-spacing:1px;text-transform:uppercase;margin-top:8px;margin-bottom:16px">predicted score</div>
+      <div style="border-top:1px solid rgba(61,90,128,0.15);padding-top:12px">
+        <div class="tab-pred-reason" style="${mono};font-size:9px;color:#777;line-height:1.7;opacity:0;transition:opacity 0.6s ease">
+          <span style="color:${blue}">↑</span> High on World<br>
+          <span style="color:#666">↓</span> Mixed on Story
         </div>
       </div>
-      <div class="tab-pred-reason" style="${sans};font-size:11px;line-height:1.5;color:#666;margin-top:14px;border-top:1px solid #1a1a18;padding-top:12px;opacity:0;transition:opacity 0.6s ease">Strong World match — you love atmospheric, melancholic films. Lower Story score likely.</div>
     </div>`;
 
-  // ── Recommendation card ──
+  // ══ TERTIARY: Recommendation card — smaller, tucked ══
   const reco = `
     <div class="tab-panel tab-reco">
       <div style="position:relative">
-        ${posterImg(posters.handmaiden, 'The Handmaiden', 148, 222)}
-        <div style="position:absolute;top:8px;right:8px;${mono};font-size:10px;color:${blue};background:rgba(0,0,0,0.8);border:0.5px solid rgba(61,90,128,0.35);padding:3px 8px;letter-spacing:0.5px">87</div>
-        <div style="position:absolute;bottom:0;left:0;right:0;padding:12px;background:linear-gradient(transparent,rgba(0,0,0,0.9))">
-          <div style="${mono};font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:${blue};margin-bottom:3px">For you</div>
-          <div style="${mono};font-size:9px;color:#999">The Handmaiden</div>
+        ${posterImg(posters.handmaiden, 'The Handmaiden', 130, 195)}
+        <div style="position:absolute;inset:0;background:linear-gradient(transparent 30%,rgba(0,0,0,0.88));display:flex;flex-direction:column;justify-content:flex-end;padding:10px">
+          <div style="${mono};font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:${blue};margin-bottom:4px">Taste match</div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <div style="${mono};font-size:8px;color:#ccc">The Handmaiden</div>
+            <div style="${serif};font-weight:900;font-size:18px;color:${blue};letter-spacing:-0.5px">92</div>
+          </div>
         </div>
       </div>
     </div>`;
 
-  // ── Taste insight chip ──
-  const insight = `
-    <div class="tab-panel tab-insight">
-      <div style="display:flex;align-items:center;gap:8px">
-        <div style="width:6px;height:6px;border-radius:50%;background:${blue}"></div>
-        <div style="${mono};font-size:10px;color:#e8e2d6;letter-spacing:0.3px">Studied Narrativist</div>
+  // ══ INPUT: Anchor film card — starting point ══
+  const anchor = `
+    <div class="tab-panel tab-anchor">
+      <div style="position:relative">
+        ${posterImg(posters.parasite, 'Parasite', 122, 183)}
+        <div style="position:absolute;inset:0;background:linear-gradient(transparent 45%,rgba(0,0,0,0.85));display:flex;flex-direction:column;justify-content:flex-end;padding:10px">
+          <div style="${mono};font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:#888;margin-bottom:3px">Your film</div>
+          <div style="${mono};font-size:8px;color:#ccc">Parasite</div>
+        </div>
       </div>
-      <div style="${mono};font-size:8px;color:#555;margin-top:5px;padding-left:14px">story-driven · high hold · atmospheric</div>
     </div>`;
 
-  return main + predict + reco + insight;
+  return main + predict + reco + anchor;
 }
 
 function buildSystemVisuals() {
