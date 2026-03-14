@@ -289,6 +289,7 @@ function buildCarouselCards() {
 
   const card0 = document.getElementById('carousel-card-0');
   if (card0) card0.innerHTML = `
+    <div class="carousel-headline">See exactly how a film hits you — not one number, eight.</div>
     <div class="card-film-header">
       <img class="card-poster" src="${posters.parasite}" alt="Parasite" width="80" height="120" loading="lazy">
       <div>
@@ -348,7 +349,7 @@ function buildCarouselCards() {
     const sarahTarget = sarahVals.map((v, i) => overlapPolar(i, v).join(',')).join(' ');
 
     card1.innerHTML = `
-      <div class="card-overlap-label">— taste overlap —</div>
+      <div class="carousel-headline">Compare your taste architecture with anyone.</div>
       <div class="card-overlap-header">
         <div class="card-avatar-wrap">
           <div class="card-avatar"><span class="card-avatar-letter">You</span></div>
@@ -407,7 +408,7 @@ function buildCarouselCards() {
 
   const card2 = document.getElementById('carousel-card-2');
   if (card2) card2.innerHTML = `
-    <div class="card-foryou-label">— for you —</div>
+    <div class="carousel-headline">Recommendations that explain themselves.</div>
     <div class="card-foryou-context">Based on your palate: Studied Narrativist · story-driven · high hold</div>
     <div class="card-rec-grid">${recCards}</div>
     <div class="carousel-foryou-detail">

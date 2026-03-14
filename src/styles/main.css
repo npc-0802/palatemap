@@ -631,6 +631,16 @@ body {
 }
 .cold-carousel-dot:hover { border-color: rgba(244, 239, 230, 0.5); }
 
+/* Carousel headline */
+.carousel-headline {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--on-dark);
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
 /* Shared card elements */
 .card-film-header {
   display: flex;

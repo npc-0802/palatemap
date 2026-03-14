@@ -38,8 +38,8 @@ test.describe('Cold landing page', () => {
 
   test('carousel card 3 has recommendation content', async ({ page }) => {
     // Verify card 3 was populated by JS (content exists even if off-screen)
-    const label = page.locator('#carousel-card-2 .card-foryou-label');
-    await expect(label).toHaveCount(1);
+    const headline = page.locator('#carousel-card-2 .carousel-headline');
+    await expect(headline).toHaveCount(1);
     const recCards = page.locator('#carousel-card-2 .carousel-rec-card');
     await expect(recCards).toHaveCount(4);
   });
