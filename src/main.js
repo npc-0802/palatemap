@@ -153,9 +153,9 @@ function animateCard(n) {
     const compat = card.querySelector('.card-compat-score');
     const youPoly = card.querySelector('.card-overlap-you');
     const sarahPoly = card.querySelector('.card-overlap-sarah');
-    const stats = card.querySelector('.card-overlap-stats');
-    const corated = card.querySelectorAll('.card-corated');
-    const insight = card.querySelector('.card-insight');
+    const stats = card.querySelector('.carousel-friends-stats');
+    const corated = card.querySelectorAll('.carousel-friends-film');
+    const insight = card.querySelector('.carousel-friends-insight');
     const center = youPoly ? youPoly.getAttribute('points').split(' ').slice(0, 8).join(' ') : '';
 
     // Reset
@@ -164,7 +164,9 @@ function animateCard(n) {
     if (sarahPoly) sarahPoly.setAttribute('points', center);
     if (stats) stats.style.opacity = '0';
     corated.forEach(c => c.style.opacity = '0');
-    if (insight) insight.classList.remove('visible');
+    if (insight) insight.style.opacity = '0';
+    const predict = card.querySelector('.carousel-friends-bottom');
+    if (predict) predict.style.opacity = '0';
 
     if (prefersReduced) {
       if (compat) compat.classList.add('visible');
@@ -172,7 +174,8 @@ function animateCard(n) {
       if (sarahPoly) sarahPoly.setAttribute('points', sarahPoly.dataset.target);
       if (stats) stats.style.opacity = '1';
       corated.forEach(c => c.style.opacity = '1');
-      if (insight) insight.classList.add('visible');
+      if (insight) insight.style.opacity = '1';
+      if (predict) predict.style.opacity = '1';
       if (headline) headline.classList.add('visible');
       return;
     }
@@ -182,8 +185,9 @@ function animateCard(n) {
     if (sarahPoly) animatePolygon(sarahPoly, 1300, 800);
     setTimeout(() => { if (stats) stats.style.transition = 'opacity 0.5s ease'; stats.style.opacity = '1'; }, 1200);
     corated.forEach((c, i) => setTimeout(() => { c.style.transition = 'opacity 0.5s ease'; c.style.opacity = '1'; }, 1400 + i * 100));
-    setTimeout(() => { if (insight) insight.classList.add('visible'); }, 1600);
-    setTimeout(() => { if (headline) headline.classList.add('visible'); }, 1900);
+    setTimeout(() => { if (insight) insight.style.transition = 'opacity 0.5s ease'; insight.style.opacity = '1'; }, 1600);
+    setTimeout(() => { if (predict) predict.style.transition = 'opacity 0.6s ease'; predict.style.opacity = '1'; }, 1700);
+    setTimeout(() => { if (headline) headline.classList.add('visible'); }, 2000);
     return;
   }
 
@@ -387,8 +391,8 @@ function buildCarouselCards() {
           <div class="card-avatar-name">Sarah</div>
         </div>
       </div>
-      <div class="card2-columns">
-        <div class="card2-left">
+      <div class="carousel-friends-top">
+        <div class="carousel-friends-top-left">
           <div class="card-overlap-radar">
             <svg viewBox="0 0 200 200" width="160" height="160" class="card-overlap-svg">
               ${oRings}${oAxes}${oLabels}
@@ -396,30 +400,36 @@ function buildCarouselCards() {
               <polygon class="card-overlap-sarah" points="${youCenter}" data-target="${sarahTarget}" fill="rgba(212,168,75,0.12)" stroke="#D4A84B" stroke-width="1.5" stroke-dasharray="4 3"/>
             </svg>
           </div>
-          <div class="card-overlap-stats">Weights: 81% · Scores: 64%</div>
-          <div class="card-corated">
-            <span class="card-corated-title">Moonlight</span>
-            <span>You: <span class="card-corated-you">88</span> Sarah: <span class="card-corated-them">91</span></span>
-          </div>
-          <div class="card-corated">
-            <span class="card-corated-title">Tenet</span>
-            <span>You: <span class="card-corated-you">52</span> Sarah: <span class="card-corated-them">78</span></span>
-          </div>
         </div>
-        <div class="card2-right">
-          <div class="carousel-overlap-predict-label">overlap predict</div>
-          <div class="carousel-overlap-predict-header">
-            <img src="https://image.tmdb.org/t/p/w154/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg" alt="Oppenheimer" class="carousel-overlap-predict-poster">
-            <div class="carousel-overlap-predict-film">Oppenheimer</div>
+        <div class="carousel-friends-top-right">
+          <div class="carousel-friends-stats">Weights: 81% · Scores: 64%</div>
+          <div class="carousel-friends-film">
+            <span>Moonlight</span>
+            <span>You: <span style="color:var(--blue)">88</span> Sarah: <span style="color:#D4A84B">91</span></span>
           </div>
-          <div class="carousel-overlap-predict-scores">
-            <div class="carousel-overlap-predict-user"><span class="carousel-overlap-predict-name">You'd give it</span><span class="carousel-overlap-predict-score" style="color:var(--blue)">84</span></div>
-            <div class="carousel-overlap-predict-user"><span class="carousel-overlap-predict-name">Sarah'd give it</span><span class="carousel-overlap-predict-score" style="color:#D4A84B">71</span></div>
+          <div class="carousel-friends-film">
+            <span>Tenet</span>
+            <span>You: <span style="color:var(--blue)">52</span> Sarah: <span style="color:#D4A84B">78</span></span>
           </div>
-          <div class="carousel-overlap-predict-reason">You'd love the Craft and World. Sarah would find it slow — low Experience for her palate.</div>
+          <div class="carousel-friends-insight">You both care about performances. You disagree on whether craft alone is enough.</div>
         </div>
       </div>
-      <div class="card-insight">You both care about performances. You disagree on whether craft alone is enough.</div>`;
+      <div class="card-rule"></div>
+      <div class="carousel-friends-bottom">
+        <div class="carousel-friends-predict-label">— overlap predict —</div>
+        <div class="carousel-friends-predict-main">
+          <img src="https://image.tmdb.org/t/p/w154/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg" alt="Oppenheimer" class="carousel-friends-predict-poster">
+          <div>
+            <div class="carousel-friends-predict-title">Oppenheimer</div>
+            <div class="carousel-friends-predict-meta">2023 · Christopher Nolan</div>
+          </div>
+        </div>
+        <div class="carousel-friends-predict-scores">
+          <div class="carousel-friends-predict-user"><span class="carousel-friends-predict-name">You'd give it</span><span class="carousel-friends-predict-number" style="color:var(--blue)">84</span></div>
+          <div class="carousel-friends-predict-user"><span class="carousel-friends-predict-name">Sarah'd give it</span><span class="carousel-friends-predict-number" style="color:#D4A84B">71</span></div>
+        </div>
+        <div class="carousel-friends-predict-reason">You'd love the Craft and World. Sarah would find it slow — low Experience for her palate.</div>
+      </div>`;
   }
 
   // ── Card 3: For You Recommendations ──

@@ -615,7 +615,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  padding: 14px 0 4px;
+  padding: 14px 0 8px;
+  background: #0c0b09;
+  border-radius: 0 0 8px 8px;
 }
 .cold-carousel-arrow {
   background: none;
@@ -948,21 +950,111 @@ body {
   font-size: 20px;
   color: #555;
 }
-/* Card 2 two-column layout */
-.card2-columns {
+/* Card 2: Friends top half — radar left, stats right */
+.carousel-friends-top {
   display: flex;
-  gap: 16px;
+  gap: 20px;
   align-items: flex-start;
 }
-.card2-left {
+.carousel-friends-top-left {
   flex: 1;
   min-width: 0;
 }
-.card2-right {
-  flex: 0 0 45%;
+.carousel-friends-top-right {
+  flex: 1;
   min-width: 0;
-  padding-left: 12px;
-  border-left: 0.5px solid rgba(244, 239, 230, 0.08);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.carousel-friends-stats {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--on-dark-dim);
+  margin-bottom: 14px;
+}
+.carousel-friends-film {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--on-dark);
+  margin-bottom: 6px;
+}
+.carousel-friends-insight {
+  font-family: 'DM Sans', sans-serif;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--on-dark-dim);
+  line-height: 1.5;
+  margin-top: 12px;
+}
+/* Card 2: Friends bottom half — full-width predict */
+.carousel-friends-bottom {
+  flex: 1;
+}
+.carousel-friends-predict-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--on-dark-dim);
+  margin-bottom: 14px;
+}
+.carousel-friends-predict-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.carousel-friends-predict-poster {
+  width: 56px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.carousel-friends-predict-title {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--on-dark);
+}
+.carousel-friends-predict-meta {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--on-dark-dim);
+  margin-top: 4px;
+}
+.carousel-friends-predict-scores {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 14px;
+}
+.carousel-friends-predict-user {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.carousel-friends-predict-name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--on-dark-dim);
+}
+.carousel-friends-predict-number {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 32px;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+.carousel-friends-predict-reason {
+  font-family: 'DM Sans', sans-serif;
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--on-dark-dim);
 }
 .card-overlap-radar {
   display: flex;
@@ -1115,67 +1207,6 @@ body {
   color: var(--on-dark-dim);
   font-style: italic;
 }
-
-/* Card 2: Overlap Predict */
-.carousel-overlap-predict-label {
-  font-family: 'DM Mono', monospace;
-  font-size: 8px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--on-dark-dim);
-  margin-bottom: 10px;
-}
-.carousel-overlap-predict-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-.carousel-overlap-predict-poster {
-  width: 40px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-.carousel-overlap-predict-film {
-  font-family: 'Playfair Display', serif;
-  font-style: italic;
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--on-dark);
-}
-.carousel-overlap-predict-scores {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 10px;
-}
-.carousel-overlap-predict-user {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-}
-.carousel-overlap-predict-name {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 11px;
-  color: var(--on-dark-dim);
-}
-.carousel-overlap-predict-score {
-  font-family: 'Playfair Display', serif;
-  font-style: italic;
-  font-size: 22px;
-  letter-spacing: -1px;
-  line-height: 1;
-}
-.carousel-overlap-predict-reason {
-  font-family: 'DM Sans', sans-serif;
-  font-style: italic;
-  font-size: 11px;
-  line-height: 1.45;
-  color: var(--on-dark-dim);
-}
-
 
 /* ── System Section ── */
 .cold-system {
@@ -1507,8 +1538,8 @@ body {
   .cold-h1 { font-size: clamp(36px, 10vw, 56px); }
   .cold-cta-stack { max-width: 100%; }
   .cold-carousel-card { padding: 22px 20px; }
-  .card2-columns { flex-direction: column; gap: 12px; }
-  .card2-right { flex: none; padding-left: 0; border-left: none; padding-top: 10px; border-top: 0.5px solid rgba(244, 239, 230, 0.08); }
+  .carousel-friends-top { flex-direction: column; gap: 12px; }
+  .carousel-friends-predict-scores { gap: 24px; }
   .cold-system { padding: 64px 0; }
   .cold-system-inner { padding: 0 32px; }
   .cold-system-grid {
