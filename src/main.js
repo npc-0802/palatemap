@@ -140,10 +140,65 @@ function animateCard(n) {
   if (!card) return;
   const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Reset fills to 0 for re-animation
-  const fills = card.querySelectorAll('.card-bar-fill, .card-contrast-bar-fill');
+  if (n === 1) {
+    // Card 2: Friends Overlap — animate radar polygons
+    const compat = card.querySelector('.card-compat-score');
+    const youPoly = card.querySelector('.card-overlap-you');
+    const sarahPoly = card.querySelector('.card-overlap-sarah');
+    const stats = card.querySelector('.card-overlap-stats');
+    const corated = card.querySelectorAll('.card-corated');
+    const insight = card.querySelector('.card-insight');
+    const center = youPoly ? youPoly.getAttribute('points').split(' ').slice(0, 8).join(' ') : '';
+
+    // Reset
+    if (compat) compat.classList.remove('visible');
+    if (youPoly) youPoly.setAttribute('points', center);
+    if (sarahPoly) sarahPoly.setAttribute('points', center);
+    if (stats) stats.style.opacity = '0';
+    corated.forEach(c => c.style.opacity = '0');
+    if (insight) insight.classList.remove('visible');
+
+    if (prefersReduced) {
+      if (compat) compat.classList.add('visible');
+      if (youPoly) youPoly.setAttribute('points', youPoly.dataset.target);
+      if (sarahPoly) sarahPoly.setAttribute('points', sarahPoly.dataset.target);
+      if (stats) stats.style.opacity = '1';
+      corated.forEach(c => c.style.opacity = '1');
+      if (insight) insight.classList.add('visible');
+      return;
+    }
+
+    setTimeout(() => { if (compat) compat.classList.add('visible'); }, 300);
+    // Animate you polygon
+    if (youPoly) animatePolygon(youPoly, 500, 800);
+    // Animate sarah polygon after
+    if (sarahPoly) animatePolygon(sarahPoly, 1300, 800);
+    setTimeout(() => { if (stats) stats.style.transition = 'opacity 0.5s ease'; stats.style.opacity = '1'; }, 1200);
+    corated.forEach((c, i) => setTimeout(() => { c.style.transition = 'opacity 0.5s ease'; c.style.opacity = '1'; }, 1400 + i * 100));
+    setTimeout(() => { if (insight) insight.classList.add('visible'); }, 1600);
+    return;
+  }
+
+  if (n === 2) {
+    // Card 3: For You — stagger rec cards
+    const recCards = card.querySelectorAll('.carousel-rec-card');
+    recCards.forEach(c => c.classList.remove('visible'));
+
+    if (prefersReduced) {
+      recCards.forEach(c => c.classList.add('visible'));
+      return;
+    }
+
+    recCards.forEach((c, i) => {
+      setTimeout(() => c.classList.add('visible'), 300 + i * 150);
+    });
+    return;
+  }
+
+  // Card 1: Score — original bar animation
+  const fills = card.querySelectorAll('.card-bar-fill');
   const values = card.querySelectorAll('.card-bar-value');
-  const reveals = card.querySelectorAll('.card-archetype, .card-total, .card-pred-score, .card-insight');
+  const reveals = card.querySelectorAll('.card-archetype, .card-total');
 
   fills.forEach(f => { f.style.width = '0%'; });
   values.forEach(v => v.classList.remove('visible'));
@@ -156,7 +211,7 @@ function animateCard(n) {
     return;
   }
 
-  const delay = n === 0 && !card.dataset.animated ? 300 : 100;
+  const delay = !card.dataset.animated ? 300 : 100;
   card.dataset.animated = '1';
 
   fills.forEach((f, i) => {
@@ -170,6 +225,32 @@ function animateCard(n) {
   reveals.forEach((r, i) => {
     setTimeout(() => r.classList.add('visible'), revealStart + i * 150);
   });
+}
+
+function animatePolygon(poly, startDelay, duration) {
+  const target = poly.dataset.target;
+  if (!target) return;
+  const targetPts = target.split(' ').map(p => p.split(',').map(Number));
+  const n = targetPts.length;
+  // Start from center (current points)
+  const current = poly.getAttribute('points').split(' ').map(p => p.split(',').map(Number));
+  const cx = current[0][0], cy = current[0][1];
+
+  setTimeout(() => {
+    const start = performance.now();
+    function frame(now) {
+      const t = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      const pts = targetPts.map(([tx, ty], i) => {
+        const stagger = Math.min(1, Math.max(0, (t * n - i * 0.3) / (n * 0.7)));
+        const e = 1 - Math.pow(1 - stagger, 3);
+        return `${cx + (tx - cx) * e},${cy + (ty - cy) * e}`;
+      }).join(' ');
+      poly.setAttribute('points', pts);
+      if (t < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }, startDelay);
 }
 
 function initTableau() {
@@ -186,8 +267,6 @@ function initTableau() {
 function buildCarouselCards() {
   const posters = {
     parasite: 'https://image.tmdb.org/t/p/w154/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg',
-    lost: 'https://image.tmdb.org/t/p/w154/4GDy0PHYX3VRXUtwK5ysFbg3kEx.jpg',
-    blade: 'https://image.tmdb.org/t/p/w154/gajva2L0rPYkEWjzgFlBXCAVBE5.jpg',
   };
 
   // ── Card 1: Score ──
@@ -225,70 +304,93 @@ function buildCarouselCards() {
       </div>
     </div>`;
 
-  // ── Card 2: Contrast ──
-  const abbr = ['Story','Craft','Perf','World','Exp','Hold','End','Sing'];
-  const parasiteVals = [92,88,80,70,85,90,97,82];
-  const bladeVals = [55,95,65,98,72,88,60,90];
-  const leftBars = abbr.map((l, i) => `
-    <div class="card-contrast-bar">
-      <span class="card-contrast-bar-label">${l}</span>
-      <div class="card-contrast-bar-track"><div class="card-contrast-bar-fill" data-target="${parasiteVals[i]}" style="width:0%;background:#3D5A80"></div></div>
-    </div>`).join('');
-  const rightBars = abbr.map((l, i) => `
-    <div class="card-contrast-bar">
-      <span class="card-contrast-bar-label">${l}</span>
-      <div class="card-contrast-bar-track"><div class="card-contrast-bar-fill" data-target="${bladeVals[i]}" style="width:0%;background:#D4A84B"></div></div>
-    </div>`).join('');
-
+  // ── Card 2: Friends Overlap ──
   const card1 = document.getElementById('carousel-card-1');
-  if (card1) card1.innerHTML = `
-    <div class="card-section-label">Your taste isn't one thing</div>
-    <div class="card-contrast-grid">
-      <div class="card-contrast-col">
-        <img class="card-contrast-poster" src="${posters.parasite}" alt="Parasite" loading="lazy">
-        <div class="card-contrast-title">Parasite</div>
-        ${leftBars}
-        <div class="card-contrast-mode" style="color:#3D5A80">story-driven</div>
-      </div>
-      <div class="card-contrast-divider"></div>
-      <div class="card-contrast-col">
-        <img class="card-contrast-poster" src="${posters.blade}" alt="Blade Runner 2049" loading="lazy">
-        <div class="card-contrast-title">Blade Runner 2049</div>
-        ${rightBars}
-        <div class="card-contrast-mode" style="color:#D4A84B">world-driven</div>
-      </div>
-    </div>
-    <div class="card-insight">Two films you love. Two completely different engines.</div>`;
+  if (card1) {
+    const labels = ['Story','Craft','Perf','World','Exp','Hold','End','Sing'];
+    const youVals = [0.85, 0.70, 0.90, 0.55, 0.88, 0.82, 0.78, 0.60];
+    const sarahVals = [0.65, 0.92, 0.88, 0.80, 0.70, 0.60, 0.55, 0.85];
+    const n = 8, ocx = 100, ocy = 100, or = 80;
 
-  // ── Card 3: Prediction ──
-  const predCats = [
-    ['Story', 62], ['Craft', 79], ['Performances', 71], ['World', 91],
-    ['Experience', 78], ['Hold', 75], ['Ending', 68], ['Singularity', 81]
+    function overlapPolar(idx, val) {
+      const angle = (Math.PI * 2 * idx / n) - Math.PI / 2;
+      return [ocx + or * val * Math.cos(angle), ocy + or * val * Math.sin(angle)];
+    }
+
+    const oRings = [0.33, 0.66, 1.0].map(level => {
+      const pts = Array.from({length: n}, (_, i) => overlapPolar(i, level).join(',')).join(' ');
+      return `<polygon points="${pts}" fill="none" stroke="rgba(244,239,230,0.06)" stroke-width="0.5"/>`;
+    }).join('');
+
+    const oAxes = Array.from({length: n}, (_, i) => {
+      const [ex, ey] = overlapPolar(i, 1);
+      return `<line x1="${ocx}" y1="${ocy}" x2="${ex}" y2="${ey}" stroke="rgba(244,239,230,0.06)" stroke-width="0.5"/>`;
+    }).join('');
+
+    const oLabels = labels.map((l, i) => {
+      const [lx, ly] = overlapPolar(i, 1.22);
+      const anchor = lx < ocx - 5 ? 'end' : lx > ocx + 5 ? 'start' : 'middle';
+      return `<text x="${lx}" y="${ly}" text-anchor="${anchor}" dominant-baseline="central" font-family="'DM Mono',monospace" font-size="8" fill="#555">${l}</text>`;
+    }).join('');
+
+    const youCenter = Array.from({length: n}, () => `${ocx},${ocy}`).join(' ');
+    const youTarget = youVals.map((v, i) => overlapPolar(i, v).join(',')).join(' ');
+    const sarahTarget = sarahVals.map((v, i) => overlapPolar(i, v).join(',')).join(' ');
+
+    card1.innerHTML = `
+      <div class="card-overlap-label">— taste overlap —</div>
+      <div class="card-overlap-header">
+        <div style="text-align:center">
+          <div class="card-avatar"><span class="card-avatar-letter">You</span></div>
+        </div>
+        <div class="card-compat-score">73<span class="card-compat-pct">%</span></div>
+        <div style="text-align:center">
+          <div class="card-avatar"><span class="card-avatar-letter">S</span></div>
+          <div class="card-avatar-name">Sarah</div>
+        </div>
+      </div>
+      <div class="card-overlap-radar">
+        <svg viewBox="0 0 200 200" width="200" height="200" class="card-overlap-svg">
+          ${oRings}${oAxes}${oLabels}
+          <polygon class="card-overlap-you" points="${youCenter}" data-target="${youTarget}" fill="rgba(61,90,128,0.12)" stroke="#3d5a80" stroke-width="1.5"/>
+          <polygon class="card-overlap-sarah" points="${youCenter}" data-target="${sarahTarget}" fill="rgba(212,168,75,0.12)" stroke="#D4A84B" stroke-width="1.5" stroke-dasharray="4 3"/>
+        </svg>
+      </div>
+      <div class="card-overlap-stats">Weights: 81% · Scores: 64%</div>
+      <div class="card-corated">
+        <span class="card-corated-title">Moonlight</span>
+        <span>You: <span class="card-corated-you">88</span> Sarah: <span class="card-corated-them">91</span></span>
+      </div>
+      <div class="card-corated">
+        <span class="card-corated-title">Tenet</span>
+        <span>You: <span class="card-corated-you">52</span> Sarah: <span class="card-corated-them">78</span></span>
+      </div>
+      <div class="card-insight">You both care about performances. You disagree on whether craft alone is enough.</div>`;
+  }
+
+  // ── Card 3: For You Recommendations ──
+  const recs = [
+    { title: 'The Handmaiden', poster: 'https://image.tmdb.org/t/p/w154/gCgt1WARPmhOwiMEpLDqU59vfAn.jpg', score: 87, source: 'World + Singularity', isNew: true },
+    { title: 'Arrival', poster: 'https://image.tmdb.org/t/p/w154/x2FJsf1ElAgr63Y3PNPtJrcmpoe.jpg', score: 84, source: 'Director affinity' },
+    { title: 'In the Mood for Love', poster: 'https://image.tmdb.org/t/p/w154/iYypPT4bhqXfq1b6sFBxMNEHlTp.jpg', score: 82, source: 'High predicted Hold' },
+    { title: 'Moonlight', poster: 'https://image.tmdb.org/t/p/w154/d5NXSklXo0qyIYkgV94XAgMIckC.jpg', score: 89, source: 'Performance + Ending' },
   ];
-  const predBars = predCats.map(([l, v]) => `
-    <div class="card-bar-row">
-      <span class="card-bar-label">${l}</span>
-      <div class="card-bar-track"><div class="card-bar-fill predicted" data-target="${v}" style="width:0%"></div></div>
-      <span class="card-bar-value">${v}</span>
+  const recCards = recs.map(r => `
+    <div class="carousel-rec-card">
+      <div style="position:relative">
+        ${r.isNew ? `<div class="carousel-rec-new"><svg width="8" height="8" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="#6dbf8b" stroke-width="1.2"/><path d="M7 2.5L8 5.5L11 7L8 8.5L7 11.5L6 8.5L3 7L6 5.5z" fill="#6dbf8b" opacity="0.7"/></svg><span style="font-family:'DM Mono',monospace;font-size:7px;color:#6dbf8b;letter-spacing:0.5px">NEW</span></div>` : ''}
+        <div class="carousel-rec-score">${r.score}</div>
+        <img src="${r.poster}" alt="${r.title}" loading="lazy">
+      </div>
+      <div class="carousel-rec-title">${r.title}</div>
+      <div class="carousel-rec-source">${r.source}</div>
     </div>`).join('');
 
   const card2 = document.getElementById('carousel-card-2');
   if (card2) card2.innerHTML = `
-    <div class="card-section-label">— We predict you'd give this —</div>
-    <div class="card-film-header">
-      <img class="card-poster" src="${posters.lost}" alt="Lost in Translation" width="80" height="120" loading="lazy">
-      <div>
-        <div class="card-film-title">Lost in Translation</div>
-        <div class="card-film-meta">2003 · Sofia Coppola</div>
-      </div>
-    </div>
-    <div style="margin-top:16px">
-      <div class="card-pred-score">78</div>
-      <div class="card-pred-label">predicted score</div>
-    </div>
-    <div class="card-rule"></div>
-    <div class="card-bars">${predBars}</div>
-    <div class="card-insight">Strong World match — you love atmospheric, melancholic films. Lower Story — you need more narrative drive.</div>`;
+    <div class="card-foryou-label">— for you —</div>
+    <div class="card-foryou-context">Based on your palate: Studied Narrativist · story-driven · high hold</div>
+    <div class="card-rec-grid">${recCards}</div>`;
 }
 
 function buildSystemVisuals() {

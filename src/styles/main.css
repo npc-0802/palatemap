@@ -582,6 +582,7 @@ body {
   position: relative;
   overflow: hidden;
   border-radius: 8px;
+  min-height: 420px;
   box-shadow:
     0 1px 2px rgba(0,0,0,0.06),
     0 8px 24px rgba(0,0,0,0.1),
@@ -593,9 +594,12 @@ body {
 }
 .cold-carousel-card {
   min-width: 100%;
+  min-height: 420px;
   box-sizing: border-box;
   background: #0c0b09;
   padding: 32px 36px 28px;
+  display: flex;
+  flex-direction: column;
 }
 .cold-carousel-dots {
   display: flex;
@@ -830,6 +834,158 @@ body {
   margin-top: 8px;
 }
 
+/* Card 2: Friends Overlap */
+.card-overlap-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #837A6A;
+  margin-bottom: 16px;
+}
+.card-overlap-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.card-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 0.5px solid #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+.card-avatar-letter {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: #999;
+}
+.card-avatar-name {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: #666;
+  margin-top: 4px;
+  text-align: center;
+}
+.card-compat-score {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 900;
+  font-size: 44px;
+  color: var(--blue);
+  line-height: 1;
+  letter-spacing: -1px;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.card-compat-score.visible { opacity: 1; }
+.card-compat-pct {
+  font-size: 20px;
+  color: #555;
+}
+.card-overlap-radar {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 12px;
+}
+.card-overlap-stats {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: #666;
+  text-align: center;
+  margin-bottom: 12px;
+}
+.card-corated {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: #999;
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+.card-corated-title { color: #ccc; }
+.card-corated-you { color: var(--blue); }
+.card-corated-them { color: #D4A84B; }
+
+/* Card 3: For You Recs */
+.card-foryou-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 8px;
+}
+.card-foryou-context {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: #837A6A;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+.card-rec-grid {
+  display: flex;
+  gap: 10px;
+}
+.carousel-rec-card {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.carousel-rec-card.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.carousel-rec-card img {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  display: block;
+  border-radius: 2px;
+}
+.carousel-rec-score {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.75);
+  border: 0.5px solid var(--blue);
+  padding: 2px 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--blue);
+}
+.carousel-rec-new {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 2px 6px;
+}
+.carousel-rec-title {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 11px;
+  color: #ccc;
+  margin-top: 6px;
+}
+.carousel-rec-source {
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  color: #555;
+  margin-top: 2px;
+}
+
 /* ── System Section ── */
 .cold-system {
   background: #0c0b09;
@@ -1037,23 +1193,29 @@ body {
 }
 .cold-ticker-headline {
   text-align: center;
-  font-family: 'DM Mono', monospace;
-  font-size: 16px;
-  letter-spacing: 1px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--dim);
+  padding: 24px 0 16px;
+  letter-spacing: 0.2px;
+}
+.cold-ticker-headline strong {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
   color: var(--ink);
-  padding: 28px 0 16px;
 }
 .cold-ticker-headline em {
   font-family: 'Playfair Display', serif;
   font-style: italic;
   font-weight: 700;
-  font-size: 20px;
-  letter-spacing: 0;
+  font-size: 18px;
+  color: var(--ink);
+  letter-spacing: -0.3px;
 }
 .cold-ticker-wrap {
   overflow: hidden;
   padding: 12px 0 24px;
-  border-top: 1px solid var(--rule);
   mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
   -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
 }
@@ -1160,8 +1322,8 @@ body {
     grid-template-columns: 1fr;
     gap: 48px;
   }
-  .cold-ticker-headline { font-size: 14px; padding: 20px 0 12px; }
-  .cold-ticker-headline em { font-size: 17px; }
+  .cold-ticker-headline { font-size: 13px; padding: 18px 0 10px; }
+  .cold-ticker-headline em { font-size: 15px; }
   .sys-radar-svg { width: 240px; height: 240px; }
   .sys-rate-scroll { height: 260px; }
 }
