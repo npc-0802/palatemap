@@ -1,5 +1,5 @@
 Palate Map
-Product Brief · Living Document · v3.27
+Product Brief · Living Document · v3.28
 Last updated: March 2026
 Confidential — do not distribute
 
@@ -224,8 +224,15 @@ Left column: 4 numbered value props with blue number markers (01–04): "Your fo
 Right column: dark surface card ("Your taste has a shape. Let's find it." + brand copy), Google sign-in button, "or" divider, "Continue with email →" (persimmon), Log in / Import links in readable on-dark contrast. Card stretches to match left column height. Footer: "Starting with film. Expanding to everything."
 
 Onboarding (3 entry points)
-New user: cold landing → auth step (Google OAuth primary, or name + email → magic link) → adaptive quiz (3–5 questions, Bayesian selection from 15-question bank, stops when uncertainty is sufficiently reduced) → palate type reveal (dark surface: full name + description + quote + secondary + username) → "See what your palate says →" → starter films → curtain lift → main app.
-Starter films: after archetype reveal, presents a curated grid of 10 films selected for the user's palate type (from starter-films.js, 9 archetypes × 10 films + 10 universal fallbacks). 4-column desktop grid, 2-column mobile. Films are genre-grouped ("Dramas & thrillers" / "Sci-fi, animation & more") — but if either group would have fewer than 2 films, all are shown under a single "Selected for you" label instead. Each card shows poster (2:3 aspect ratio, object-fit cover). Tapping a card inserts an inline rate card immediately below the clicked poster (using grid-column: 1/-1 to span full width), preserving spatial continuity. 2-column slider layout with quiz-derived weighted defaults. After rating, auto-scrolls back to top of the overlay. Progress bar tracks rated count. "Show more" reveals additional films. Skip available at any point. Cross-fade animation between reveal and starters steps.
+New user: cold landing → auth step (Google OAuth primary, or name + email → magic link) → adaptive quiz (3–5 questions, Bayesian selection from 15-question bank, stops when uncertainty is sufficiently reduced) → palate type reveal (dark surface: full name + description + quote + secondary + username) → "See what your palate says →" → guided starter films (5 films, full slider scoring) → transition screen ("Good start.") → film selection grid (pick 5+ from 41 curated films) → pairwise calibration (~30 comparisons) → taste reveal (confidence-weighted radar, archetype, stats) → "Enter Palate Map →" → curtain lift → main app with welcome banner.
+Guided starter films (Phase 1): after archetype reveal, presents a curated grid of 10 films selected for the user's palate type (from starter-films.js, 9 archetypes × 10 films + 10 universal fallbacks). 4-column desktop grid, 2-column mobile. Films are genre-grouped ("Dramas & thrillers" / "Sci-fi, animation & more") — but if either group would have fewer than 2 films, all are shown under a single "Selected for you" label instead. Each card shows poster (2:3 aspect ratio, object-fit cover). Tapping a card inserts an inline rate card immediately below the clicked poster (using grid-column: 1/-1 to span full width), preserving spatial continuity. 2-column slider layout with quiz-derived weighted defaults. After rating, auto-scrolls back to top of the overlay. Progress bar tracks rated count. "Show more" reveals additional films. Skip available at any point. Cross-fade animation between reveal and starters steps. After 5 films are rated, user advances to transition screen (no more starter film scoring).
+Transition screen: "Good start." with subtext "Now let's see how your taste compares." Persimmon "Let's go →" CTA. Progress bar updates to step 3 of 5.
+Film selection grid (Phase 2): 41 curated films (selection-films.js) spanning diverse genres, decades, and cultures. 4-column poster grid with unchecked-state circle indicators (bottom-right). Tapping toggles selection (persimmon checkmark replaces circle). Sticky bottom bank shows selected film posters as thumbnails with × remove. Minimum 5 films required, "Show me some more" reveals additional rows (8 at a time). TMDB search bar for adding films not in the curated grid. "Continue →" button advances to calibration when ≥5 films selected.
+Pairwise calibration (Phase 2): bracket-based comparative scoring. Categories selected by variance (discrimination) across the 5 guided anchor films, not by mean. Top 2 categories get 2 comparisons each (high + mid bracket anchor), next 2 get 1 comparison each (mid anchor). ~30 total comparisons. Each comparison: "Which film does [category question] better?" with two poster cards + "About the same" option + "Skip" option. Progress counter shows "Question X of Y".
+Calibration math: deterministic interval inference per category per film. `estimateCategoryScore()` computes bounds from beaten/lost anchor scores, with 5 bound cases (both→midpoint, lower only→+35% headroom, upper only→-35% floor, crossed→midpoint, none→prior). Confidence alpha: bracket=0.7, multi-one-sided=0.55, single=0.35, none=0.0. Final score = alpha × raw + (1−alpha) × prior, clamped 20–98. Two-pass scoring: covered categories first, then uncovered categories with 10% coherence nudge toward covered-category average. Calibrated films carry metadata: `calibration_source: 'pairwise_onboarding_v2'`, `calibration_confidence` (per-category alpha map), `calibration_comp_count` (per-category comparison count).
+Taste reveal: confidence-weighted averages across all 10 films (5 anchors at weight 1.0, 5 calibrated at per-category alpha, UI floor of 0.15 for reveal display only). Dark surface. Animated radar chart (8 categories). Archetype name + description. Category stats showing strongest/weakest. "Enter Palate Map →" CTA. Passes shaped weights and archetype classification to obFinish() (not flat defaults).
+Welcome banner: appears on For You screen after onboarding. Shows user name, archetype, and action chips ("Rate a film", "Get a prediction", "Find friends"). Dismissible via × (localStorage flag `pm_welcome_banner_dismissed`).
+Progress bar: global progress indicator across all onboarding phases (Quiz → Reveal → Rate → Compare → Results). 5 labeled steps. Appears above onboarding content, updates at each phase transition.
 Returning user: "Log in →" link on auth step. Shows Google OAuth or email-only magic link (no name field). On click: redirects to Google or sends magic link. Supabase session auto-loads profile on return. Legacy profiles with no auth_id are auto-linked on first sign-in (auth session linked to localStorage user, auth_id + email written to Supabase row).
 Letterboxd import: drag-and-drop ratings.csv → parses star ratings (×20 = score) → loads films → proceeds to quiz. CTA on name step ("On Letterboxd? Import your ratings →").
 Quiz overlay: flex-column, flex-start, 48px top padding so content is scrollable and never clips. "← Start over" button renders below the card (outside it) when a pending auth session exists — plain border style, visually separated, hidden on all non-quiz steps.
@@ -377,7 +384,7 @@ Masthead
 Wordmark ("palate map") is clickable — navigates to Rankings (home). Search bar spans the full eyebrow area below the wordmark: white background, full border, 11px DM Mono, opens global search overlay on click. All other meta items (cloud status, storage status, export, film count, display name) removed from visible UI; ghost elements remain in DOM for JS compatibility.
 
 07  Known Issues & Tech Debt
-• Playwright e2e test suite (tests/*.spec.js, 34 tests). Covers add film, rankings, scoring, navigation. Run: npx playwright test.
+• Playwright e2e test suite (tests/*.spec.js, 50 tests). Covers add film, rankings, scoring, navigation. Run: npx playwright test.
 • Cloudflare Worker renamed to palate-map-proxy — URL updated in all modules (predict.js, friends.js, insights.js).
 • Refreshing while inside a friend's profile page lands on friends list (friend ID not persisted). Acceptable for now.
 • Entity stub "Rate →" button navigates to Add Film screen and pre-fills search — relies on DOM timing (setTimeout 100ms) which is fragile. Revisit if unreliable.
@@ -392,6 +399,8 @@ Wordmark ("palate map") is clickable — navigates to Rankings (home). Search ba
 • No database backup strategy on Supabase free tier. Upgrade to Pro before first paid user.
 • TMDB API key hardcoded in multiple client files (publishable, not a security issue, but rate limit sharing risk at scale).
 • No data export UI exists yet — only a console-level exportData() function. Must build visible export in Profile before charging for paid tier.
+• Pairwise-calibrated films (onboarding) leak equal-weight influence into weight-blend.js, archetype recomputation, and predict.js taste profile. Required: confidence-aware weighting pass where calibrated films are discounted by their per-category alpha values. See project memory for full scope.
+• `quiz_weights` semantic mismatch: after 3.28, quiz_weights may contain inferred weights from taste reveal (not pure stated-preference baseline). Needs cleanup so weight-blend.js decay logic has a clean quiz-only baseline.
 
 08  Full Product Roadmap
 Phase 0 — Foundation [COMPLETE]
@@ -511,7 +520,7 @@ Phase 3 — Growth Features [IN PROGRESS]
   - New CSS classes: .add-search-state, .add-headline, .add-subline, .add-search-wrap, .add-search-input, .add-search-icon, .add-results, .add-result, .add-hero-wrap, .add-hero-poster, .add-hero-body, .add-hero-title, .add-hero-meta, .add-hero-overview, .add-hero-cta, .add-hero-secondary, .add-hero-details, .add-detail-row, .add-detail-chip, .add-recent, .add-recent-card, .profile-palate-row.
   - Hints system (src/modules/hints.js): shouldShowHint(key) / renderHint(key, config) with localStorage persistence for dismissable educational hints.
 
-• 3.24 Onboarding Weight Accuracy ✓ — (superseded by 3.26 Quiz v2)
+• 3.24 Onboarding Weight Accuracy ✓ — (superseded by 3.26 Quiz v2, then further by 3.28 Extended Onboarding Journey)
 
 • 3.25 Scoring & Prediction UX Pass ✓ — coordinated refinements across scoring flow and prediction system:
   - Progressive unlock: tiered predictions replace the 10-film hard gate. getPredictionTier() returns tier objects (early at 3 films → exploratory at 5 → full at 10). Early tier uses local compatScore for recommendations (no Claude). Exploratory tier shows score ranges (±6→±2) that narrow with each film rated. Rankings banner and onboarding nudges update per tier.
@@ -554,6 +563,18 @@ Phase 3 — Growth Features [IN PROGRESS]
   - Global search: row click now works for all films — falls back to watchlist detail modal or Add Film when no prediction cache exists.
   - Onboarding: "Skip this for now →" CTA below search input (visible when 0 films rated).
   - Masthead wordmark: hover state with opacity transition.
+
+• 3.28 Extended Onboarding Journey ✓ — complete pairwise calibration flow:
+  - Transition screen after 5 guided films ("Good start. Now let's see how your taste compares.")
+  - Film selection grid: 41 curated films (src/data/selection-films.js) with sticky bank, search, show more, minimum 5 required.
+  - Pairwise calibration: bracket-based anchor selection with variance-driven category prioritization (~30 comparisons). Deterministic interval inference with confidence alphas (bracket=0.7, multi-one-sided=0.55, single=0.35, none=0.0).
+  - Taste reveal: confidence-weighted radar chart, archetype classification, category stats. Passes shaped weights (not defaults) to obFinish().
+  - Welcome banner on For You screen (name, archetype, action chips, dismissible).
+  - Global progress bar (5 steps: Quiz → Reveal → Rate → Compare → Results).
+  - Cold landing: carousel hidden on mobile (≤800px), card 2 predict description two-column layout, card 3 updated reasoning copy, "back" CTA on onboarding, fixed carousel arrow click handling, fixed cold landing flash.
+  - Calibration metadata: calibrated films carry `calibration_source`, `calibration_confidence`, `calibration_comp_count` per category.
+  - Analytics: `onboarding_calibration_completed` event with comparisons_answered, comparisons_total, selected_films_count, skipped_early.
+  - CSS: ~300 lines added to components.css (progress bar, sticky bank, selection grid, calibration matchup, taste reveal, welcome banner).
 
 Phase 4 — Platform
 • 4.1 Universal entity search — global search surfacing any director/actor/writer/company (entity-level, not film-level — film search is covered by 3.8 Global Search). Entity page shows: TMDB data, user's own rankings (if any), community avg score (requires 4.2). Requires schema change: separate palatemap_ratings table (see below).

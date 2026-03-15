@@ -627,16 +627,94 @@ export function goToStep4() {
 
 function autoSaveFilm() {
   newFilm.total = calcTotal(newFilm.scores);
-  MOVIES.push({
-    title: newFilm.title, year: newFilm.year, total: newFilm.total,
-    director: newFilm.director, writer: newFilm.writer, cast: newFilm.cast,
-    productionCompanies: newFilm.productionCompanies || '',
-    poster: newFilm._tmdbDetail?.poster_path || null,
-    overview: newFilm._tmdbDetail?.overview || '',
-    tmdbId: newFilm._tmdbId || null,
-    scores: { ...newFilm.scores }
-  });
   const savedTmdbId = newFilm._tmdbId;
+
+  // Check if this film was previously inferred via onboarding pairwise calibration
+  const existingIdx = MOVIES.findIndex(m => String(m.tmdbId) === String(savedTmdbId));
+  const existingInferred = existingIdx !== -1 && MOVIES[existingIdx].rating_source === 'onboarding_pairwise'
+    ? MOVIES[existingIdx] : null;
+
+  // Reconcile inferred-vs-actual if replacing a pairwise-inferred film
+  if (existingInferred) {
+    const inferredScores = { ...existingInferred.scores };
+    const inferredTotal = existingInferred.total;
+    const actualScores = { ...newFilm.scores };
+    const perCatError = {};
+    let errorSum = 0, errorCount = 0;
+    CATEGORIES.forEach(cat => {
+      const inf = inferredScores[cat.key];
+      const act = actualScores[cat.key];
+      if (inf != null && act != null) {
+        perCatError[cat.key] = Math.round(Math.abs(act - inf) * 10) / 10;
+        errorSum += Math.abs(act - inf);
+        errorCount++;
+      }
+    });
+    const mae = errorCount > 0 ? Math.round((errorSum / errorCount) * 10) / 10 : null;
+
+    // Preserve reconciliation data on the film object
+    const reconciliation = {
+      inferred_scores: inferredScores,
+      inferred_total: inferredTotal,
+      calibration_confidence: existingInferred.calibration_confidence || {},
+      calibration_comp_count: existingInferred.calibration_comp_count || {},
+      per_category_abs_error: perCatError,
+      mean_abs_error: mae,
+      reconciled_at: new Date().toISOString(),
+    };
+
+    // Count covered/bracketed categories
+    const coveredCount = CATEGORIES.filter(c => (existingInferred.calibration_confidence?.[c.key] ?? 0) > 0).length;
+    const bracketedCount = CATEGORIES.filter(c => (existingInferred.calibration_confidence?.[c.key] ?? 0) >= 0.7).length;
+    const avgConfidence = coveredCount > 0
+      ? CATEGORIES.reduce((s, c) => s + (existingInferred.calibration_confidence?.[c.key] ?? 0), 0) / CATEGORIES.length
+      : 0;
+
+    track('onboarding_calibration_reconciled', {
+      tmdb_id: savedTmdbId,
+      per_category_abs_error: perCatError,
+      mean_abs_error: mae,
+      covered_category_count: coveredCount,
+      bracketed_category_count: bracketedCount,
+      avg_confidence: Math.round(avgConfidence * 1000) / 1000,
+      days_since_onboarding: existingInferred.calibration_source
+        ? Math.round((Date.now() - (new Date(currentUser?.created_at || Date.now())).getTime()) / 86400000)
+        : null,
+    });
+
+    // Append to user's calibration reconciliation log
+    const reconLog = currentUser?.calibration_reconciliation_log || [];
+    reconLog.push({ tmdbId: savedTmdbId, ...reconciliation });
+    setCurrentUser({ ...currentUser, calibration_reconciliation_log: reconLog });
+
+    // Replace the inferred film with the real rating
+    MOVIES.splice(existingIdx, 1);
+    MOVIES.push({
+      title: newFilm.title, year: newFilm.year, total: newFilm.total,
+      director: newFilm.director, writer: newFilm.writer, cast: newFilm.cast,
+      productionCompanies: newFilm.productionCompanies || '',
+      poster: newFilm._tmdbDetail?.poster_path || null,
+      overview: newFilm._tmdbDetail?.overview || '',
+      tmdbId: newFilm._tmdbId || null,
+      scores: { ...newFilm.scores },
+      rating_source: 'manual_rating',
+      calibration_reconciliation: reconciliation,
+    });
+  } else {
+    // Normal new film (not replacing an inferred one)
+    if (existingIdx !== -1) MOVIES.splice(existingIdx, 1); // dedup
+    MOVIES.push({
+      title: newFilm.title, year: newFilm.year, total: newFilm.total,
+      director: newFilm.director, writer: newFilm.writer, cast: newFilm.cast,
+      productionCompanies: newFilm.productionCompanies || '',
+      poster: newFilm._tmdbDetail?.poster_path || null,
+      overview: newFilm._tmdbDetail?.overview || '',
+      tmdbId: newFilm._tmdbId || null,
+      scores: { ...newFilm.scores },
+      rating_source: 'manual_rating',
+    });
+  }
+
   if (savedTmdbId && currentUser?.predictions?.[String(savedTmdbId)]) {
     const entry = currentUser.predictions[String(savedTmdbId)];
     const actualTotal = newFilm.total;

@@ -360,3 +360,34 @@ function showArchetypeReveal(classification) {
   `;
   document.body.appendChild(overlay);
 }
+
+// ── Confidence-aware observation helpers ──
+// Reusable helpers for downstream systems to weight films by source/confidence.
+// Not wired everywhere yet — available for future aggregation passes.
+
+const PAIRWISE_FALLBACK_WEIGHT = 0.25;
+
+/**
+ * Get the observation weight for a film's score in a given category.
+ * - guided_slider / manual_rating → 1.0
+ * - onboarding_pairwise → calibration_confidence[categoryKey] or fallback
+ * @param {object} film - film object from MOVIES
+ * @param {string} categoryKey - e.g. 'story', 'craft'
+ * @returns {number} weight in [0, 1]
+ */
+export function getFilmObservationWeight(film, categoryKey) {
+  if (!film) return 1.0;
+  if (film.rating_source === 'onboarding_pairwise') {
+    return film.calibration_confidence?.[categoryKey] ?? PAIRWISE_FALLBACK_WEIGHT;
+  }
+  return 1.0; // guided_slider, manual_rating, or untagged legacy films
+}
+
+/**
+ * Check if a film was inferred via onboarding pairwise calibration.
+ * @param {object} film - film object from MOVIES
+ * @returns {boolean}
+ */
+export function isInferredOnboardingFilm(film) {
+  return film?.rating_source === 'onboarding_pairwise';
+}

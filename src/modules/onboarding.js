@@ -37,6 +37,8 @@ let obCalComparisons = [];
 let obCalIndex = 0;
 let obCalResults = [];
 let _tasteRevealData = null; // computed weights/archetype from taste reveal, used by obEnterApp
+let _calStartTimestamp = null;       // ms timestamp when calibration began
+let _calCompTimestamps = [];          // elapsed ms per comparison answer
 
 // Category grouping for staged sliders
 const GUT_CATS = ['experience', 'story', 'performance', 'hold'];
@@ -1023,6 +1025,7 @@ window.guidedRateFilm = async function() {
     productionCompanies: '', poster: film.poster,
     overview: '', tmdbId: film.tmdbId,
     scores: { ...scores }, total,
+    rating_source: 'guided_slider',
     ...roleMeta,
   };
 
@@ -1083,6 +1086,7 @@ window.guidedShowTransition = function() {
 
 // ── TRANSITION SCREEN ──
 function renderTransition() {
+  track('onboarding_transition_seen', { guided_films: guidedFilms.length });
   const card = document.getElementById('ob-card-content');
   card.innerHTML = `
     <div style="max-width:480px;margin:0 auto;padding:80px 24px 40px;text-align:center">
@@ -1238,6 +1242,7 @@ window.obStartSelection = function() {
   selectSearchResults = null;
   selectSearchAdded = [];
   obStep = 'select';
+  track('onboarding_selection_started');
   renderObStep();
 };
 
@@ -1250,6 +1255,10 @@ window.obSkipSelection = function() {
 
 window.obConfirmSelection = async function() {
   if (selectSelectedFilms.length < 5) return;
+  track('onboarding_selection_completed', {
+    selected_films_count: selectSelectedFilms.length,
+    selected_tmdb_ids: selectSelectedFilms.map(f => f.tmdbId),
+  });
   updateProgress(65);
 
   // Fetch TMDB details for selected films in background
@@ -1265,6 +1274,12 @@ window.obConfirmSelection = async function() {
   generateObComparisons();
   obCalIndex = 0;
   obCalResults = [];
+  _calStartTimestamp = Date.now();
+  _calCompTimestamps = [];
+  track('onboarding_calibration_started', {
+    comparisons_total: obCalComparisons.length,
+    selected_films_count: selectSelectedFilms.length,
+  });
   obStep = 'ob-calibrate';
   renderObStep();
 };
@@ -1364,9 +1379,13 @@ function renderObCalibrate() {
 window.obCalPick = function(choice) {
   const comp = obCalComparisons[obCalIndex];
   const winner = choice === 'a' ? 'filmA' : 'filmB';
+  const elapsedMs = _calStartTimestamp ? Date.now() - _calStartTimestamp : 0;
+  _calCompTimestamps.push(elapsedMs);
   obCalResults.push({
     filmA: comp.filmA, filmB: comp.filmB, category: comp.category, winner,
-    anchorScore: comp.anchorScore, anchorRole: comp.anchorRole
+    anchorScore: comp.anchorScore, anchorRole: comp.anchorRole,
+    comparison_index: obCalIndex,
+    elapsed_ms: elapsedMs,
   });
 
   // Visual feedback
@@ -1380,11 +1399,22 @@ window.obCalPick = function(choice) {
     obCalIndex++;
     if (obCalIndex >= obCalComparisons.length) {
       updateProgress(100);
+      const totalMs = _calStartTimestamp ? Date.now() - _calStartTimestamp : 0;
+      const avgMs = _calCompTimestamps.length > 0
+        ? Math.round(_calCompTimestamps.reduce((a, b, i, arr) => a + (i === 0 ? b : b - arr[i - 1]), 0) / _calCompTimestamps.length)
+        : 0;
+      const half = Math.floor(_calCompTimestamps.length / 2);
+      const firstHalfDeltas = _calCompTimestamps.slice(0, half).map((t, i, a) => i === 0 ? t : t - a[i - 1]);
+      const secondHalfDeltas = _calCompTimestamps.slice(half).map((t, i, a) => i === 0 ? (half > 0 ? t - _calCompTimestamps[half - 1] : t) : t - a[i - 1]);
       track('onboarding_calibration_completed', {
         comparisons_answered: obCalIndex,
         comparisons_total: obCalComparisons.length,
         selected_films_count: selectSelectedFilms.length,
         skipped_early: false,
+        total_ms: totalMs,
+        avg_ms_per_comparison: avgMs,
+        first_half_avg_ms: firstHalfDeltas.length > 0 ? Math.round(firstHalfDeltas.reduce((a, b) => a + b, 0) / firstHalfDeltas.length) : 0,
+        second_half_avg_ms: secondHalfDeltas.length > 0 ? Math.round(secondHalfDeltas.reduce((a, b) => a + b, 0) / secondHalfDeltas.length) : 0,
       });
       setTimeout(() => finishCalibration(), 600);
     } else {
@@ -1395,11 +1425,14 @@ window.obCalPick = function(choice) {
 
 window.obCalSkip = function() {
   // Skip remaining calibration, estimate all scores from prior
+  const totalMs = _calStartTimestamp ? Date.now() - _calStartTimestamp : 0;
   track('onboarding_calibration_completed', {
     comparisons_answered: obCalIndex,
     comparisons_total: obCalComparisons.length,
     selected_films_count: selectSelectedFilms.length,
     skipped_early: true,
+    total_ms: totalMs,
+    avg_ms_per_comparison: obCalIndex > 0 ? Math.round(totalMs / obCalIndex) : 0,
   });
   finishCalibration();
 };
@@ -1532,10 +1565,21 @@ function finishCalibration() {
       productionCompanies: '', poster: nf.poster,
       overview: '', tmdbId: nf.tmdbId,
       scores, total,
+      rating_source: 'onboarding_pairwise',
       onboarding_role: 'calibrated',
       calibration_source: 'pairwise_onboarding_v2',
       calibration_confidence: calibrationConfidence,
       calibration_comp_count: calibrationCompCount,
+      // Per-film pairwise comparison trace for debugging/analysis
+      calibration_log: obCalResults
+        .filter(r => String(r.filmA.tmdbId) === String(nf.tmdbId))
+        .map((r, i) => ({
+          anchor_tmdbId: r.filmB.tmdbId,
+          category: r.category,
+          winner: r.winner,
+          anchorRole: r.anchorRole,
+          anchorScore: r.anchorScore,
+        })),
     };
     MOVIES.push(filmObj);
   }
@@ -1580,6 +1624,13 @@ function renderTasteReveal() {
 
   // Persist for obEnterApp so obFinish uses shaped weights, not flat defaults
   _tasteRevealData = { weights, classification };
+
+  // Track taste reveal
+  const calibratedMovies = MOVIES.filter(m => m.rating_source === 'onboarding_pairwise');
+  track('onboarding_taste_reveal_shown', {
+    movies_count: MOVIES.length,
+    calibrated_movies_count: calibratedMovies.length,
+  });
 
   // Strongest category
   const sortedCats = [...catKeys].sort((a, b) => avgScores[b] - avgScores[a]);
@@ -1688,10 +1739,57 @@ function renderTasteReveal() {
 
 window.obEnterApp = function() {
   hideProgressBar();
+  const calibratedMovies = MOVIES.filter(m => m.rating_source === 'onboarding_pairwise');
+  track('onboarding_entered_app', {
+    movies_count: MOVIES.length,
+    calibrated_movies_count: calibratedMovies.length,
+  });
   if (_tasteRevealData) {
     // Use the shaped weights/archetype computed during taste reveal,
     // not the flat 2.5 defaults from guidedFinishWithDefaults()
     const { weights, classification } = _tasteRevealData;
+
+    // Build onboarding profile confidence summary
+    const compAnswered = obCalResults.length;
+    const compTotal = obCalComparisons.length;
+    const catKeys = CATEGORIES.map(c => c.key);
+    const avgConf = calibratedMovies.length > 0
+      ? calibratedMovies.reduce((s, m) => {
+          const vals = catKeys.map(c => m.calibration_confidence?.[c] ?? 0);
+          return s + vals.reduce((a, b) => a + b, 0) / vals.length;
+        }, 0) / calibratedMovies.length
+      : 0;
+    const coveredFraction = calibratedMovies.length > 0
+      ? calibratedMovies.reduce((s, m) => {
+          const covered = catKeys.filter(c => (m.calibration_confidence?.[c] ?? 0) > 0).length;
+          return s + covered / catKeys.length;
+        }, 0) / calibratedMovies.length
+      : 0;
+    let level = 'low';
+    if (compAnswered >= compTotal * 0.9 && avgConf >= 0.4) level = 'high';
+    else if (compAnswered >= compTotal * 0.5 && avgConf >= 0.25) level = 'medium';
+
+    // Store calibration log and profile confidence on the reveal data
+    // so obFinish can persist them on currentUser
+    _tasteRevealData.calibration_log = obCalResults.map((r, i) => ({
+      filmA_tmdbId: r.filmA.tmdbId,
+      filmB_tmdbId: r.filmB.tmdbId,
+      category: r.category,
+      winner: r.winner,
+      anchorRole: r.anchorRole,
+      anchorScore: r.anchorScore,
+      comparison_index: r.comparison_index ?? i,
+      elapsed_ms: r.elapsed_ms ?? null,
+    }));
+    _tasteRevealData.onboarding_profile_confidence = {
+      level,
+      comparisons_answered: compAnswered,
+      comparisons_total: compTotal,
+      calibrated_films: calibratedMovies.length,
+      avg_category_confidence: Math.round(avgConf * 1000) / 1000,
+      covered_category_fraction: Math.round(coveredFraction * 1000) / 1000,
+    };
+
     obFinish({
       primary: classification.archetype,
       secondary: '',
@@ -1809,6 +1907,9 @@ async function obFinish(reveal, opts = {}) {
     ...(existing?.watchlist ? { watchlist: existing.watchlist } : {}),
     ...(existing?.predictions ? { predictions: existing.predictions } : {}),
     ...(existing?.harmony_sensitivity != null ? { harmony_sensitivity: existing.harmony_sensitivity } : {}),
+    // Beta instrumentation: calibration trace and profile confidence
+    ...(_tasteRevealData?.calibration_log ? { onboarding_calibration_log: _tasteRevealData.calibration_log } : {}),
+    ...(_tasteRevealData?.onboarding_profile_confidence ? { onboarding_profile_confidence: _tasteRevealData.onboarding_profile_confidence } : {}),
   });
   window._pendingAuthSession = null;
 
