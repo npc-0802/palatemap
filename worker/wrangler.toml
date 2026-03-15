@@ -1,0 +1,9 @@
+name = "palate-map-proxy"
+main = "index.js"
+compatibility_date = "2025-03-14"
+
+# Environment variables — set these in Cloudflare dashboard (Settings > Variables):
+#   ANTHROPIC_KEY    — Anthropic API key
+#   RESEND_API_KEY   — Resend email API key
+#   SUPABASE_URL     — https://gzuuhjjedrzeqbgxhfip.supabase.co
+#   SUPABASE_KEY     — Supabase service role key (NOT the anon key)

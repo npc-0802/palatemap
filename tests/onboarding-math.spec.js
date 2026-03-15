@@ -3,29 +3,30 @@ import { test, expect } from '@playwright/test';
 import { mockSupabase } from './fixtures.js';
 
 // These tests exercise onboarding math functions via the browser debug helper.
-// estimateCategoryScore and ABSOLUTE_BUCKETS are exposed on window.__pmOnboardingDebug.
+// estimateCategoryScore, applyAbsoluteAdjustment, and ABSOLUTE_BUCKETS are
+// exposed on window.__pmOnboardingDebug (dev/test builds only).
+
+const CATS = ['story', 'craft', 'performance', 'world', 'experience', 'hold', 'ending', 'singularity'];
 
 async function setupPage(page) {
   await mockSupabase(page);
   await page.addInitScript(() => { localStorage.clear(); });
   await page.goto('/');
   await page.waitForTimeout(500);
-  // Trigger onboarding to ensure the module is loaded
   await page.evaluate(() => window._testSkipToQuiz('Math Test'));
   await page.waitForSelector('[data-testid="guided-search"]', { timeout: 5000 });
 }
 
+// ── estimateCategoryScore ──
+
 test.describe('estimateCategoryScore', () => {
-  test.beforeEach(async ({ page }) => {
-    await setupPage(page);
-  });
+  test.beforeEach(async ({ page }) => { await setupPage(page); });
 
   test('returns prior with alpha=0 when no comparisons', async ({ page }) => {
     const result = await page.evaluate(() => {
       const fn = window.__pmOnboardingDebug.estimateCategoryScore;
       return fn({ prior: 72, comparisons: [], categoryRank: 0 });
     });
-
     expect(result.score).toBe(72);
     expect(result.alpha).toBe(0);
     expect(result.compCount).toBe(0);
@@ -53,12 +54,10 @@ test.describe('estimateCategoryScore', () => {
       const fn = window.__pmOnboardingDebug.estimateCategoryScore;
       return fn({ prior: 60, comparisons: [{ anchorScore: 70, won: true }], categoryRank: 0 });
     });
-
     expect(result.lowerBound).toBe(70);
     expect(result.upperBound).toBeNull();
-    expect(result.alpha).toBe(0.35); // single comparison
+    expect(result.alpha).toBe(0.35);
     expect(result.compCount).toBe(1);
-    // Raw should be lowerBound + 0.35 * (100 - lowerBound) = 70 + 10.5 = 80.5
     expect(result.raw).toBeCloseTo(80.5, 1);
   });
 
@@ -67,11 +66,9 @@ test.describe('estimateCategoryScore', () => {
       const fn = window.__pmOnboardingDebug.estimateCategoryScore;
       return fn({ prior: 60, comparisons: [{ anchorScore: 70, won: false }], categoryRank: 0 });
     });
-
     expect(result.lowerBound).toBeNull();
     expect(result.upperBound).toBe(70);
     expect(result.alpha).toBe(0.35);
-    // Raw should be upperBound - 0.35 * (upperBound - 20) = 70 - 17.5 = 52.5
     expect(result.raw).toBeCloseTo(52.5, 1);
   });
 
@@ -81,19 +78,16 @@ test.describe('estimateCategoryScore', () => {
       return fn({
         prior: 60,
         comparisons: [
-          { anchorScore: 50, won: true },  // beat 50 → lower bound
-          { anchorScore: 80, won: false }, // lost to 80 → upper bound
+          { anchorScore: 50, won: true },
+          { anchorScore: 80, won: false },
         ],
         categoryRank: 0,
       });
     });
-
     expect(result.lowerBound).toBe(50);
     expect(result.upperBound).toBe(80);
     expect(result.alpha).toBe(0.7);
-    // Raw = (50 + 80) / 2 = 65
     expect(result.raw).toBe(65);
-    // Blended = 0.7 * 65 + 0.3 * 60 = 45.5 + 18 = 63.5 → 64
     expect(result.score).toBe(64);
   });
 
@@ -109,23 +103,17 @@ test.describe('estimateCategoryScore', () => {
         categoryRank: 0,
       });
     });
-
-    // Both wins → only lower bound (max of beaten = 70)
     expect(result.lowerBound).toBe(70);
     expect(result.upperBound).toBeNull();
     expect(result.alpha).toBe(0.55);
     expect(result.compCount).toBe(2);
   });
 
-  test('ties are excluded from comparisons', async ({ page }) => {
-    // This tests the filtering at the finishCalibration level.
-    // estimateCategoryScore itself doesn't see ties — they're filtered before.
-    // Verify it handles empty comparisons from all-tie scenario.
+  test('ties are excluded before reaching estimateCategoryScore', async ({ page }) => {
     const result = await page.evaluate(() => {
       const fn = window.__pmOnboardingDebug.estimateCategoryScore;
       return fn({ prior: 65, comparisons: [], categoryRank: 0 });
     });
-
     expect(result.score).toBe(65);
     expect(result.alpha).toBe(0);
   });
@@ -136,29 +124,182 @@ test.describe('estimateCategoryScore', () => {
       return fn({
         prior: 50,
         comparisons: [
-          { anchorScore: 80, won: true },  // lower bound = 80
-          { anchorScore: 90, won: false }, // upper bound = 90
+          { anchorScore: 80, won: true },
+          { anchorScore: 90, won: false },
         ],
         categoryRank: 0,
       });
     });
-
-    // Raw = (80 + 90) / 2 = 85
-    // Alpha = 0.7 (true bracket)
-    // Blended = 0.7 * 85 + 0.3 * 50 = 59.5 + 15 = 74.5 → 75
     expect(result.raw).toBe(85);
     expect(result.score).toBe(75);
   });
 });
 
-test.describe('Absolute adjustment math', () => {
-  test.beforeEach(async ({ page }) => {
-    await setupPage(page);
+// ── applyAbsoluteAdjustment ──
+
+test.describe('Absolute adjustment algorithm', () => {
+  test.beforeEach(async ({ page }) => { await setupPage(page); });
+
+  // Simple calcTotal stub: unweighted mean of all categories
+  const simpleTotalFn = `(scores) => {
+    const vals = Object.values(scores);
+    return vals.reduce((a, b) => a + b, 0) / vals.length;
+  }`;
+
+  test('moderate upward adjustment toward target', async ({ page }) => {
+    const result = await page.evaluate((calcFn) => {
+      const fn = window.__pmOnboardingDebug.applyAbsoluteAdjustment;
+      const scores = { story: 60, craft: 65, performance: 62, world: 58, experience: 63, hold: 61, ending: 59, singularity: 64 };
+      const confidence = { story: 0.4, craft: 0.5, performance: 0.3, world: 0.4, experience: 0.5, hold: 0.3, ending: 0.4, singularity: 0.35 };
+      const calcTotal = eval(calcFn);
+      const result = fn(scores, confidence, 80, calcTotal);
+      return { scores, result };
+    }, simpleTotalFn);
+
+    // avgConfidence ≈ 0.39 → absoluteWeight = 0.75
+    expect(result.result.absoluteWeight).toBe(0.75);
+    // All scores should have shifted upward
+    expect(result.result.postAdjustmentTotal).toBeGreaterThan(result.result.pairwiseTotal);
+    // The shift should move toward 80 but not fully reach it (partial weight)
+    expect(result.result.postAdjustmentTotal).toBeGreaterThan(65);
+    expect(result.result.postAdjustmentTotal).toBeLessThan(82);
   });
 
-  test('ABSOLUTE_BUCKETS has correct target totals', async ({ page }) => {
-    const buckets = await page.evaluate(() => window.__pmOnboardingDebug.ABSOLUTE_BUCKETS);
+  test('moderate downward adjustment toward target', async ({ page }) => {
+    const result = await page.evaluate((calcFn) => {
+      const fn = window.__pmOnboardingDebug.applyAbsoluteAdjustment;
+      const scores = { story: 85, craft: 88, performance: 82, world: 90, experience: 86, hold: 84, ending: 87, singularity: 83 };
+      const confidence = { story: 0.5, craft: 0.5, performance: 0.4, world: 0.5, experience: 0.5, hold: 0.4, ending: 0.5, singularity: 0.4 };
+      const calcTotal = eval(calcFn);
+      const result = fn(scores, confidence, 58, calcTotal);
+      return { scores, result };
+    }, simpleTotalFn);
 
+    // avgConfidence ≈ 0.46 → absoluteWeight = 0.75
+    expect(result.result.absoluteWeight).toBe(0.75);
+    expect(result.result.rawDelta).toBeLessThan(0); // downward
+    expect(result.result.postAdjustmentTotal).toBeLessThan(result.result.pairwiseTotal);
+  });
+
+  test('high confidence reduces adjustment magnitude (weight=0.6)', async ({ page }) => {
+    const result = await page.evaluate((calcFn) => {
+      const fn = window.__pmOnboardingDebug.applyAbsoluteAdjustment;
+      const scores = { story: 60, craft: 60, performance: 60, world: 60, experience: 60, hold: 60, ending: 60, singularity: 60 };
+      // All high confidence → avgConfidence = 0.7 → weight = 0.6
+      const confidence = { story: 0.7, craft: 0.7, performance: 0.7, world: 0.7, experience: 0.7, hold: 0.7, ending: 0.7, singularity: 0.7 };
+      const calcTotal = eval(calcFn);
+      return fn(scores, confidence, 80, calcTotal);
+    }, simpleTotalFn);
+
+    expect(result.absoluteWeight).toBe(0.6);
+    // adjustment = 0.6 * (80 - 60) = 12
+    expect(result.adjustment).toBe(12);
+  });
+
+  test('low confidence increases adjustment magnitude (weight=0.9)', async ({ page }) => {
+    const result = await page.evaluate((calcFn) => {
+      const fn = window.__pmOnboardingDebug.applyAbsoluteAdjustment;
+      const scores = { story: 60, craft: 60, performance: 60, world: 60, experience: 60, hold: 60, ending: 60, singularity: 60 };
+      // All low confidence → avgConfidence ≈ 0.2 → weight = 0.9
+      const confidence = { story: 0.2, craft: 0.2, performance: 0.2, world: 0.2, experience: 0.2, hold: 0.2, ending: 0.2, singularity: 0.2 };
+      const calcTotal = eval(calcFn);
+      return fn(scores, confidence, 80, calcTotal);
+    }, simpleTotalFn);
+
+    expect(result.absoluteWeight).toBe(0.9);
+    // adjustment = 0.9 * (80 - 60) = 18
+    expect(result.adjustment).toBe(18);
+  });
+
+  test('medium confidence gets weight=0.75', async ({ page }) => {
+    const result = await page.evaluate((calcFn) => {
+      const fn = window.__pmOnboardingDebug.applyAbsoluteAdjustment;
+      const scores = { story: 60, craft: 60, performance: 60, world: 60, experience: 60, hold: 60, ending: 60, singularity: 60 };
+      // avgConfidence = 0.45 → between 0.35 and 0.55 → weight = 0.75
+      const confidence = { story: 0.45, craft: 0.45, performance: 0.45, world: 0.45, experience: 0.45, hold: 0.45, ending: 0.45, singularity: 0.45 };
+      const calcTotal = eval(calcFn);
+      return fn(scores, confidence, 80, calcTotal);
+    }, simpleTotalFn);
+
+    expect(result.absoluteWeight).toBe(0.75);
+    expect(result.adjustment).toBe(15);
+  });
+
+  test('near-ceiling clamping prevents scores above 98', async ({ page }) => {
+    const result = await page.evaluate((calcFn) => {
+      const fn = window.__pmOnboardingDebug.applyAbsoluteAdjustment;
+      // Scores already near 98
+      const scores = { story: 95, craft: 96, performance: 94, world: 97, experience: 95, hold: 93, ending: 96, singularity: 94 };
+      const confidence = { story: 0.2, craft: 0.2, performance: 0.2, world: 0.2, experience: 0.2, hold: 0.2, ending: 0.2, singularity: 0.2 };
+      const calcTotal = eval(calcFn);
+      fn(scores, confidence, 98, calcTotal);
+      return scores;
+    }, simpleTotalFn);
+
+    // All scores should be clamped at ≤ 98
+    for (const cat of CATS) {
+      expect(result[cat]).toBeLessThanOrEqual(98);
+      expect(result[cat]).toBeGreaterThanOrEqual(20);
+    }
+  });
+
+  test('near-floor clamping prevents scores below 20', async ({ page }) => {
+    const result = await page.evaluate((calcFn) => {
+      const fn = window.__pmOnboardingDebug.applyAbsoluteAdjustment;
+      // Scores already near 20
+      const scores = { story: 25, craft: 22, performance: 28, world: 23, experience: 26, hold: 24, ending: 21, singularity: 27 };
+      const confidence = { story: 0.2, craft: 0.2, performance: 0.2, world: 0.2, experience: 0.2, hold: 0.2, ending: 0.2, singularity: 0.2 };
+      const calcTotal = eval(calcFn);
+      fn(scores, confidence, 20, calcTotal);
+      return scores;
+    }, simpleTotalFn);
+
+    for (const cat of CATS) {
+      expect(result[cat]).toBeGreaterThanOrEqual(20);
+      expect(result[cat]).toBeLessThanOrEqual(98);
+    }
+  });
+
+  test('total is recomputed after adjustment', async ({ page }) => {
+    const result = await page.evaluate((calcFn) => {
+      const fn = window.__pmOnboardingDebug.applyAbsoluteAdjustment;
+      const scores = { story: 50, craft: 50, performance: 50, world: 50, experience: 50, hold: 50, ending: 50, singularity: 50 };
+      const confidence = { story: 0.7, craft: 0.7, performance: 0.7, world: 0.7, experience: 0.7, hold: 0.7, ending: 0.7, singularity: 0.7 };
+      const calcTotal = eval(calcFn);
+      return fn(scores, confidence, 90, calcTotal);
+    }, simpleTotalFn);
+
+    // pairwiseTotal = 50, target = 90, weight = 0.6
+    // adjustment = 0.6 * 40 = 24, so scores go to 74
+    expect(result.pairwiseTotal).toBe(50);
+    expect(result.adjustment).toBe(24);
+    expect(result.postAdjustmentTotal).toBe(74);
+    expect(result.discrepancy).toBe(74 - 90); // -16
+  });
+
+  test('zero-confidence categories get fallback and produce weight=0.9', async ({ page }) => {
+    const result = await page.evaluate((calcFn) => {
+      const fn = window.__pmOnboardingDebug.applyAbsoluteAdjustment;
+      const scores = { story: 70, craft: 70, performance: 70, world: 70, experience: 70, hold: 70, ending: 70, singularity: 70 };
+      // All zero confidence → avgConfidence = 0 → weight = 0.9
+      const confidence = { story: 0, craft: 0, performance: 0, world: 0, experience: 0, hold: 0, ending: 0, singularity: 0 };
+      const calcTotal = eval(calcFn);
+      return fn(scores, confidence, 42, calcTotal);
+    }, simpleTotalFn);
+
+    expect(result.absoluteWeight).toBe(0.9);
+    // adjustment = 0.9 * (42 - 70) = 0.9 * -28 = -25.2
+    expect(result.adjustment).toBeCloseTo(-25.2, 1);
+  });
+});
+
+// ── ABSOLUTE_BUCKETS validation ──
+
+test.describe('ABSOLUTE_BUCKETS', () => {
+  test.beforeEach(async ({ page }) => { await setupPage(page); });
+
+  test('has correct target totals', async ({ page }) => {
+    const buckets = await page.evaluate(() => window.__pmOnboardingDebug.ABSOLUTE_BUCKETS);
     expect(buckets).toEqual([
       { key: 'favorite', label: 'One of my favorites', target: 90 },
       { key: 'really_liked', label: 'Really liked it', target: 80 },
@@ -168,19 +309,17 @@ test.describe('Absolute adjustment math', () => {
     ]);
   });
 
-  test('bucket targets span the full taste spectrum', async ({ page }) => {
+  test('targets are monotonically decreasing within valid range', async ({ page }) => {
     const buckets = await page.evaluate(() => window.__pmOnboardingDebug.ABSOLUTE_BUCKETS);
-
-    // Targets should be monotonically decreasing
     for (let i = 1; i < buckets.length; i++) {
       expect(buckets[i].target).toBeLessThan(buckets[i - 1].target);
     }
-
-    // Highest target should be < 100, lowest should be > 20
     expect(buckets[0].target).toBeLessThan(100);
     expect(buckets[buckets.length - 1].target).toBeGreaterThan(20);
   });
 });
+
+// ── Confidence weighting ──
 
 test.describe('Confidence weighting', () => {
   test.beforeEach(async ({ page }) => {
@@ -191,12 +330,9 @@ test.describe('Confidence weighting', () => {
   test('getFilmObservationWeight returns 1.0 for manual/guided films', async ({ page }) => {
     await page.goto('/');
     await page.waitForTimeout(500);
-
     const weight = await page.evaluate(() => {
-      // Import the function dynamically
       return import('/src/modules/weight-blend.js').then(mod => {
-        const film = { rating_source: 'guided_slider', scores: { story: 80 } };
-        return mod.getFilmObservationWeight(film, 'story');
+        return mod.getFilmObservationWeight({ rating_source: 'guided_slider', scores: { story: 80 } }, 'story');
       });
     });
     expect(weight).toBe(1.0);
@@ -205,13 +341,11 @@ test.describe('Confidence weighting', () => {
   test('getFilmObservationWeight uses calibration_confidence for pairwise films', async ({ page }) => {
     await page.goto('/');
     await page.waitForTimeout(500);
-
     const weight = await page.evaluate(() => {
       return import('/src/modules/weight-blend.js').then(mod => {
         const film = {
           rating_source: 'onboarding_pairwise',
           calibration_confidence: { story: 0.7, craft: 0.55 },
-          scores: { story: 80, craft: 70 },
         };
         return {
           storyWeight: mod.getFilmObservationWeight(film, 'story'),
@@ -226,29 +360,20 @@ test.describe('Confidence weighting', () => {
   test('getFilmObservationWeight falls back for zero-confidence pairwise categories', async ({ page }) => {
     await page.goto('/');
     await page.waitForTimeout(500);
-
     const weight = await page.evaluate(() => {
       return import('/src/modules/weight-blend.js').then(mod => {
-        const film = {
-          rating_source: 'onboarding_pairwise',
-          calibration_confidence: { story: 0, craft: 0.7 },
-          scores: { story: 60, craft: 80 },
-        };
+        const film = { rating_source: 'onboarding_pairwise', calibration_confidence: { story: 0, craft: 0.7 } };
         return mod.getFilmObservationWeight(film, 'story');
       });
     });
-    // confidence=0 should fall through to PAIRWISE_FALLBACK_WEIGHT (0.25)
     expect(weight).toBe(0.25);
   });
 
   test('getFilmObservationWeight returns 1.0 for null film', async ({ page }) => {
     await page.goto('/');
     await page.waitForTimeout(500);
-
     const weight = await page.evaluate(() => {
-      return import('/src/modules/weight-blend.js').then(mod => {
-        return mod.getFilmObservationWeight(null, 'story');
-      });
+      return import('/src/modules/weight-blend.js').then(mod => mod.getFilmObservationWeight(null, 'story'));
     });
     expect(weight).toBe(1.0);
   });
@@ -256,7 +381,6 @@ test.describe('Confidence weighting', () => {
   test('computeWeightedCategoryAverages discounts low-confidence categories', async ({ page }) => {
     await page.goto('/');
     await page.waitForTimeout(500);
-
     const avgs = await page.evaluate(() => {
       return import('/src/modules/weight-blend.js').then(mod => {
         const movies = [
@@ -266,17 +390,14 @@ test.describe('Confidence weighting', () => {
         return mod.computeWeightedCategoryAverages(movies);
       });
     });
-
-    // Weighted avg: (90 * 1.0 + 50 * 0.35) / (1.0 + 0.35) = 107.5 / 1.35 ≈ 79.6
+    // (90 * 1.0 + 50 * 0.35) / (1.0 + 0.35) ≈ 79.6
     expect(avgs.story).toBeCloseTo(79.6, 0);
-    // Much closer to 90 than the naive avg of 70, proving the weighting works
     expect(avgs.story).toBeGreaterThan(75);
   });
 
   test('isInferredOnboardingFilm correctly identifies pairwise films', async ({ page }) => {
     await page.goto('/');
     await page.waitForTimeout(500);
-
     const results = await page.evaluate(() => {
       return import('/src/modules/weight-blend.js').then(mod => ({
         pairwise: mod.isInferredOnboardingFilm({ rating_source: 'onboarding_pairwise' }),
@@ -286,7 +407,6 @@ test.describe('Confidence weighting', () => {
         nil: mod.isInferredOnboardingFilm(null),
       }));
     });
-
     expect(results.pairwise).toBe(true);
     expect(results.guided).toBe(false);
     expect(results.manual).toBe(false);
@@ -295,34 +415,7 @@ test.describe('Confidence weighting', () => {
   });
 });
 
-test.describe('Progress percentage calculation', () => {
-  test.beforeEach(async ({ page }) => {
-    await setupPage(page);
-  });
-
-  test('0% at start of guided flow', async ({ page }) => {
-    const debug = await page.evaluate(() => window.__pmOnboardingDebug);
-    expect(debug.progressPercent).toBe(0);
-  });
-
-  test('progress formula: guidedFilms.length * 12, capped at 60', async ({ page }) => {
-    // Inject state directly to test the formula
-    const percentages = await page.evaluate(() => {
-      // We can't directly set internal state, but we can check the
-      // autosaved states at different points. Use the exposed function logic.
-      // The formula is: min(guidedFilms.length * 12, 60) for guided steps
-      return [0, 12, 24, 36, 48, 60].map((expected, i) => ({
-        films: i,
-        expected,
-      }));
-    });
-
-    // Verify the expected formula matches
-    for (const { films, expected } of percentages) {
-      expect(Math.min(films * 12, 60)).toBe(expected);
-    }
-  });
-});
+// ── Backward compatibility ──
 
 test.describe('Backward compatibility', () => {
   test.beforeEach(async ({ page }) => {
@@ -333,12 +426,9 @@ test.describe('Backward compatibility', () => {
   test('films without rating_source get weight 1.0', async ({ page }) => {
     await page.goto('/');
     await page.waitForTimeout(500);
-
     const weight = await page.evaluate(() => {
       return import('/src/modules/weight-blend.js').then(mod => {
-        // Legacy film with no rating_source property
-        const film = { scores: { story: 80 } };
-        return mod.getFilmObservationWeight(film, 'story');
+        return mod.getFilmObservationWeight({ scores: { story: 80 } }, 'story');
       });
     });
     expect(weight).toBe(1.0);
@@ -347,14 +437,11 @@ test.describe('Backward compatibility', () => {
   test('films without calibration_confidence use fallback weight', async ({ page }) => {
     await page.goto('/');
     await page.waitForTimeout(500);
-
     const weight = await page.evaluate(() => {
       return import('/src/modules/weight-blend.js').then(mod => {
-        const film = { rating_source: 'onboarding_pairwise' };
-        return mod.getFilmObservationWeight(film, 'story');
+        return mod.getFilmObservationWeight({ rating_source: 'onboarding_pairwise' }, 'story');
       });
     });
-    // No calibration_confidence → undefined?.[categoryKey] → undefined → || PAIRWISE_FALLBACK_WEIGHT
     expect(weight).toBe(0.25);
   });
 });

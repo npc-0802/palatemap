@@ -1,5 +1,5 @@
 import { MOVIES, CATEGORIES, currentUser, setCurrentUser, scoreClass, getLabel, calcTotal, mergeSplitNames } from '../state.js';
-import { syncToSupabase, saveUserLocally, logPrediction } from './supabase.js';
+import { syncToSupabase, saveUserLocally, logPrediction, sb } from './supabase.js';
 import { ARCHETYPES } from '../data/archetypes.js';
 import { classifyArchetype } from './quiz-engine.js';
 import { track } from '../analytics.js';
@@ -35,6 +35,7 @@ import { loadTagVectors, getTagVector, tagVectorsLoaded, getAdmissibleTags, find
 import { computeCategoryFingerprints, categorySimilarity, overallSimilarity, getTopCategoryTags, tagSimilarity, getCoverageCount } from './tag-profile.js';
 import { fitUserResidual, predictWithResidual, checkPooledBaselineGate, checkResidualGate } from './residual-model.js';
 import { evaluatePredictions } from './eval-framework.js';
+import { canRunFreshPrediction, recordPredictionUsage, isCachedPrediction, isCacheValid, getRemainingPredictionQuota } from './prediction-policy.js';
 
 const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 const TMDB = 'https://api.themoviedb.org/3';
@@ -765,8 +766,8 @@ function buildTasteProfile() {
   const sorted = [...MOVIES].sort((a,b) => b.total - a.total);
   // Use high-trust films for prompt examples; fall back to all films if <5 high-trust
   const examplePool = sortedHT.length >= 5 ? sortedHT : sorted;
-  const top10 = examplePool.slice(0,10).map(m => `${m.title} (${m.total})`).join(', ');
-  const bottom5 = examplePool.slice(-5).map(m => `${m.title} (${m.total})`).join(', ');
+  const top5 = examplePool.slice(0,5).map(m => `${m.title} (${m.total})`).join(', ');
+  const bottom3 = examplePool.slice(-3).map(m => `${m.title} (${m.total})`).join(', ');
   const weightStr = CATEGORIES.map(c => `${c.label}×${+(currentUser?.weights?.[c.key] ?? c.weight).toFixed(1)}`).join(', ');
 
   const predictions = currentUser?.predictions || {};
@@ -828,7 +829,7 @@ function buildTasteProfile() {
 
   const onboardingContext = buildOnboardingContext();
 
-  return { stats, top10, bottom5, weightStr, archetype: currentUser?.archetype, archetypeSecondary: currentUser?.archetype_secondary, totalFilms: MOVIES.length, reconciledPredictions, categoryBias, reconciledCount: allReconciled.length, tagFingerprint, onboardingContext };
+  return { stats, top5, bottom3, weightStr, archetype: currentUser?.archetype, archetypeSecondary: currentUser?.archetype_secondary, totalFilms: MOVIES.length, reconciledPredictions, categoryBias, reconciledCount: allReconciled.length, tagFingerprint, onboardingContext };
 }
 
 function findComparableFilms(film) {
@@ -847,7 +848,7 @@ function findComparableFilms(film) {
     if (aInferred !== bInferred) return aInferred - bInferred;
     return b.total - a.total;
   });
-  return matches.slice(0, 8);
+  return matches.slice(0, 6);
 }
 
 // ── DYNAMIC ENTITY WEIGHTING ────────────────────────────────────────────────
@@ -1412,111 +1413,184 @@ async function buildCandidatePool() {
   return candidates;
 }
 
-async function callClaudeForPrediction(film, entityConstraint = null) {
+// ── PROMPT BUILDERS ─────────────────────────────────────────────────────────
+// Each section is built independently so prompt content can be audited,
+// measured, and trimmed without touching unrelated sections.
+
+function buildPredictionSystemPrompt(profile) {
+  const tier = getPredictionTier();
+  const hedge = tier.tier === 'exploratory'
+    ? ` Note: This user has rated only ${profile.totalFilms} films. Acknowledge limited data and widen confidence intervals.`
+    : '';
+  return `You are a precise film taste prediction engine. Predict how a specific user would score an unrated film based on their rating history and taste profile. When a track record is provided, correct for systematic bias. Respond ONLY with valid JSON.${hedge}`;
+}
+
+function buildPredictionProfileSection(profile) {
+  const statsStr = Object.entries(profile.stats).map(([k,v]) =>
+    `${k}: μ=${v.mean} σ=${v.std} [${v.min}–${v.max}]`
+  ).join('\n');
+  return `USER TASTE PROFILE:
+Archetype: ${profile.archetype || 'unknown'}${profile.archetypeSecondary ? ` / ${profile.archetypeSecondary}` : ''}
+Films rated: ${profile.totalFilms}
+Weights: ${profile.weightStr}
+
+Category stats:
+${statsStr}
+
+Top films: ${profile.top5}
+Bottom films: ${profile.bottom3}`;
+}
+
+function buildPredictionExamplesSection(profile) {
+  if (!profile.onboardingContext) return '';
+  return `\n${profile.onboardingContext}`;
+}
+
+function buildPredictionTrackRecordSection(profile) {
+  let section = '';
+  if (profile.reconciledPredictions.length >= 2) {
+    const lines = profile.reconciledPredictions.map(e => {
+      const sign = e.delta > 0 ? '+' : '';
+      return `- ${e.film.title}: pred ${e.predictedTotal}, actual ${e.actualTotal} (${sign}${e.delta})`;
+    }).join('\n');
+    section += `\nTRACK RECORD (recent predictions vs actuals — positive delta = predicted too low):\n${lines}`;
+  }
+  if (profile.categoryBias) {
+    const biasLines = Object.entries(profile.categoryBias)
+      .filter(([, v]) => Math.abs(v) >= 2)
+      .map(([cat, avg]) => `- ${cat}: ${avg > 0 ? '+' : ''}${avg.toFixed(1)} avg error`)
+      .join('\n');
+    if (biasLines) {
+      section += `\n\nBIAS CORRECTION (${profile.reconciledCount} reconciled):\n${biasLines}\nApply these as systematic corrections.`;
+    }
+  }
+  return section;
+}
+
+function buildPredictionComparablesSection(comps) {
+  if (!comps.length) return '\nCOMPARABLES: None found.';
+  // For each comparable, show title/year/total + the 3 most distinctive category scores
+  // (categories where the score deviates most from the film's own total)
+  const lines = comps.map(m => {
+    const cats = ['story','craft','performance','world','experience','hold','ending','singularity'];
+    const scored = cats.map(c => ({ c, v: m.scores[c] })).filter(x => x.v != null);
+    // Show all 8 compactly: "st=72 cr=80 pf=65 ..."
+    const abbrev = { story: 'st', craft: 'cr', performance: 'pf', world: 'wd', experience: 'ex', hold: 'hd', ending: 'en', singularity: 'sg' };
+    const scoresStr = scored.map(x => `${abbrev[x.c]}=${x.v}`).join(' ');
+    return `- ${m.title} (${m.year||''}): ${m.total} | ${scoresStr}`;
+  }).join('\n');
+  return `\nCOMPARABLES (shared director/cast):\n${lines}`;
+}
+
+function buildPredictionTagSection(tagCtx) {
+  if (!tagCtx) return '';
+  return `\n${tagCtx.section}`;
+}
+
+function buildPredictionTargetFilmSection(film) {
+  return `\nFILM TO PREDICT:
+${film.title} (${film.year}) dir. ${film.director || '?'}
+Cast: ${film.cast || '?'}
+Genres: ${film.genres || '?'}
+Synopsis: ${film.overview || 'N/A'}`;
+}
+
+function buildPredictionTaskSection(entityConstraint) {
+  let ctx = '';
+  if (entityConstraint) {
+    const name = entityConstraint.name;
+    const type = entityConstraint.type;
+    ctx = `Context: User asked for ${type === 'company' ? name + ' film' : name + ' (' + type + ')'}. Weight ${type === 'actor' ? 'performance' : type === 'director' ? 'craft/execution' : 'production'} reasoning more.\n\n`;
+  }
+  return `\n${ctx}TASK: Predict scores. Use comparables as strongest signal. Weight director/cast patterns heavily. Correct for track record bias if present.
+
+Reasoning: 2-3 sentences, second person, personal to THIS person's taste. Reference their rated films by name. No general film analysis.
+
+JSON response:
+{"predicted_scores":{"story":<1-100>,"craft":<1-100>,"performance":<1-100>,"world":<1-100>,"experience":<1-100>,"hold":<1-100>,"ending":<1-100>,"singularity":<1-100>},"confidence":"high|medium|low","reasoning":"<2-3 sentences, you/your>","key_comparables":["<title>","<title>"]}`;
+}
+
+async function callClaudeForPrediction(film, entityConstraint = null, source = 'manual_predict') {
+  // Policy gate — check quota and source entitlement
+  const policyCheck = canRunFreshPrediction(source);
+  if (!policyCheck.allowed) {
+    throw new Error(policyCheck.reason);
+  }
+
   const profile = buildTasteProfile();
   const comps = findComparableFilms(film);
   const tagCtx = buildTagContext(film);
 
-  const compStr = comps.length
-    ? comps.map(m => `- ${m.title} (${m.year||''}): total=${m.total}, story=${m.scores.story}, craft=${m.scores.craft}, performance=${m.scores.performance}, world=${m.scores.world}, experience=${m.scores.experience}, hold=${m.scores.hold}, ending=${m.scores.ending}, singularity=${m.scores.singularity}`).join('\n')
-    : 'No direct comparisons found in rated list.';
+  // Build modular prompt sections
+  const systemPrompt = buildPredictionSystemPrompt(profile);
+  const sections = {
+    profile: buildPredictionProfileSection(profile),
+    examples: buildPredictionExamplesSection(profile),
+    trackRecord: buildPredictionTrackRecordSection(profile),
+    comparables: buildPredictionComparablesSection(comps),
+    tags: buildPredictionTagSection(tagCtx),
+    targetFilm: buildPredictionTargetFilmSection(film),
+    task: buildPredictionTaskSection(entityConstraint),
+  };
 
-  const statsStr = Object.entries(profile.stats).map(([k,v]) =>
-    `${k}: mean=${v.mean}, std=${v.std}, range=${v.min}–${v.max}`
-  ).join('\n');
+  const userPrompt = sections.profile + sections.examples + sections.trackRecord + sections.comparables + sections.tags + sections.targetFilm + sections.task;
 
-  const trackRecordStr = profile.reconciledPredictions.length >= 2
-    ? profile.reconciledPredictions.map(e => {
-        const sign = e.delta > 0 ? '+' : '';
-        return `- ${e.film.title}: predicted ${e.predictedTotal}, actual ${e.actualTotal} (${sign}${e.delta})`;
-      }).join('\n')
-    : null;
+  // Section size telemetry (dev + analytics)
+  const sectionSizes = {};
+  for (const [name, content] of Object.entries(sections)) {
+    sectionSizes[name] = content.length;
+  }
+  sectionSizes.system = systemPrompt.length;
+  sectionSizes.userTotal = userPrompt.length;
+  sectionSizes.grandTotal = systemPrompt.length + userPrompt.length;
 
-  // Direction 2: per-category bias correction string
-  const biasStr = profile.categoryBias
-    ? Object.entries(profile.categoryBias)
-        .filter(([, v]) => Math.abs(v) >= 2)
-        .map(([cat, avg]) => {
-          const dir = avg > 0 ? 'low' : 'high';
-          return `- ${cat}: your predictions run ${Math.abs(avg).toFixed(1)} points too ${dir} on average`;
-        }).join('\n')
-    : null;
+  if (import.meta.env.DEV) {
+    console.log('[predict] prompt section sizes:', sectionSizes);
+  }
+  track('prediction_prompt_built', {
+    source,
+    tmdb_id: film.tmdbId,
+    ...sectionSizes,
+  });
 
-  const tier = getPredictionTier();
-  const hedgePreamble = tier.tier === 'exploratory'
-    ? `\n\nNote: This user has only rated ${profile.totalFilms} films. Your predictions should be directionally accurate but acknowledge limited data. Widen your confidence intervals. In your reasoning, be transparent: "Based on your ${profile.totalFilms} ratings so far..." rather than speaking with full certainty.`
-    : '';
-  const systemPrompt = `You are a precise film taste prediction engine. Your job is to predict how a specific user would score an unrated film, based on their detailed rating history and taste profile. When a prediction track record is provided, use it to calibrate your predictions — correct for any systematic bias in your past estimates. You must respond ONLY with valid JSON — no preamble, no markdown, no explanation outside the JSON.${hedgePreamble}`;
-
-  const userPrompt = `USER TASTE PROFILE:
-Archetype: ${profile.archetype || 'unknown'} (secondary: ${profile.archetypeSecondary || 'none'})
-Total films rated: ${profile.totalFilms}
-Weighting formula: ${profile.weightStr}
-
-Category score statistics (across all rated films):
-${statsStr}
-
-Top 10 films: ${profile.top10}
-Bottom 5 films: ${profile.bottom5}
-${profile.onboardingContext ? `
-${profile.onboardingContext}
-` : ''}${trackRecordStr ? `
-PREDICTION TRACK RECORD (your recent predictions vs what they actually gave):
-${trackRecordStr}
-
-Use this track record to self-correct. If you have been consistently over- or under-predicting, adjust accordingly. A positive delta means you predicted too low. A negative delta means you predicted too high.
-` : ''}${biasStr ? `
-PER-CATEGORY BIAS CORRECTION (computed from ${profile.reconciledCount} reconciled predictions):
-${biasStr}
-
-Apply these corrections to your category predictions. If a category runs too low, nudge your prediction upward by roughly that amount. If too high, nudge downward. These are averaged across many predictions — treat them as reliable systematic corrections, not suggestions.
-` : ''}
-FILMS WITH SHARED DIRECTOR/CAST (most relevant comparisons):
-${compStr}
-${tagCtx ? `
-${tagCtx.section}
-` : ''}
-FILM TO PREDICT:
-Title: ${film.title}
-Year: ${film.year}
-Director: ${film.director || 'unknown'}
-Writer: ${film.writer || 'unknown'}
-Cast: ${film.cast || 'unknown'}
-Genres: ${film.genres || 'unknown'}
-Synopsis: ${film.overview || 'not available'}
-
-${entityConstraint ? `CONTEXT: The user specifically asked for a ${entityConstraint.type === 'company' ? entityConstraint.name + ' film' : entityConstraint.name + ' (' + entityConstraint.type + ') film'}. Weight the ${entityConstraint.type === 'actor' ? 'acting and cast-specific' : entityConstraint.type === 'director' ? 'directing and execution' : 'production and studio-specific'} reasoning more heavily.\n\n` : ''}TASK:
-Predict the scores this person would give this film. Use comparable films as the strongest signal. Weight director/cast patterns heavily. If a prediction track record is present, use it to correct for known systematic errors.
-
-The reasoning must feel personal and specific to THIS person's taste — not a general film analysis. Write like you genuinely understand how they think about film. Reference their actual rated films by name. Focus on what THEY care about based on their scoring patterns. Be direct and confident. 2-3 sentences max. Never describe the film in general terms — always anchor to their specific ratings and patterns.
-
-Respond with this exact JSON structure:
-{
-  "predicted_scores": {
-    "story": <integer 1-100>,
-    "craft": <integer 1-100>,
-    "performance": <integer 1-100>,
-    "world": <integer 1-100>,
-    "experience": <integer 1-100>,
-    "hold": <integer 1-100>,
-    "ending": <integer 1-100>,
-    "singularity": <integer 1-100>
-  },
-  "confidence": "high" | "medium" | "low",
-  "reasoning": "<2-3 sentences in second person (you/your). Reference specific films they have rated. Never say the user. Sound like a trusted friend who knows their taste intimately, not a film critic.>",
-  "key_comparables": ["<film title>", "<film title>"]
-}`;
+  // Get auth token for server-side quota enforcement
+  const headers = { 'Content-Type': 'application/json' };
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+  } catch {}
 
   const res = await fetch(PROXY_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({
       system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }]
+      messages: [{ role: 'user', content: userPrompt }],
+      prediction_source: source,
     })
   });
 
   const data = await res.json();
+
+  // Handle server-side quota/policy/auth blocks
+  if (data.error === 'quota_exceeded' || data.error === 'plan_restricted' || data.error === 'auth_required' || data.error === 'quota_service_error') {
+    throw new Error(data.message || 'Prediction blocked by server policy.');
+  }
+
+  // Thread usage data from proxy response (Phase 2 telemetry)
+  const usage = data.usage || null;
+  if (usage) {
+    track('prediction_usage', {
+      source,
+      tmdb_id: film.tmdbId,
+      input_tokens: usage.input_tokens,
+      output_tokens: usage.output_tokens,
+      model: data.model || null,
+    });
+  }
+
   const text = data.content?.[0]?.text || '';
   const clean = text.replace(/```json|```/g, '').trim();
   const prediction = JSON.parse(clean);
@@ -1532,14 +1606,23 @@ Respond with this exact JSON structure:
     throw new Error('API returned all-zero or missing category scores');
   }
 
+  // Attach usage metadata to prediction for downstream logging
+  prediction._usage = usage;
+  prediction._source = source;
+  prediction._promptSizes = sectionSizes;
+
+  // Record quota usage
+  recordPredictionUsage(source, film.tmdbId);
+
   return { prediction, comps };
 }
 
-async function runPrediction(film) {
+async function runPrediction(film, source = 'manual_predict') {
   const _predStart = Date.now();
   track('prediction_requested', {
     tmdb_id: film.tmdbId,
     title: film.title,
+    source,
     predictions_this_month: Object.values(currentUser?.predictions || {}).filter(p => {
       if (!p.predictedAt) return false;
       const d = new Date(p.predictedAt);
@@ -1548,7 +1631,7 @@ async function runPrediction(film) {
     }).length,
   });
   try {
-    const { prediction, comps } = await callClaudeForPrediction(film);
+    const { prediction, comps } = await callClaudeForPrediction(film, null, source);
     lastPrediction = prediction;
     track('prediction_completed', {
       tmdb_id: film.tmdbId,
@@ -1642,18 +1725,23 @@ async function runPrediction(film) {
       predictedScores: prediction.predicted_scores,
       predictedTotal: calcPredictedTotal(prediction),
       confidence: prediction.confidence,
+      predictionSource: prediction._source || source,
       userFilmsAtPrediction: MOVIES.length,
       weightsAtPrediction: currentUser?.weights ? { ...currentUser.weights } : null,
       tagContextVersion: _tagCtx?.version || null,
       metadata: {
         ...(_tagCtx ? { tag_coverage: _tagCtx.coverage } : {}),
-        ...(_darkResidual ? { dark_residual: _darkResidual } : {})
+        ...(_darkResidual ? { dark_residual: _darkResidual } : {}),
+        ...(prediction._usage ? { usage: prediction._usage } : {}),
+        ...(prediction._promptSizes ? { prompt_sizes: prediction._promptSizes } : {}),
       }
     });
     renderPrediction(film, prediction, comps, predictedAt);
   } catch(e) {
+    // Distinguish quota/policy errors from API errors
+    const isQuotaError = e.message?.includes('predictions') || e.message?.includes('plan');
     document.getElementById('predict-result').innerHTML = `
-      <div class="tmdb-error">Prediction failed: ${e.message}. Check that the proxy is running and your API key is valid.</div>`;
+      <div class="tmdb-error">${isQuotaError ? e.message : `Prediction failed: ${e.message}. Check that the proxy is running and your API key is valid.`}</div>`;
   }
 }
 
@@ -1668,7 +1756,10 @@ function calcPredictedTotal(prediction) {
 
 export async function runAutoPredict(item) {
   if (!currentUser || !getPredictionTier().canPredict) return;
-  if (currentUser.predictions?.[String(item.tmdbId)]) return;
+  if (isCacheValid(item.tmdbId)) return;
+  // Policy gate — skip silently if watchlist auto-predict is blocked
+  const policyCheck = canRunFreshPrediction('watchlist_auto');
+  if (!policyCheck.allowed) return;
   let detail = {}, credits = {};
   try {
     const [dRes, cRes] = await Promise.all([
@@ -1688,7 +1779,7 @@ export async function runAutoPredict(item) {
     overview: item.overview || detail.overview || '',
     poster: item.poster || detail.poster_path || null
   };
-  await runPrediction(film);
+  await runPrediction(film, 'watchlist_auto');
 }
 
 function renderPrediction(film, prediction, comps, predictedAt = null) {
@@ -1828,8 +1919,8 @@ async function findMeAFilm() {
     const top5 = scored.slice(0, 8);
 
     // At Tier 1, skip Claude calls entirely — use compatScore as predTotal
-    if (fmTier.canPredict) {
-      const toPredict = top5.filter(c => !currentUser?.predictions?.[String(c.tmdbId)]);
+    if (fmTier.canPredict && canRunFreshPrediction('foryou_auto').allowed) {
+      const toPredict = top5.filter(c => !isCacheValid(c.tmdbId));
       const toCall = toPredict.slice(0, 5);
 
       await Promise.allSettled(toCall.map(async (c) => {
@@ -1840,7 +1931,7 @@ async function findMeAFilm() {
           overview: c.overview || '', poster: c.poster || null
         };
         try {
-          const { prediction } = await callClaudeForPrediction(film);
+          const { prediction } = await callClaudeForPrediction(film, null, 'foryou_auto');
           const predictedAt = new Date().toISOString();
           const newPredictions = {
             ...(currentUser?.predictions || {}),
@@ -2108,9 +2199,11 @@ async function loadDiscoveryRecommendations() {
       .map(c => ({ ...c, compatScore: scoreCandidate(c) }))
       .sort((a, b) => b.compatScore - a.compatScore);
 
-    // Predict top 4, render top 3
+    // Predict top 4, render top 3 — skip if policy blocks discovery
     const top4 = scored.slice(0, 4);
-    const toPredict = top4.filter(c => !currentUser?.predictions?.[String(c.tmdbId)]);
+    const toPredict = canRunFreshPrediction('discovery_auto').allowed
+      ? top4.filter(c => !isCacheValid(c.tmdbId))
+      : [];
     await Promise.allSettled(toPredict.slice(0, 3).map(async (c) => {
       const film = {
         tmdbId: c.tmdbId, title: c.title, year: c.year,
@@ -2119,7 +2212,7 @@ async function loadDiscoveryRecommendations() {
         overview: c.overview || '', poster: c.poster || null
       };
       try {
-        const { prediction } = await callClaudeForPrediction(film);
+        const { prediction } = await callClaudeForPrediction(film, null, 'discovery_auto');
         const predictedAt = new Date().toISOString();
         const newPredictions = {
           ...(currentUser?.predictions || {}),
@@ -2456,9 +2549,10 @@ async function constrainedSelectEntity(type, tmdbId, name) {
       .map(c => ({ ...c, compatScore: scoreCandidate(c) }))
       .sort((a, b) => b.compatScore - a.compatScore);
 
-    // Step 4: Predict top 5 (cache-first)
+    // Step 4: Predict top 5 (cache-first, policy-gated)
     const top5 = scored.slice(0, 5);
-    const toPredict = top5.filter(c => !currentUser?.predictions?.[String(c.tmdbId)]);
+    const csPolicy = canRunFreshPrediction('constrained_search');
+    const toPredict = csPolicy.allowed ? top5.filter(c => !isCacheValid(c.tmdbId)) : [];
     const toCall = toPredict.slice(0, 5);
 
     await Promise.allSettled(toCall.map(async (c) => {
@@ -2469,7 +2563,7 @@ async function constrainedSelectEntity(type, tmdbId, name) {
         overview: c.overview || '', poster: c.poster || null
       };
       try {
-        const { prediction } = await callClaudeForPrediction(film, entityConstraint);
+        const { prediction } = await callClaudeForPrediction(film, entityConstraint, 'constrained_search');
         const predictedAt = new Date().toISOString();
         const newPredictions = {
           ...(currentUser?.predictions || {}),
@@ -2867,7 +2961,7 @@ export function predictFresh() {
       <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:22px;color:var(--dim)">Re-analysing…</div>
       <div class="predict-loading-label">Reading ${MOVIES.length} films · building your fingerprint · predicting scores</div>
     </div>`;
-  runPrediction(predictSelectedFilm);
+  runPrediction(predictSelectedFilm, 'repredict');
 }
 
 export function predictAddToWatchlist() {
