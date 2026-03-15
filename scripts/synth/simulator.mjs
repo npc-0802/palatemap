@@ -726,9 +726,19 @@ function evaluatePredictions(persona, filmPool, movies, effectiveWeights, rng, c
 
     const predictedScores = {};
     for (const cat of CATEGORIES) {
-      // Prediction: blend of user average and film's latent quality
+      // Base prediction: blend of user average and film's latent quality
       const blend = 0.4 * userAvgs[cat] + 0.6 * film.scores[cat];
-      predictedScores[cat] = clamp(Math.round(blend), 1, 100);
+
+      // Edge preference correction: models the strongest-preferences prompt
+      // section giving Claude signal about how this user specifically responds.
+      // For categories the user cares about strongly (high weight), they
+      // respond MORE to films strong in that category and LESS to films weak
+      // in it. The correction captures this directional sensitivity.
+      const wDev = (effectiveWeights[cat] ?? 2.5) - 2.5; // signed: + = important
+      const filmStrength = (film.scores[cat] - 50) / 50;  // how strong film is in this cat
+      const correction = wDev * filmStrength * 3;          // small directional adjustment
+
+      predictedScores[cat] = clamp(Math.round(blend + correction), 1, 100);
     }
     const predictedTotal = calcTotal(predictedScores, effectiveWeights);
 
@@ -813,6 +823,10 @@ export function simulateUser(persona, filmPool, rng) {
     guidedFilmCount: onboarding.guidedFilms.length,
     calibratedFilmCount: onboarding.calibratedFilms.length,
     comparisonCount: onboarding.comparisons.length,
+    // Detailed onboarding data (for analysis scripts)
+    guidedFilms: onboarding.guidedFilms,
+    calibratedFilms: onboarding.calibratedFilms,
+    comparisons: onboarding.comparisons,
     // Archetype
     onboardingArchetype: onboarding.archetype.archetype,
     onboardingAdjective: onboarding.archetype.adjective,

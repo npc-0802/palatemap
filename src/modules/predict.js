@@ -728,6 +728,73 @@ ${lines.join('\n\n')}
 Interpret these films in context: the anchor defines baseline, the contrast reveals secondary drivers, the guilty pleasure shows unguarded preferences, the rejection reveals standards, and the wild card shows hidden range.`;
 }
 
+// ── Strongest Preferences ────────────────────────────────────────────────────
+// Hard cohorts (cinephile, power-user types) are underserved not because
+// onboarding fails, but because the prediction context underrepresents their
+// sharpest preferences. This section surfaces the 2-3 categories where the
+// user deviates most from neutral (weight 2.5), with 1-2 diagnostic films per
+// edge category, so Claude can see what is *unusually important* to this user.
+
+function buildStrongestPreferencesSection(profile) {
+  const weights = currentUser?.weights;
+  if (!weights) return '';
+
+  const NEUTRAL = 2.5;
+  const cats = ['story','craft','performance','world','experience','hold','ending','singularity'];
+  const catLabels = { story: 'Story', craft: 'Craft', performance: 'Performance', world: 'World',
+    experience: 'Experience', hold: 'Hold', ending: 'Ending', singularity: 'Singularity' };
+
+  // Compute signed deviation from neutral for each category
+  const deviations = cats.map(cat => ({
+    cat,
+    label: catLabels[cat],
+    weight: weights[cat] ?? NEUTRAL,
+    dev: (weights[cat] ?? NEUTRAL) - NEUTRAL,
+  }));
+
+  // Sort by absolute deviation — strongest edges first
+  deviations.sort((a, b) => Math.abs(b.dev) - Math.abs(a.dev));
+
+  // Take top 2-3 edges (need |dev| >= 0.3 to be meaningful)
+  const edges = deviations.filter(d => Math.abs(d.dev) >= 0.3).slice(0, 3);
+  if (edges.length === 0) return '';
+
+  // Find 1-2 diagnostic films per edge category from high-trust pool
+  const highTrustFilms = MOVIES.filter(m => m.rating_source !== 'onboarding_pairwise');
+  const filmPool = highTrustFilms.length >= 5 ? highTrustFilms : MOVIES;
+
+  const lines = edges.map(edge => {
+    const sign = edge.dev > 0 ? '+' : '';
+    const direction = edge.dev > 0 ? 'unusually important' : 'less central';
+
+    // Pick films that best express this edge:
+    // For positive edges: films where this category score is high AND the user rated highly
+    // For negative edges: films where this category is low AND the user still liked them
+    const scored = filmPool
+      .filter(m => m.scores?.[edge.cat] != null)
+      .map(m => ({
+        title: m.title,
+        catScore: m.scores[edge.cat],
+        total: m.total,
+        // Diagnostic value: how well does this film demonstrate the edge?
+        diagnostic: edge.dev > 0
+          ? m.scores[edge.cat] * (m.total / 100) // high category + high total = strong positive signal
+          : (100 - m.scores[edge.cat]) * (m.total / 100), // low category + high total = user doesn't need this
+      }))
+      .sort((a, b) => b.diagnostic - a.diagnostic)
+      .slice(0, 2);
+
+    const filmStr = scored.length > 0
+      ? scored.map(f => `${f.title} (${edge.cat}=${f.catScore})`).join(', ')
+      : '';
+
+    return `- ${edge.label}: ${direction} (${sign}${edge.dev.toFixed(1)} vs neutral)${filmStr ? ' — e.g. ' + filmStr : ''}`;
+  });
+
+  return `\nSTRONGEST PREFERENCES (what makes this user distinctive):
+${lines.join('\n')}`;
+}
+
 function buildTasteProfile() {
   const cats = ['story','craft','performance','world','experience','hold','ending','singularity'];
   const stats = {};
@@ -1525,6 +1592,7 @@ async function callClaudeForPrediction(film, entityConstraint = null, source = '
   const systemPrompt = buildPredictionSystemPrompt(profile);
   const sections = {
     profile: buildPredictionProfileSection(profile),
+    edges: buildStrongestPreferencesSection(profile),
     examples: buildPredictionExamplesSection(profile),
     trackRecord: buildPredictionTrackRecordSection(profile),
     comparables: buildPredictionComparablesSection(comps),
@@ -1533,7 +1601,7 @@ async function callClaudeForPrediction(film, entityConstraint = null, source = '
     task: buildPredictionTaskSection(entityConstraint),
   };
 
-  const userPrompt = sections.profile + sections.examples + sections.trackRecord + sections.comparables + sections.tags + sections.targetFilm + sections.task;
+  const userPrompt = sections.profile + sections.edges + sections.examples + sections.trackRecord + sections.comparables + sections.tags + sections.targetFilm + sections.task;
 
   // Section size telemetry (dev + analytics)
   const sectionSizes = {};
