@@ -1009,8 +1009,8 @@ body {
 .carousel-friends-predict-main {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 14px;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 .carousel-friends-predict-poster {
   width: 56px;
@@ -1023,7 +1023,7 @@ body {
   font-family: 'Playfair Display', serif;
   font-style: italic;
   font-weight: 700;
-  font-size: 22px;
+  font-size: 18px;
   color: var(--on-dark);
 }
 .carousel-friends-predict-meta {
@@ -1032,10 +1032,17 @@ body {
   color: var(--on-dark-dim);
   margin-top: 4px;
 }
+.carousel-friends-predict-row {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+.carousel-friends-predict-left {
+  flex-shrink: 0;
+}
 .carousel-friends-predict-scores {
   display: flex;
-  gap: 40px;
-  margin-bottom: 14px;
+  gap: 24px;
 }
 .carousel-friends-predict-user {
   display: flex;
@@ -1050,16 +1057,20 @@ body {
 .carousel-friends-predict-number {
   font-family: 'Playfair Display', serif;
   font-style: italic;
-  font-size: 32px;
+  font-size: 26px;
   letter-spacing: -1px;
   line-height: 1;
 }
 .carousel-friends-predict-reason {
   font-family: 'DM Sans', sans-serif;
   font-style: italic;
-  font-size: 14px;
-  line-height: 1.55;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--on-dark-dim);
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
 }
 .card-overlap-radar {
   display: flex;
@@ -1544,6 +1555,7 @@ body {
   .cold-cta-stack { max-width: 100%; }
   .cold-carousel-card { padding: 22px 20px; }
   .carousel-friends-top { flex-direction: column; gap: 12px; }
+  .carousel-friends-predict-row { flex-direction: column; gap: 12px; }
   .carousel-friends-predict-scores { gap: 24px; }
   .cold-system { padding: 64px 0; }
   .cold-system-inner { padding: 0 32px; }

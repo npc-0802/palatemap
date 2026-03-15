@@ -417,18 +417,22 @@ function buildCarouselCards() {
       <div class="card-rule"></div>
       <div class="carousel-friends-bottom">
         <div class="carousel-friends-predict-label">— overlap predict —</div>
-        <div class="carousel-friends-predict-main">
-          <img src="https://image.tmdb.org/t/p/w154/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg" alt="Oppenheimer" class="carousel-friends-predict-poster">
-          <div>
-            <div class="carousel-friends-predict-title">Oppenheimer</div>
-            <div class="carousel-friends-predict-meta">2023 · Christopher Nolan</div>
+        <div class="carousel-friends-predict-row">
+          <div class="carousel-friends-predict-left">
+            <div class="carousel-friends-predict-main">
+              <img src="https://image.tmdb.org/t/p/w154/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg" alt="Oppenheimer" class="carousel-friends-predict-poster">
+              <div>
+                <div class="carousel-friends-predict-title">Oppenheimer</div>
+                <div class="carousel-friends-predict-meta">2023 · Christopher Nolan</div>
+              </div>
+            </div>
+            <div class="carousel-friends-predict-scores">
+              <div class="carousel-friends-predict-user"><span class="carousel-friends-predict-name">You'd give it</span><span class="carousel-friends-predict-number" style="color:var(--blue)">84</span></div>
+              <div class="carousel-friends-predict-user"><span class="carousel-friends-predict-name">Sarah'd give it</span><span class="carousel-friends-predict-number" style="color:#D4A84B">71</span></div>
+            </div>
           </div>
+          <div class="carousel-friends-predict-reason">You'd love the Craft and World — Nolan's obsessive detail and the weight of Los Alamos land perfectly for your palate. Sarah would find it slow — low Experience for her taste. She wants momentum; this film builds pressure instead.</div>
         </div>
-        <div class="carousel-friends-predict-scores">
-          <div class="carousel-friends-predict-user"><span class="carousel-friends-predict-name">You'd give it</span><span class="carousel-friends-predict-number" style="color:var(--blue)">84</span></div>
-          <div class="carousel-friends-predict-user"><span class="carousel-friends-predict-name">Sarah'd give it</span><span class="carousel-friends-predict-number" style="color:#D4A84B">71</span></div>
-        </div>
-        <div class="carousel-friends-predict-reason">You'd love the Craft and World. Sarah would find it slow — low Experience for her palate.</div>
       </div>`;
   }
 
