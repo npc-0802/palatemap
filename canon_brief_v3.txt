@@ -1,5 +1,5 @@
 Palate Map
-Product Brief · Living Document · v3.28
+Product Brief · Living Document · v3.29
 Last updated: March 2026
 Confidential — do not distribute
 
@@ -399,8 +399,8 @@ Wordmark ("palate map") is clickable — navigates to Rankings (home). Search ba
 • No database backup strategy on Supabase free tier. Upgrade to Pro before first paid user.
 • TMDB API key hardcoded in multiple client files (publishable, not a security issue, but rate limit sharing risk at scale).
 • No data export UI exists yet — only a console-level exportData() function. Must build visible export in Profile before charging for paid tier.
-• Pairwise-calibrated films (onboarding) leak equal-weight influence into weight-blend.js, archetype recomputation, and predict.js taste profile. Required: confidence-aware weighting pass where calibrated films are discounted by their per-category alpha values. See project memory for full scope.
-• `quiz_weights` semantic mismatch: after 3.28, quiz_weights may contain inferred weights from taste reveal (not pure stated-preference baseline). Needs cleanup so weight-blend.js decay logic has a clean quiz-only baseline.
+• MOVIES array holds all observation types (guided_slider, onboarding_pairwise, manual_rating) in one collection. Metadata (rating_source, calibration_confidence) handles this adequately via getFilmObservationWeight(), but the single-array design will accumulate complexity as more observation types are added.
+• calibrate.js (Elo head-to-head) still lets pairwise-inferred films enter the matchup pool. Their inferred scores may generate spurious close-scoring pairs. Not yet addressed — separate decision about whether to exclude or annotate them.
 
 08  Full Product Roadmap
 Phase 0 — Foundation [COMPLETE]
@@ -540,7 +540,7 @@ Phase 3 — Growth Features [IN PROGRESS]
   - Quiz engine (src/modules/quiz-engine.js): 15-question bank (src/data/quiz-questions.js), Bayesian question selection via expected uncertainty reduction, adaptive stopping at 3–5 questions. Each answer nudges 8-dimensional weight vector directly (no archetype scoring). Weight range 1.0–5.0, neutral 2.5.
   - 5-composite archetype classification: narrative (0.6×story + 0.4×ending), craft (0.5×craft + 0.5×world), human (1.0×performance), experiential (0.6×experience + 0.4×hold), singular (1.0×singularity). Dominant composite = palate type. If no composite leads by >0.3, user is Holist.
   - Adjective system: Studied (craft > experience by 1.5+), Instinctive (experience > craft by 1.5+), Devoted (neither). Full name = "Studied Narrativist" etc.
-  - Weight blending (src/modules/weight-blend.js): quiz_influence = 1/(1 + films_rated × 0.15). Rating-derived weights from per-category score variance. Effective weights = quiz × decay + rating × (1 − decay). Palate type recomputed on every blend.
+  - Weight blending (src/modules/weight-blend.js): quiz_influence = 1/(1 + films_rated × 0.15). Rating-derived weights from per-category score variance (confidence-weighted — see 3.29). Effective weights = baseline × decay + rating × (1 − decay). Palate type recomputed on every blend. Baseline is quiz_weights (quiz-derived for old quiz users, neutral 2.5 for extended onboarding users — see 3.29 for why).
   - Category key rename: plot→story, execution→craft, acting→performance, production→world, enjoyability→experience, rewatchability→hold, uniqueness→singularity. Old keys migrated at localStorage and Supabase load boundaries via migrateKeys().
   - Legacy user handling: users without quiz_weights are prompted to complete new onboarding before accessing the app (forced re-onboarding, no silent weight migration).
   - Starter films use NEW_ARCHETYPE_TO_OLD mapping (Archivist→Completionist, Holist→Visceralist) for compatibility with existing starter-films.js data.
@@ -575,6 +575,31 @@ Phase 3 — Growth Features [IN PROGRESS]
   - Calibration metadata: calibrated films carry `calibration_source`, `calibration_confidence`, `calibration_comp_count` per category.
   - Analytics: `onboarding_calibration_completed` event with comparisons_answered, comparisons_total, selected_films_count, skipped_early.
   - CSS: ~300 lines added to components.css (progress bar, sticky bank, selection grid, calibration matchup, taste reveal, welcome banner).
+
+• 3.29 Beta Instrumentation & Confidence-Aware Weighting ✓ — two-pass systems upgrade:
+  Pass 1 — Beta instrumentation:
+  - Explicit `rating_source` on all films: `guided_slider`, `onboarding_pairwise`, `manual_rating`.
+  - Pairwise comparison trace persisted per-film (`calibration_log`) and on currentUser (`onboarding_calibration_log`).
+  - Full onboarding funnel analytics: 7 events (transition_seen → selection_started → selection_completed → calibration_started → calibration_completed → taste_reveal_shown → entered_app).
+  - Calibration timing metrics: per-comparison timestamps, first/second half averages, total duration. Detects fatigue in ~30-comparison flows.
+  - Inferred-vs-actual reconciliation: when a pairwise film is later manually rated, captures per-category error, MAE, and logs `onboarding_calibration_reconciled` event. Stored on `currentUser.calibration_reconciliation_log`.
+  - Observation weight helpers: `getFilmObservationWeight(film, categoryKey)` and `isInferredOnboardingFilm(film)` in weight-blend.js.
+  - Onboarding profile confidence summary: `currentUser.onboarding_profile_confidence` (level: low/medium/high, comparisons, avg confidence, coverage fraction).
+
+  Pass 2 — Confidence-aware downstream weighting:
+  - `computeRatingWeights()`: weighted variance, weighted mean deviation, and weighted per-film mean (filmMean). Low-confidence pairwise categories can't distort the baseline that deviations are measured from.
+  - `computeSkewCoefficient()`: weighted total mean so pairwise films don't distort decay logic.
+  - `computeWeightedCategoryAverages()`: centralized helper used by obFinish, profile, analysis, insights.
+  - `buildTasteProfile()` in predict.js: weighted means/std for Claude prompts. Top10/bottom5 examples exclude pairwise films. `findComparableFilms()` deprioritizes pairwise behind slider-scored.
+  - Profile, analysis, insights, tag-profile: all category averages confidence-weighted.
+  - `getFilmObservationWeight()` uses `||` not `??` — confidence=0 (uncovered categories) falls to 0.25 fallback instead of zero.
+
+  Pass 3 — Weight architecture stabilization:
+  - Fixed double-counting: extended onboarding was storing the shaped profile as both `quiz_weights` (blend baseline) AND in MOVIES (rating evidence). Same data entered the model through two channels.
+  - Fix: `quiz_weights` is now neutral 2.5 for extended onboarding users. Shaped profile stored separately as `onboarding_profile_weights` (diagnostic only).
+  - Weight architecture: `quiz_weights` (blend baseline/prior) · `rating_weights` (from MOVIES, confidence-aware) · `weights` (effective = blend) · `onboarding_profile_weights` (record of taste reveal output).
+  - Extended onboarding sets `archetype_revealed=true` to prevent redundant deferred archetype popup.
+  - Backward compatible: legacy films without `rating_source` default to 1.0 (full trust).
 
 Phase 4 — Platform
 • 4.1 Universal entity search — global search surfacing any director/actor/writer/company (entity-level, not film-level — film search is covered by 3.8 Global Search). Entity page shows: TMDB data, user's own rankings (if any), community avg score (requires 4.2). Requires schema change: separate palatemap_ratings table (see below).

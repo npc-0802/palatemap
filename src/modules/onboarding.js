@@ -40,6 +40,19 @@ let _tasteRevealData = null; // computed weights/archetype from taste reveal, us
 let _calStartTimestamp = null;       // ms timestamp when calibration began
 let _calCompTimestamps = [];          // elapsed ms per comparison answer
 
+// Absolute-level pass state
+let _absoluteIndex = 0;
+let _absoluteResponses = {};  // tmdbId -> { bucket, targetTotal }
+let _absoluteStartTimestamp = null;
+
+const ABSOLUTE_BUCKETS = [
+  { key: 'favorite',     label: 'One of my favorites', target: 90 },
+  { key: 'really_liked', label: 'Really liked it',     target: 80 },
+  { key: 'liked',        label: 'Liked it',            target: 70 },
+  { key: 'mixed',        label: 'Mixed on it',         target: 58 },
+  { key: 'didnt_like',   label: "Didn't like it",      target: 42 },
+];
+
 // Category grouping for staged sliders
 const GUT_CATS = ['experience', 'story', 'performance', 'hold'];
 const BEAT_CATS = ['craft', 'world', 'ending', 'singularity'];
@@ -75,7 +88,7 @@ function ensureProgressBar() {
   bar.className = 'ob-progress-global';
   bar.innerHTML = `
     <div class="ob-progress-global-fill" id="ob-progress-fill"></div>
-    <div class="ob-progress-global-label" id="ob-progress-label">Getting to know you</div>
+    <div class="ob-progress-global-label" id="ob-progress-label">Getting to know you · <span id="ob-progress-pct">0%</span></div>
   `;
   document.body.appendChild(bar);
   bar.style.display = 'block';
@@ -84,17 +97,22 @@ function ensureProgressBar() {
 function updateProgress(percent) {
   const fill = document.getElementById('ob-progress-fill');
   const label = document.getElementById('ob-progress-label');
+  const pct = document.getElementById('ob-progress-pct');
   if (!fill || !label) return;
   fill.style.width = percent + '%';
+  const roundedPct = Math.round(percent);
   const thresholds = [100, 85, 65, 50, 25, 0];
+  let msg = '';
   for (const t of thresholds) {
     if (percent >= t) {
-      label.textContent = PROGRESS_LABELS[t];
+      msg = PROGRESS_LABELS[t];
       break;
     }
   }
   if (percent >= 100) {
     label.style.display = 'none';
+  } else {
+    label.innerHTML = `${msg} · <span id="ob-progress-pct">${roundedPct}%</span>`;
   }
 }
 
@@ -494,6 +512,9 @@ function renderObStep() {
   } else if (obStep === 'ob-calibrate') {
     renderObCalibrate();
 
+  } else if (obStep === 'ob-absolute') {
+    renderAbsolutePass();
+
   } else if (obStep === 'taste-reveal') {
     renderTasteReveal();
   }
@@ -514,7 +535,7 @@ function renderGuidedStep() {
       <div style="font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.7;color:var(--on-dark-dim);margin-bottom:8px;white-space:pre-line;opacity:0;animation:fadeIn 0.4s ease 0.6s both">${prompt.sub}</div>
       ${prompt.reason ? `<div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--on-dark-dim);opacity:0.7;margin-bottom:24px;opacity:0;animation:fadeIn 0.3s ease 0.8s both">${prompt.reason}</div>` : '<div style="margin-bottom:24px"></div>'}
 
-      <div style="position:relative;max-width:440px;margin:0 auto;opacity:0;animation:fadeIn 0.4s ease 0.8s both">
+      <div style="position:relative;opacity:0;animation:fadeIn 0.4s ease 0.8s both">
         <input id="guided-search-input" type="text" placeholder="Search for a film..."
           style="width:100%;box-sizing:border-box;background:rgba(244,239,230,0.06);border:1px solid rgba(244,239,230,0.15);color:var(--on-dark);font-family:'DM Sans',sans-serif;font-size:16px;padding:14px 16px;border-radius:3px;outline:none"
           oninput="guidedSearchFilm(this.value)">
@@ -539,7 +560,9 @@ function renderGuidedScoring() {
   const posterUrl = film.poster ? `https://image.tmdb.org/t/p/w185${film.poster}` : null;
   const isFirstFilm = guidedFilms.length === 0;
   const showAll = !isFirstFilm || guidedSliderStage === 'all';
-  const visibleCats = showAll ? CATEGORIES : CATEGORIES.filter(c => GUT_CATS.includes(c.key));
+  const visibleCats = showAll
+    ? [...CATEGORIES.filter(c => GUT_CATS.includes(c.key)), ...CATEGORIES.filter(c => BEAT_CATS.includes(c.key))]
+    : CATEGORIES.filter(c => GUT_CATS.includes(c.key));
 
   // Check if all gut sliders have been touched (for Film 1 staged reveal)
   const gutTouched = GUT_CATS.every(k => guidedScores[k] !== 65);
@@ -1091,11 +1114,14 @@ function renderTransition() {
   card.innerHTML = `
     <div style="max-width:480px;margin:0 auto;padding:80px 24px 40px;text-align:center">
       <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;color:var(--on-dark);margin-bottom:24px;opacity:0;animation:fadeIn 0.4s ease 0.2s both">Good start.</div>
-      <p style="font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.65;color:var(--on-dark-dim);max-width:440px;margin:0 auto 24px;opacity:0;animation:fadeIn 0.4s ease 0.5s both">
-        Now let's go wider. We'll show you some well-known films — pick any 5 you've seen and we'll run through a few quick comparisons to place them in your rankings.
+      <p style="font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.65;color:var(--on-dark-dim);max-width:440px;margin:0 auto 20px;opacity:0;animation:fadeIn 0.4s ease 0.5s both">
+        You just scored 5 films across 8 dimensions each — that's 40 data points. Now let's add 5 more films without the sliders.
       </p>
-      <p style="font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.65;color:var(--on-dark-dim);max-width:440px;margin:0 auto 36px;opacity:0;animation:fadeIn 0.4s ease 0.7s both">
-        <span style="color:var(--on-dark)">No sliders</span> — just "which is better?" Pick fast. Trust your gut.
+      <p style="font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.65;color:var(--on-dark-dim);max-width:440px;margin:0 auto 20px;opacity:0;animation:fadeIn 0.4s ease 0.7s both">
+        We'll show you some well-known films. Pick any 5 you've seen, and then we'll ask you a series of quick head-to-head questions — <span style="font-style:italic">"which film has a better story?" "which one is better made?"</span> — to figure out where they rank.
+      </p>
+      <p style="font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.65;color:var(--on-dark-dim);max-width:440px;margin:0 auto 36px;opacity:0;animation:fadeIn 0.4s ease 0.9s both">
+        <span style="color:var(--on-dark)">Same precision. Much faster.</span>
       </p>
       <div style="opacity:0;animation:fadeIn 0.3s ease 1s both">
         <button class="ob-btn" style="max-width:300px;background:var(--action)" onclick="obStartSelection()">Let's go →</button>
@@ -1370,7 +1396,7 @@ function renderObCalibrate() {
       </div>
       <div class="ob-calibrate-count">Question ${obCalIndex + 1} of ${total}</div>
       <div style="margin-top:20px">
-        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);cursor:pointer" onclick="obCalSkip()">Skip for now →</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="obCalTie()">Too close to call</span>
       </div>
     </div>
   `;
@@ -1398,43 +1424,143 @@ window.obCalPick = function(choice) {
   setTimeout(() => {
     obCalIndex++;
     if (obCalIndex >= obCalComparisons.length) {
-      updateProgress(100);
-      const totalMs = _calStartTimestamp ? Date.now() - _calStartTimestamp : 0;
-      const avgMs = _calCompTimestamps.length > 0
-        ? Math.round(_calCompTimestamps.reduce((a, b, i, arr) => a + (i === 0 ? b : b - arr[i - 1]), 0) / _calCompTimestamps.length)
-        : 0;
-      const half = Math.floor(_calCompTimestamps.length / 2);
-      const firstHalfDeltas = _calCompTimestamps.slice(0, half).map((t, i, a) => i === 0 ? t : t - a[i - 1]);
-      const secondHalfDeltas = _calCompTimestamps.slice(half).map((t, i, a) => i === 0 ? (half > 0 ? t - _calCompTimestamps[half - 1] : t) : t - a[i - 1]);
-      track('onboarding_calibration_completed', {
-        comparisons_answered: obCalIndex,
-        comparisons_total: obCalComparisons.length,
-        selected_films_count: selectSelectedFilms.length,
-        skipped_early: false,
-        total_ms: totalMs,
-        avg_ms_per_comparison: avgMs,
-        first_half_avg_ms: firstHalfDeltas.length > 0 ? Math.round(firstHalfDeltas.reduce((a, b) => a + b, 0) / firstHalfDeltas.length) : 0,
-        second_half_avg_ms: secondHalfDeltas.length > 0 ? Math.round(secondHalfDeltas.reduce((a, b) => a + b, 0) / secondHalfDeltas.length) : 0,
-      });
-      setTimeout(() => finishCalibration(), 600);
+      startAbsolutePass();
     } else {
       renderObCalibrate();
     }
   }, 200);
 };
 
-window.obCalSkip = function() {
-  // Skip remaining calibration, estimate all scores from prior
+window.obCalTie = function() {
+  // "Too close to call" — record no winner, advance to next question
+  const comp = obCalComparisons[obCalIndex];
+  const elapsedMs = _calStartTimestamp ? Date.now() - _calStartTimestamp : 0;
+  _calCompTimestamps.push(elapsedMs);
+  obCalResults.push({
+    filmA: comp.filmA, filmB: comp.filmB, category: comp.category, winner: 'tie',
+    anchorScore: comp.anchorScore, anchorRole: comp.anchorRole,
+    comparison_index: obCalIndex,
+    elapsed_ms: elapsedMs,
+  });
+
+  obCalIndex++;
+  if (obCalIndex >= obCalComparisons.length) {
+    startAbsolutePass();
+  } else {
+    renderObCalibrate();
+  }
+};
+
+function startAbsolutePass() {
+  // Log calibration completion analytics before transitioning
+  updateProgress(85);
   const totalMs = _calStartTimestamp ? Date.now() - _calStartTimestamp : 0;
+  const avgMs = _calCompTimestamps.length > 0
+    ? Math.round(_calCompTimestamps.reduce((a, b, i, arr) => a + (i === 0 ? b : b - arr[i - 1]), 0) / _calCompTimestamps.length)
+    : 0;
+  const half = Math.floor(_calCompTimestamps.length / 2);
+  const firstHalfDeltas = _calCompTimestamps.slice(0, half).map((t, i, a) => i === 0 ? t : t - a[i - 1]);
+  const secondHalfDeltas = _calCompTimestamps.slice(half).map((t, i, a) => i === 0 ? (half > 0 ? t - _calCompTimestamps[half - 1] : t) : t - a[i - 1]);
   track('onboarding_calibration_completed', {
     comparisons_answered: obCalIndex,
     comparisons_total: obCalComparisons.length,
     selected_films_count: selectSelectedFilms.length,
-    skipped_early: true,
+    skipped_early: false,
     total_ms: totalMs,
-    avg_ms_per_comparison: obCalIndex > 0 ? Math.round(totalMs / obCalIndex) : 0,
+    avg_ms_per_comparison: avgMs,
+    first_half_avg_ms: firstHalfDeltas.length > 0 ? Math.round(firstHalfDeltas.reduce((a, b) => a + b, 0) / firstHalfDeltas.length) : 0,
+    second_half_avg_ms: secondHalfDeltas.length > 0 ? Math.round(secondHalfDeltas.reduce((a, b) => a + b, 0) / secondHalfDeltas.length) : 0,
   });
-  finishCalibration();
+
+  // Initialize absolute pass state
+  _absoluteIndex = 0;
+  _absoluteResponses = {};
+  _absoluteStartTimestamp = Date.now();
+  track('onboarding_absolute_started', { films_count: selectSelectedFilms.length });
+
+  obStep = 'ob-absolute';
+  renderObStep();
+}
+
+// ── ABSOLUTE-LEVEL PASS ──
+// One quick gut-level question per calibrated film to ground the overall elevation.
+// Pairwise determines category shape; this pass determines total level.
+function renderAbsolutePass() {
+  const card = document.getElementById('ob-card-content');
+  ensureProgressBar();
+  const film = selectSelectedFilms[_absoluteIndex];
+  if (!film) { finishCalibration(); return; }
+
+  const posterUrl = film.poster ? `https://image.tmdb.org/t/p/w185${film.poster}` : null;
+  const pct = 85 + (_absoluteIndex / selectSelectedFilms.length) * 15;
+  updateProgress(pct);
+
+  const buttonsHTML = ABSOLUTE_BUCKETS.map(b =>
+    `<button class="ob-absolute-btn" onclick="obAbsolutePick('${b.key}')" style="
+      display:block;width:100%;padding:14px 20px;margin-bottom:10px;
+      background:rgba(244,239,230,0.04);border:1px solid rgba(244,239,230,0.12);
+      color:var(--on-dark);font-family:'DM Sans',sans-serif;font-size:15px;
+      border-radius:3px;cursor:pointer;text-align:left;transition:all 0.15s ease
+    " onmouseover="this.style.background='rgba(244,239,230,0.1)';this.style.borderColor='rgba(244,239,230,0.25)'"
+       onmouseout="this.style.background='rgba(244,239,230,0.04)';this.style.borderColor='rgba(244,239,230,0.12)'"
+    >${b.label}</button>`
+  ).join('');
+
+  card.innerHTML = `
+    <div style="max-width:420px;margin:0 auto;padding:60px 24px 40px;text-align:center">
+      ${_absoluteIndex === 0 ? `
+        <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--on-dark-dim);line-height:1.6;margin-bottom:32px;opacity:0;animation:fadeIn 0.4s ease 0.1s both">
+          One last thing — just roughly, how much did you like each one?
+        </div>
+      ` : ''}
+      <div style="opacity:0;animation:fadeIn 0.3s ease ${_absoluteIndex === 0 ? '0.4' : '0.1'}s both">
+        ${posterUrl ? `<img src="${posterUrl}" style="width:120px;border-radius:3px;margin-bottom:16px">` : ''}
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:22px;color:var(--on-dark);margin-bottom:6px">${film.title}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);margin-bottom:24px">${film.year || ''}</div>
+      </div>
+      <div style="max-width:320px;margin:0 auto;opacity:0;animation:fadeIn 0.3s ease ${_absoluteIndex === 0 ? '0.6' : '0.2'}s both">
+        ${buttonsHTML}
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);margin-top:16px;opacity:0.5;opacity:0;animation:fadeIn 0.3s ease ${_absoluteIndex === 0 ? '0.8' : '0.3'}s both">
+        ${_absoluteIndex + 1} of ${selectSelectedFilms.length}
+      </div>
+    </div>
+  `;
+}
+
+window.obAbsolutePick = function(bucketKey) {
+  const film = selectSelectedFilms[_absoluteIndex];
+  const bucket = ABSOLUTE_BUCKETS.find(b => b.key === bucketKey);
+  if (!film || !bucket) return;
+
+  _absoluteResponses[String(film.tmdbId)] = {
+    bucket: bucket.key,
+    targetTotal: bucket.target,
+  };
+
+  _absoluteIndex++;
+  if (_absoluteIndex >= selectSelectedFilms.length) {
+    updateProgress(100);
+    track('onboarding_absolute_completed', {
+      films_count: selectSelectedFilms.length,
+      buckets: Object.fromEntries(
+        Object.entries(_absoluteResponses).map(([id, r]) => [id, r.bucket])
+      ),
+      total_ms: _absoluteStartTimestamp ? Date.now() - _absoluteStartTimestamp : 0,
+    });
+    // Brief flash then finish
+    const card = document.getElementById('ob-card-content');
+    if (card) {
+      card.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;opacity:0;animation:fadeIn 0.3s ease both">
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;color:var(--on-dark);margin-bottom:12px">All done.</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--on-dark-dim)">Building your taste profile...</div>
+        </div>`;
+    }
+    setTimeout(() => finishCalibration(), 1200);
+  } else {
+    renderAbsolutePass();
+  }
 };
 
 // Deterministic score estimation from pairwise comparison evidence.
@@ -1527,7 +1653,7 @@ function finishCalibration() {
     // First pass: estimate covered categories
     catKeys.forEach(c => {
       const comps = obCalResults
-        .filter(r => String(r.filmA.tmdbId) === String(nf.tmdbId) && r.category === c)
+        .filter(r => String(r.filmA.tmdbId) === String(nf.tmdbId) && r.category === c && r.winner !== 'tie')
         .map(r => ({
           anchorScore: r.anchorScore ?? (r.filmB.scores[c] || 50),
           won: r.winner === 'filmA',
@@ -1558,6 +1684,38 @@ function finishCalibration() {
       });
     }
 
+    // ── Absolute-level elevation adjustment ──
+    // Pairwise determines category shape; absolute pass determines total level.
+    const absoluteData = _absoluteResponses[String(nf.tmdbId)];
+    let absoluteMeta = {};
+    if (absoluteData) {
+      const pairwiseTotal = calcTotal(scores);
+      const targetTotal = absoluteData.targetTotal;
+      const rawDelta = targetTotal - pairwiseTotal;
+
+      // Confidence-modulated adjustment: weaker pairwise evidence → more absolute authority
+      const avgConfidence = catKeys.reduce((s, c) => s + (calibrationConfidence[c] || 0), 0) / catKeys.length;
+      let absoluteWeight;
+      if (avgConfidence >= 0.55) absoluteWeight = 0.6;
+      else if (avgConfidence >= 0.35) absoluteWeight = 0.75;
+      else absoluteWeight = 0.9;
+
+      const adjustment = absoluteWeight * rawDelta;
+      catKeys.forEach(c => {
+        scores[c] = Math.round(Math.min(98, Math.max(20, scores[c] + adjustment)));
+      });
+
+      const postAdjustmentTotal = calcTotal(scores);
+      absoluteMeta = {
+        absolute_bucket: absoluteData.bucket,
+        absolute_target_total: targetTotal,
+        absolute_adjustment_delta: Math.round(rawDelta * 100) / 100,
+        absolute_adjustment_applied: Math.round(adjustment * 100) / 100,
+        post_adjustment_total: postAdjustmentTotal,
+        post_adjustment_discrepancy: Math.round((postAdjustmentTotal - targetTotal) * 100) / 100,
+      };
+    }
+
     const total = calcTotal(scores);
     const filmObj = {
       title: nf.title, year: nf.year,
@@ -1570,6 +1728,7 @@ function finishCalibration() {
       calibration_source: 'pairwise_onboarding_v2',
       calibration_confidence: calibrationConfidence,
       calibration_comp_count: calibrationCompCount,
+      ...absoluteMeta,
       // Per-film pairwise comparison trace for debugging/analysis
       calibration_log: obCalResults
         .filter(r => String(r.filmA.tmdbId) === String(nf.tmdbId))
@@ -1765,8 +1924,9 @@ window.obEnterApp = function() {
           return s + covered / catKeys.length;
         }, 0) / calibratedMovies.length
       : 0;
+    const absoluteCompleted = Object.keys(_absoluteResponses).length === selectSelectedFilms.length && selectSelectedFilms.length > 0;
     let level = 'low';
-    if (compAnswered >= compTotal * 0.9 && avgConf >= 0.4) level = 'high';
+    if (compAnswered >= compTotal * 0.9 && avgConf >= 0.4) level = absoluteCompleted ? 'high' : 'medium-high';
     else if (compAnswered >= compTotal * 0.5 && avgConf >= 0.25) level = 'medium';
 
     // Store calibration log and profile confidence on the reveal data
@@ -1788,6 +1948,7 @@ window.obEnterApp = function() {
       calibrated_films: calibratedMovies.length,
       avg_category_confidence: Math.round(avgConf * 1000) / 1000,
       covered_category_fraction: Math.round(coveredFraction * 1000) / 1000,
+      absolute_pass_completed: absoluteCompleted,
     };
 
     // quiz_weights must be a neutral prior (2.5), NOT the shaped onboarding
