@@ -130,6 +130,8 @@ window.goToCardManual = function(n) {
     goToCard(carouselIndex);
   }, CAROUSEL_DURATION);
 };
+window.carouselPrev = function() { window.goToCardManual((carouselIndex + 2) % 3); };
+window.carouselNext = function() { window.goToCardManual((carouselIndex + 1) % 3); };
 
 function goToCard(n) {
   carouselIndex = n;
@@ -431,7 +433,7 @@ function buildCarouselCards() {
               <div class="carousel-friends-predict-user"><span class="carousel-friends-predict-name">Sarah'd give it</span><span class="carousel-friends-predict-number" style="color:#D4A84B">71</span></div>
             </div>
           </div>
-          <div class="carousel-friends-predict-reason">You'd love the Craft and World — Nolan's obsessive detail and the weight of Los Alamos land perfectly for your palate. Sarah would find it slow — low Experience for her taste. She wants momentum; this film builds pressure instead.</div>
+          <div class="carousel-friends-predict-reason">You'd love the Craft and World — Nolan's obsessive detail and the weight of Los Alamos land perfectly for your palate. Sarah would find it slow — low Experience for her taste. She wants momentum; this film builds pressure instead. Where you see a masterclass in tension, she sees a three-hour lecture.</div>
         </div>
       </div>`;
   }
