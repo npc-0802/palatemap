@@ -174,9 +174,20 @@ export function computeRatingWeights() {
 
   for (const m of MOVIES) {
     if (!m.scores) continue;
-    const filmScores = CATEGORIES.map(c => m.scores[c.key]).filter(s => s != null);
-    if (filmScores.length < 4) continue; // need most categories scored
-    const filmMean = filmScores.reduce((a, b) => a + b, 0) / filmScores.length;
+    // Compute the film's own mean as a confidence-weighted average.
+    // Without this, uncovered pairwise categories (inferred from prior,
+    // not measured) would drag the film mean around, distorting the
+    // deviation signal for categories that WERE properly measured.
+    let filmWSum = 0, filmWTotal = 0;
+    for (const cat of CATEGORIES) {
+      const s = m.scores[cat.key];
+      if (s == null) continue;
+      const w = getFilmObservationWeight(m, cat.key);
+      filmWSum += s * w;
+      filmWTotal += w;
+    }
+    if (filmWTotal < 3) continue; // need meaningful effective coverage
+    const filmMean = filmWSum / filmWTotal;
     for (const cat of CATEGORIES) {
       const s = m.scores[cat.key];
       if (s == null) continue;
@@ -417,7 +428,9 @@ const PAIRWISE_FALLBACK_WEIGHT = 0.25;
 export function getFilmObservationWeight(film, categoryKey) {
   if (!film) return 1.0;
   if (film.rating_source === 'onboarding_pairwise') {
-    return film.calibration_confidence?.[categoryKey] ?? PAIRWISE_FALLBACK_WEIGHT;
+    // Use || not ?? — uncovered categories store confidence=0 (no evidence),
+    // which should fall through to the fallback, not contribute at zero weight.
+    return film.calibration_confidence?.[categoryKey] || PAIRWISE_FALLBACK_WEIGHT;
   }
   // guided_slider, manual_rating, or legacy films without rating_source
   return 1.0;

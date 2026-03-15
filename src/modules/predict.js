@@ -757,9 +757,16 @@ function buildTasteProfile() {
     stats[cat] = { mean: Math.round(mean*10)/10, std: Math.round(std*10)/10, min: minVal, max: maxVal };
   });
 
+  // Exclude pairwise-inferred films from top/bottom examples sent to Claude.
+  // These are low-confidence bootstrap data — letting them anchor the prompt
+  // context would undermine the confidence-aware aggregation above.
+  const highTrustFilms = MOVIES.filter(m => m.rating_source !== 'onboarding_pairwise');
+  const sortedHT = [...highTrustFilms].sort((a,b) => b.total - a.total);
   const sorted = [...MOVIES].sort((a,b) => b.total - a.total);
-  const top10 = sorted.slice(0,10).map(m => `${m.title} (${m.total})`).join(', ');
-  const bottom5 = sorted.slice(-5).map(m => `${m.title} (${m.total})`).join(', ');
+  // Use high-trust films for prompt examples; fall back to all films if <5 high-trust
+  const examplePool = sortedHT.length >= 5 ? sortedHT : sorted;
+  const top10 = examplePool.slice(0,10).map(m => `${m.title} (${m.total})`).join(', ');
+  const bottom5 = examplePool.slice(-5).map(m => `${m.title} (${m.total})`).join(', ');
   const weightStr = CATEGORIES.map(c => `${c.label}×${+(currentUser?.weights?.[c.key] ?? c.weight).toFixed(1)}`).join(', ');
 
   const predictions = currentUser?.predictions || {};
@@ -827,11 +834,20 @@ function buildTasteProfile() {
 function findComparableFilms(film) {
   const directorNames = mergeSplitNames((film.director||'').split(',').map(s=>s.trim()).filter(Boolean));
   const castNames = mergeSplitNames((film.cast||'').split(',').map(s=>s.trim()).filter(Boolean));
-  return MOVIES.filter(m => {
+  const matches = MOVIES.filter(m => {
     const mDirectors = mergeSplitNames((m.director||'').split(',').map(s=>s.trim()).filter(Boolean));
     const mCast = mergeSplitNames((m.cast||'').split(',').map(s=>s.trim()).filter(Boolean));
     return directorNames.some(d => mDirectors.includes(d)) || castNames.some(c => mCast.includes(c));
-  }).sort((a,b) => b.total - a.total).slice(0,8);
+  });
+  // Sort high-trust films first so pairwise-inferred films don't anchor
+  // Claude's predictions when better-measured comparables exist.
+  matches.sort((a, b) => {
+    const aInferred = a.rating_source === 'onboarding_pairwise' ? 1 : 0;
+    const bInferred = b.rating_source === 'onboarding_pairwise' ? 1 : 0;
+    if (aInferred !== bInferred) return aInferred - bInferred;
+    return b.total - a.total;
+  });
+  return matches.slice(0, 8);
 }
 
 // ── DYNAMIC ENTITY WEIGHTING ────────────────────────────────────────────────
