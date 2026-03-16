@@ -100,12 +100,13 @@ export function identifyUser(user, filmsCount) {
 // SPA virtual pageview
 export function trackPageview(screenId) {
   const titles = {
-    rankings: 'Rankings',
-    analysis: 'Analysis',
-    predict: 'For You',
+    myfilms: 'My Films',
+    rankings: 'My Films',
+    analysis: 'Profile',
+    predict: 'Discover',
     profile: 'Profile',
     friends: 'Friends',
-    watchlist: 'Watch List',
+    watchlist: 'My Films',
     add: 'Add Film',
     calibration: 'Calibrate',
   };

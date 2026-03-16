@@ -33,8 +33,8 @@
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style id="app-cloak">.masthead, .tabs, .screen, .empty-state-card, .mobile-nav { visibility: hidden; }</style>
-  <script type="module" crossorigin src="/assets/index-DMWNhO6f.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-86J26WNj.css">
+  <script type="module" crossorigin src="/assets/index-JZHAjRIU.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BSrYTThb.css">
 </head>
 <body>
 <!-- GTM noscript fallback -->
@@ -177,7 +177,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </div>
 
 <div class="masthead">
-  <span class="masthead-wordmark" onclick="showScreen('rankings')" style="cursor:pointer">palate map</span>
+  <span class="masthead-wordmark" onclick="showScreen('myfilms')" style="cursor:pointer">palate map</span>
   <div class="masthead-rules">
     <div class="masthead-rule-thick"></div>
     <div class="masthead-rule-thin"></div>
@@ -197,12 +197,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <div id="sticky-header">
   <div class="nav-strip">
-    <button class="nav-btn active" onclick="showScreen('rankings')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M4.5 1L3 5M8.5 1L10 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="6.5" cy="9" r="4" fill="currentColor"/></svg>Rankings</button>
-    <button class="nav-btn" onclick="showScreen('analysis')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="0" y="6" width="3" height="7" fill="currentColor"/><rect x="5" y="3" width="3" height="10" fill="currentColor"/><rect x="10" y="0" width="3" height="13" fill="currentColor"/></svg>Analysis</button>
-    <button class="nav-btn" id="nav-friends" onclick="showScreen('friends')" style="position:relative"><svg width="14" height="13" viewBox="0 0 14 13" fill="none"><circle cx="4.5" cy="3.5" r="2.5" fill="currentColor"/><path d="M0 12c0-2.5 2-4.5 4.5-4.5S9 9.5 9 12" stroke="currentColor" stroke-width="1.4" fill="none"/><circle cx="11" cy="3.5" r="2" fill="currentColor" opacity="0.45"/><path d="M9.5 12c0-2 1-3.5 2.5-4.2" stroke="currentColor" stroke-width="1.2" fill="none" opacity="0.45" stroke-linecap="round"/></svg>Friends</button>
-    <button class="nav-btn" onclick="showScreen('watchlist')"><svg width="11" height="14" viewBox="0 0 11 14" fill="none"><path d="M1 1h9a1 1 0 0 1 1 1v11l-5-3-5 3V2a1 1 0 0 1 1-1z" fill="currentColor"/></svg>Watch List</button>
+    <button class="nav-btn active" onclick="showScreen('myfilms')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M4.5 1L3 5M8.5 1L10 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="6.5" cy="9" r="4" fill="currentColor"/></svg>My Films</button>
+    <button class="nav-btn nav-btn-foryou" onclick="showScreen('predict')"><svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="vertical-align:-1px;margin-right:4px"><path d="M7 1L8.5 5.5L13 7L8.5 8.5L7 13L5.5 8.5L1 7L5.5 5.5Z" fill="currentColor" opacity="0.7"/></svg>Discover</button>
     <button class="nav-btn" id="nav-profile" onclick="showScreen('profile')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="4" r="3" fill="currentColor"/><path d="M0.5 13c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.4" fill="none"/></svg>Profile</button>
-    <button class="nav-btn nav-btn-foryou" onclick="showScreen('predict')"><svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="vertical-align:-1px;margin-right:4px"><path d="M7 1L8.5 5.5L13 7L8.5 8.5L7 13L5.5 8.5L1 7L5.5 5.5Z" fill="currentColor" opacity="0.7"/></svg>For You</button>
+    <button class="nav-btn" id="nav-friends" onclick="showScreen('friends')" style="position:relative"><svg width="14" height="13" viewBox="0 0 14 13" fill="none"><circle cx="4.5" cy="3.5" r="2.5" fill="currentColor"/><path d="M0 12c0-2.5 2-4.5 4.5-4.5S9 9.5 9 12" stroke="currentColor" stroke-width="1.4" fill="none"/><circle cx="11" cy="3.5" r="2" fill="currentColor" opacity="0.45"/><path d="M9.5 12c0-2 1-3.5 2.5-4.2" stroke="currentColor" stroke-width="1.2" fill="none" opacity="0.45" stroke-linecap="round"/></svg>Friends</button>
     <button class="nav-btn invite-tab" onclick="openInviteModal()">Invite a friend →</button>
     <button class="nav-btn action-tab" onclick="showScreen('add')">+ Add Film</button>
   </div>
@@ -212,29 +210,25 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <div class="mobile-bottom">
   <nav class="nav-mobile">
-    <button class="nav-mobile-btn active" onclick="showScreen('rankings')">
+    <button class="nav-mobile-btn active" onclick="showScreen('myfilms')">
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M6 1L4 7M12 1L14 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="13" r="5" fill="currentColor"/></svg>
-      <span>Rankings</span>
+      <span>My Films</span>
     </button>
     <button class="nav-mobile-btn nav-btn-foryou" onclick="showScreen('predict')">
       <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M7 1L8.5 5.5L13 7L8.5 8.5L7 13L5.5 8.5L1 7L5.5 5.5Z" fill="currentColor" opacity="0.7"/></svg>
-      <span>For You</span>
+      <span>Discover</span>
     </button>
-    <button class="nav-mobile-btn" onclick="showScreen('analysis')">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="0" y="8" width="4" height="10" fill="currentColor"/><rect x="7" y="4" width="4" height="14" fill="currentColor"/><rect x="14" y="0" width="4" height="18" fill="currentColor"/></svg>
-      <span>Analysis</span>
+    <button class="nav-mobile-btn" onclick="showScreen('profile')">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="6" r="4" fill="currentColor"/><path d="M1 17c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+      <span>Profile</span>
     </button>
     <button class="nav-mobile-btn" id="nav-mobile-friends" onclick="showScreen('friends')" style="position:relative">
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="6" cy="5" r="3" fill="currentColor"/><path d="M0 16c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="14" cy="5" r="2.5" fill="currentColor" opacity="0.5"/><path d="M11.5 16c0-2.5 1.1-4.7 2.5-5.5" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.5"/></svg>
       <span>Friends</span>
     </button>
-    <button class="nav-mobile-btn" onclick="showScreen('watchlist')">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 1h12a1 1 0 0 1 1 1v14l-7-4-7 4V2a1 1 0 0 1 1-1z" fill="currentColor"/></svg>
-      <span>Watch</span>
-    </button>
-    <button class="nav-mobile-btn" onclick="showScreen('profile')">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="6" r="4" fill="currentColor"/><path d="M1 17c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
-      <span>Profile</span>
+    <button class="nav-mobile-btn" onclick="showScreen('add')">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><line x1="9" y1="2" x2="9" y2="16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><line x1="2" y1="9" x2="16" y2="9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+      <span>Add Film</span>
     </button>
   </nav>
   <button class="nav-add-bar" onclick="openGlobalSearch()">
@@ -243,24 +237,36 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </button>
 </div>
 
-<!-- ══════════════ RANKINGS ══════════════ -->
-<div id="rankings" class="screen active">
-  <div id="rankings-controls"></div>
-  <div class="rankings-header">
-    <div class="col-head"></div>
-    <div class="col-head sortable" onclick="sortBy('rank')" id="sort-rank"># <span class="sort-arrow active-sort">↓</span></div>
-    <div class="col-head sortable" style="text-align:left;padding-left:12px" onclick="sortBy('title')">Film <span class="sort-arrow" id="sort-title-arrow"></span></div>
-    <div class="col-head sortable" onclick="sortBy('plot')">Plot <span class="sort-arrow" id="sort-plot-arrow"></span></div>
-    <div class="col-head sortable" onclick="sortBy('execution')">Exec <span class="sort-arrow" id="sort-execution-arrow"></span></div>
-    <div class="col-head sortable" onclick="sortBy('acting')">Act <span class="sort-arrow" id="sort-acting-arrow"></span></div>
-    <div class="col-head sortable" onclick="sortBy('production')">Prod <span class="sort-arrow" id="sort-production-arrow"></span></div>
-    <div class="col-head sortable" onclick="sortBy('enjoyability')">Enjoy <span class="sort-arrow" id="sort-enjoyability-arrow"></span></div>
-    <div class="col-head sortable" onclick="sortBy('rewatchability')">Rewch <span class="sort-arrow" id="sort-rewatchability-arrow"></span></div>
-    <div class="col-head sortable" onclick="sortBy('ending')">End <span class="sort-arrow" id="sort-ending-arrow"></span></div>
-    <div class="col-head sortable" onclick="sortBy('uniqueness')">Uniq <span class="sort-arrow" id="sort-uniqueness-arrow"></span></div>
-    <div class="col-head sortable" onclick="sortBy('total')">Total <span class="sort-arrow" id="sort-total-arrow"></span></div>
+<!-- ══════════════ MY FILMS (Rankings + Watch List) ══════════════ -->
+<div id="myfilms" class="screen active">
+  <div class="myfilms-header">
+    <div class="myfilms-title">My Films</div>
+    <div class="myfilms-tabs">
+      <button class="myfilms-tab active" id="myfilms-tab-rated" onclick="showMyFilmsTab('rated')">Rated <span class="myfilms-tab-count" id="myfilms-count-rated"></span></button>
+      <button class="myfilms-tab" id="myfilms-tab-watchlist" onclick="showMyFilmsTab('watchlist')">Watch List <span class="myfilms-tab-count" id="myfilms-count-watchlist"></span></button>
+    </div>
   </div>
-  <div id="filmList"></div>
+  <div id="rankings" class="myfilms-panel active">
+    <div id="rankings-controls"></div>
+    <div class="rankings-header">
+      <div class="col-head"></div>
+      <div class="col-head sortable" onclick="sortBy('rank')" id="sort-rank"># <span class="sort-arrow active-sort">↓</span></div>
+      <div class="col-head sortable" style="text-align:left;padding-left:12px" onclick="sortBy('title')">Film <span class="sort-arrow" id="sort-title-arrow"></span></div>
+      <div class="col-head sortable" onclick="sortBy('plot')">Plot <span class="sort-arrow" id="sort-plot-arrow"></span></div>
+      <div class="col-head sortable" onclick="sortBy('execution')">Exec <span class="sort-arrow" id="sort-execution-arrow"></span></div>
+      <div class="col-head sortable" onclick="sortBy('acting')">Act <span class="sort-arrow" id="sort-acting-arrow"></span></div>
+      <div class="col-head sortable" onclick="sortBy('production')">Prod <span class="sort-arrow" id="sort-production-arrow"></span></div>
+      <div class="col-head sortable" onclick="sortBy('enjoyability')">Enjoy <span class="sort-arrow" id="sort-enjoyability-arrow"></span></div>
+      <div class="col-head sortable" onclick="sortBy('rewatchability')">Rewch <span class="sort-arrow" id="sort-rewatchability-arrow"></span></div>
+      <div class="col-head sortable" onclick="sortBy('ending')">End <span class="sort-arrow" id="sort-ending-arrow"></span></div>
+      <div class="col-head sortable" onclick="sortBy('uniqueness')">Uniq <span class="sort-arrow" id="sort-uniqueness-arrow"></span></div>
+      <div class="col-head sortable" onclick="sortBy('total')">Total <span class="sort-arrow" id="sort-total-arrow"></span></div>
+    </div>
+    <div id="filmList"></div>
+  </div>
+  <div id="myfilms-watchlist" class="myfilms-panel">
+    <div id="watchlistContent"></div>
+  </div>
 </div>
 
 <!-- ══════════════ PROFILE ══════════════ -->
@@ -395,12 +401,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </div>
 </div>
 
-<!-- ══════════════ ANALYSIS ══════════════ -->
-<div id="analysis" class="screen">
-  <div id="analysisContent"></div>
-</div>
 
-<!-- ══════════════ FOR YOU ══════════════ -->
+<!-- ══════════════ DISCOVER ══════════════ -->
 <div id="predict" class="screen">
   <!-- Welcome banner (first visit after onboarding) -->
   <div id="foryou-welcome-banner"></div>
@@ -551,10 +553,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <div id="friendsContent"></div>
 </div>
 
-<!-- ══════════════ WATCHLIST ══════════════ -->
-<div id="watchlist" class="screen">
-  <div id="watchlistContent"></div>
-</div>
 
 <!-- ══════════════ MODALS ══════════════ -->
 <div class="modal-overlay" id="archetypeModal" onclick="closeArchetypeModal(event)">

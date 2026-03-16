@@ -10,6 +10,7 @@ import { loadTagVectors, getTagVector, tagVectorsLoaded, getAdmissibleTags } fro
 import { computeCategoryFingerprints, getTopCategoryTags, getCoverageCount } from './tag-profile.js';
 import { getFilmObservationWeight, getPalateConfidenceSummary } from './weight-blend.js';
 import { evaluatePredictions } from './eval-framework.js';
+import { renderAnalysis } from './analysis.js';
 
 let profileImportedMovies = null;
 
@@ -319,7 +320,7 @@ window.profileConfirmImport = async function() {
   profileImportedMovies = null;
   syncToSupabase().catch(() => {});
   window.showToast?.(`${count} film${count !== 1 ? 's' : ''} imported.`, { type: 'success' });
-  window.showScreen?.('rankings');
+  window.showScreen?.('myfilms');
 };
 
 function radarLegend() {
@@ -568,6 +569,12 @@ export function renderProfile() {
         ${signatureFilms(movies)}
       </div>
 
+      <!-- ANALYSIS / EXPLORE (entity leaderboards) -->
+      <div id="profile-analysis-section" style="margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--rule)">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:20px">Taste Analysis</div>
+        <div id="profile-analysis-content"></div>
+      </div>
+
       <!-- CALIBRATE -->
       ${shouldShowHint('profile_calibrate', () => MOVIES.length >= 15 && !localStorage.getItem('palatemap_calibrate_last_threshold'))
         ? renderHint('profile_calibrate', 'You have <strong>' + MOVIES.length + ' films</strong> ranked — enough for calibration to be useful. It runs head-to-head matchups to sharpen scores that are close together.')
@@ -652,6 +659,9 @@ export function renderProfile() {
 
     </div>
   `;
+
+  // Render analysis/explore section into the profile container
+  renderAnalysis();
 }
 
 // ── ACCOUNT INLINE EDITING ──

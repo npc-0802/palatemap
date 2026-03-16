@@ -24,6 +24,23 @@ import { predictAddToWatchlist } from './modules/predict.js';
 
 // ── SCREEN NAVIGATION ──
 export function showScreen(id) {
+  // Backward-compat routing: old screen names → new destinations
+  if (id === 'rankings' || id === 'watchlist') {
+    const tab = id === 'watchlist' ? 'watchlist' : 'rated';
+    showScreen('myfilms');
+    showMyFilmsTab(tab);
+    return;
+  }
+  if (id === 'analysis') {
+    showScreen('profile');
+    // Scroll to analysis section after render
+    requestAnimationFrame(() => {
+      const target = document.getElementById('profile-analysis-section');
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return;
+  }
+
   // If clicking Add Film while already on Add Film with a film in progress, show discard prompt
   if (id === 'add') {
     const currentScreen = localStorage.getItem('palatemap_last_screen');
@@ -45,17 +62,49 @@ export function showScreen(id) {
     if (addBanner) { addBanner.style.display = 'none'; addBanner.innerHTML = ''; }
   }
   if (id === 'add') { checkAddFilmResume(); renderWatchlistInSearch(); }
-  if (id === 'analysis') renderAnalysis();
+  if (id === 'myfilms') { renderRankings(); renderWatchlist(); updateMyFilmsTabCounts(); }
   if (id === 'calibration') resetCalibration();
   if (id === 'predict') {
     initPredict();
-    pushAnalyticsEvent('pm_recommendations_screen_viewed', { screen_name: 'for_you' });
+    pushAnalyticsEvent('pm_recommendations_screen_viewed', { screen_name: 'discover' });
   }
   if (id === 'profile') renderProfile();
   if (id === 'friends') renderFriends();
-  if (id === 'watchlist') renderWatchlist();
   localStorage.setItem('palatemap_last_screen', id);
   trackPageview(id);
+}
+
+export function showMyFilmsTab(tab) {
+  const ratedPanel = document.getElementById('rankings');
+  const watchPanel = document.getElementById('myfilms-watchlist');
+  const ratedTab = document.getElementById('myfilms-tab-rated');
+  const watchTab = document.getElementById('myfilms-tab-watchlist');
+  if (!ratedPanel || !watchPanel) return;
+
+  if (tab === 'watchlist') {
+    ratedPanel.classList.remove('active');
+    watchPanel.classList.add('active');
+    ratedTab?.classList.remove('active');
+    watchTab?.classList.add('active');
+    renderWatchlist();
+  } else {
+    watchPanel.classList.remove('active');
+    ratedPanel.classList.add('active');
+    watchTab?.classList.remove('active');
+    ratedTab?.classList.add('active');
+  }
+  localStorage.setItem('palatemap_last_myfilms_tab', tab);
+  updateMyFilmsTabCounts();
+}
+
+export function updateMyFilmsTabCounts() {
+  const ratedCount = document.getElementById('myfilms-count-rated');
+  const watchCount = document.getElementById('myfilms-count-watchlist');
+  if (ratedCount) ratedCount.textContent = MOVIES.length ? `${MOVIES.length}` : '';
+  if (watchCount) {
+    const wl = currentUser?.watchlist || [];
+    watchCount.textContent = wl.length ? `${wl.length}` : '';
+  }
 }
 
 export function updateStorageStatus() {
@@ -904,20 +953,23 @@ async function init() {
     }
   });
 
-  // Restore last screen
+  // Restore last screen (with migration from old screen names)
   const rawLastScreen = localStorage.getItem('palatemap_last_screen');
-  const lastScreen = rawLastScreen === 'explore' ? 'analysis' : rawLastScreen;
-  if (lastScreen && lastScreen !== 'rankings' && document.getElementById(lastScreen)) {
-    const navBtns = document.querySelectorAll('.nav-btn');
-    navBtns.forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(lastScreen).classList.add('active');
-    navBtns.forEach(b => { if (b.getAttribute('onclick')?.includes(lastScreen)) b.classList.add('active'); });
-    if (lastScreen === 'add') { checkAddFilmResume(); renderWatchlistInSearch(); }
-    if (lastScreen === 'analysis') renderAnalysis();
-    if (lastScreen === 'profile') renderProfile();
-    if (lastScreen === 'friends') renderFriends();
-    if (lastScreen === 'watchlist') renderWatchlist();
+  const lastMyFilmsTab = localStorage.getItem('palatemap_last_myfilms_tab');
+  let lastScreen = rawLastScreen;
+  // Migrate old screen names
+  if (lastScreen === 'explore' || lastScreen === 'analysis') lastScreen = 'profile';
+  if (lastScreen === 'rankings') { lastScreen = 'myfilms'; }
+  if (lastScreen === 'watchlist') { lastScreen = 'myfilms'; localStorage.setItem('palatemap_last_myfilms_tab', 'watchlist'); }
+  if (lastScreen && document.getElementById(lastScreen)) {
+    if (lastScreen !== 'myfilms') {
+      showScreen(lastScreen);
+    } else {
+      // Restore the correct tab within My Films
+      const tab = lastMyFilmsTab || (rawLastScreen === 'watchlist' ? 'watchlist' : 'rated');
+      showMyFilmsTab(tab);
+      updateMyFilmsTabCounts();
+    }
   }
 }
 
@@ -960,7 +1012,7 @@ export function setCloudStatus(state) {
 
 // Expose all functions to window for inline HTML onclick handlers
 window.__ledger = {
-  showScreen, sortBy, openModal, closeModal, exploreEntity,
+  showScreen, showMyFilmsTab, updateMyFilmsTabCounts, sortBy, openModal, closeModal, exploreEntity,
   renderExploreIndex, renderAnalysis, initPredict, predictSearch, predictSearchDebounce,
   predictSelectFilm, predictAddToList, startCalibration, selectCalCat,
   selectCalInt, applyCalibration, resetCalibration, launchOnboarding,
@@ -976,7 +1028,7 @@ window.__ledger = {
 
 // Bridge window globals for inline onclick= attributes in HTML
 const bridge = [
-  'showScreen','sortBy','openModal','closeModal','exploreEntity','renderExploreIndex',
+  'showScreen','showMyFilmsTab','sortBy','openModal','closeModal','exploreEntity','renderExploreIndex',
   'initPredict','predictSearch','predictSearchDebounce','predictSelectFilm','predictAddToList',
   'startCalibration','selectCalCat','selectCalInt','applyCalibration','resetCalibration',
   'launchOnboarding','liveSearch','tmdbSelect','toggleCast','showMoreCast','toggleCompany',

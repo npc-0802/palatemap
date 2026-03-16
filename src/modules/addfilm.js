@@ -890,9 +890,10 @@ export function saveFilm() {
   updateStepUI(1);
 
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('rankings').classList.add('active');
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.nav-btn')[0].classList.add('active');
+  document.getElementById('myfilms').classList.add('active');
+  document.querySelectorAll('.nav-btn, .nav-mobile-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('onclick')?.includes("'myfilms'"));
+  });
 }
 
 // ── RATE ANOTHER (resets form, stays on Add Film) ──

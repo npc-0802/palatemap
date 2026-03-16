@@ -319,9 +319,10 @@ export function applyCalibration() {
     import('../ui-callbacks.js').then(({ updateStorageStatus }) => updateStorageStatus());
     renderRankings();
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById('rankings').classList.add('active');
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector('.nav-btn[onclick*="rankings"]').classList.add('active');
+    document.getElementById('myfilms').classList.add('active');
+    document.querySelectorAll('.nav-btn, .nav-mobile-btn').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('onclick')?.includes("'myfilms'"));
+    });
     resetCalibration();
   } catch(e) {
     console.error('applyCalibration error:', e);

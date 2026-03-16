@@ -206,14 +206,66 @@ body {
 @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
 @keyframes screenFade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes screenSlideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-#rankings.active { animation: none; }
-#analysis.active { animation: screenFade 0.25s ease both; }
+#myfilms.active { animation: none; }
 #predict.active { animation: screenSlideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
 #profile.active { animation: screenFade 0.4s ease both; }
 #friends.active { animation: screenFade 0.2s ease both; }
-#watchlist.active { animation: screenFade 0.2s ease both; }
 #add.active { animation: none; }
 #calibration.active { animation: screenSlideUp 0.3s ease both; }
+
+/* ── MY FILMS HEADER + TABS ── */
+.myfilms-header {
+  margin-bottom: 28px;
+}
+.myfilms-title {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 900;
+  font-size: clamp(28px, 4vw, 36px);
+  color: var(--ink);
+  letter-spacing: -0.5px;
+  line-height: 1;
+  margin-bottom: 20px;
+}
+.myfilms-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--rule);
+}
+.myfilms-tab {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  background: none;
+  border: none;
+  padding: 10px 20px 9px;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.15s;
+}
+.myfilms-tab:hover { color: var(--ink); }
+.myfilms-tab.active {
+  color: var(--ink);
+  font-weight: 500;
+}
+.myfilms-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--ink);
+}
+.myfilms-tab-count {
+  font-weight: 400;
+  opacity: 0.55;
+  font-size: 10px;
+}
+.myfilms-panel { display: none; }
+.myfilms-panel.active { display: block; }
 
 /* ── TRANSITION: Cold Landing exit ── */
 #cold-landing.exiting {

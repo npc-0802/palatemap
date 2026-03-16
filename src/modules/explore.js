@@ -70,26 +70,37 @@ export function renderExploreIndex(tab) {
           <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:22px;color:var(--ink);margin-bottom:8px">Terra incognita.</div>
           <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);font-weight:300">Rate at least two films from the same ${exploreActiveTab === 'companies' ? 'company' : exploreActiveTab.slice(0,-1)} to map this territory.</div>
         </div>`
-      : entities.map((e, i) => {
-          const safeName = e.name.replace(/'/g, "\\'");
+      : (() => {
+          const COMPACT_LIMIT = 3;
+          const needsExpand = entities.length > COMPACT_LIMIT;
           const singularType = exploreActiveTab === 'companies' ? 'company' : exploreActiveTab === 'years' ? 'year' : exploreActiveTab.slice(0, -1);
           const showPortrait = exploreActiveTab !== 'years';
           const isCompanyTab = exploreActiveTab === 'companies';
-          const portraitHtml = showPortrait
-            ? isCompanyTab
-              ? `<div style="position:relative;width:40px;height:40px;border-radius:6px;flex-shrink:0;background:white;border:1px solid var(--rule);display:flex;align-items:center;justify-content:center;overflow:hidden"><img id="explore-list-img-${i}" src="" alt="" style="width:32px;height:32px;object-fit:contain;display:none"></div>`
-              : `<div style="position:relative;width:40px;height:40px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--rule)"><img id="explore-list-img-${i}" src="" alt="" style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;display:none"></div>`
+          function renderRow(e, i, hidden) {
+            const safeName = e.name.replace(/'/g, "\\'");
+            const portraitHtml = showPortrait
+              ? isCompanyTab
+                ? `<div style="position:relative;width:40px;height:40px;border-radius:6px;flex-shrink:0;background:white;border:1px solid var(--rule);display:flex;align-items:center;justify-content:center;overflow:hidden"><img id="explore-list-img-${i}" src="" alt="" style="width:32px;height:32px;object-fit:contain;display:none"></div>`
+                : `<div style="position:relative;width:40px;height:40px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--rule)"><img id="explore-list-img-${i}" src="" alt="" style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;display:none"></div>`
+              : '';
+            return `<div class="explore-entity-row${hidden ? ' explore-entity-overflow' : ''}" style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--rule);cursor:pointer${hidden ? ';display:none' : ''}" onclick="exploreEntity('${singularType}','${safeName}')" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+              <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);min-width:24px;text-align:right;flex-shrink:0">${i+1}</div>
+              ${portraitHtml}
+              <div style="flex:1;min-width:0">
+                <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:18px;font-weight:700;color:var(--ink);line-height:1.2">${e.name}</div>
+                <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px">${e.films.length} film${e.films.length!==1?'s':''}</div>
+              </div>
+              <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:17px;color:white;padding:4px 11px 3px;background:${badgeColor(e.avg)};border-radius:4px;flex-shrink:0">${e.avg.toFixed(1)}</div>
+            </div>`;
+          }
+          const rows = entities.map((e, i) => renderRow(e, i, needsExpand && i >= COMPACT_LIMIT)).join('');
+          const expandBtn = needsExpand
+            ? `<div id="explore-expand-btn" style="text-align:center;padding:14px 0;cursor:pointer" onclick="document.querySelectorAll('.explore-entity-overflow').forEach(el=>{el.style.display='flex'});this.remove()">
+                <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--blue);text-decoration:underline">Show all ${entities.length} ${exploreActiveTab} →</span>
+              </div>`
             : '';
-          return `<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--rule);cursor:pointer" onclick="exploreEntity('${singularType}','${safeName}')" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-            <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);min-width:24px;text-align:right;flex-shrink:0">${i+1}</div>
-            ${portraitHtml}
-            <div style="flex:1;min-width:0">
-              <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:18px;font-weight:700;color:var(--ink);line-height:1.2">${e.name}</div>
-              <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px">${e.films.length} film${e.films.length!==1?'s':''}</div>
-            </div>
-            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:17px;color:white;padding:4px 11px 3px;background:${badgeColor(e.avg)};border-radius:4px;flex-shrink:0">${e.avg.toFixed(1)}</div>
-          </div>`;
-        }).join('')
+          return rows + expandBtn;
+        })()
     }
   `;
 
@@ -105,13 +116,16 @@ export function exploreEntity(type, name) {
   const fmEl = document.getElementById('filmModal');
   fmEl.classList.remove('visible');
   fmEl.classList.remove('open');
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('analysis').classList.add('active');
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  const analysisBtn = document.querySelector('.nav-btn[onclick*="analysis"]');
-  if (analysisBtn) analysisBtn.classList.add('active');
 
-  window.scrollTo(0, 0);
+  // Ensure we're on the profile screen (entity detail lives inside profile)
+  const profileEl = document.getElementById('profile');
+  if (!profileEl?.classList.contains('active')) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    profileEl.classList.add('active');
+    document.querySelectorAll('.nav-btn, .nav-mobile-btn').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('onclick')?.includes("'profile'"));
+    });
+  }
 
   const pluralType = type === 'director' ? 'directors' : type === 'writer' ? 'writers' : type === 'actor' ? 'actors' : type === 'year' ? 'years' : 'companies';
   exploreActiveTab = pluralType;
@@ -156,24 +170,27 @@ export function exploreEntity(type, name) {
   const strength = scored[0];
   const weakness = scored[scored.length-1];
 
-  document.getElementById('analysisContent').innerHTML = `
+  const analysisTarget = document.getElementById('profile-analysis-content') || document.getElementById('analysisContent');
+  if (!analysisTarget) return;
+  analysisTarget.innerHTML = `
     <div style="max-width:800px">
 
-      <div class="dark-grid" style="background:var(--surface-dark);margin:-40px -56px 32px;padding:40px 56px 32px;border-bottom:3px solid ${parseFloat(avg) >= 90 ? '#C4922A' : parseFloat(avg) >= 80 ? '#1F4A2A' : parseFloat(avg) >= 70 ? '#4A5830' : parseFloat(avg) >= 60 ? '#6B4820' : 'rgba(12,11,9,0.25)'}">
-        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:14px">
-          ${typeLabel} &nbsp;·&nbsp; <span onclick="renderAnalysis()" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px">← all ${pluralType}</span>
-        </div>
-        <div style="display:flex;align-items:flex-end;gap:20px">
-          ${(PERSON_TYPES.includes(type) || type === 'company') ? `<img id="explore-person-img" src="" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:50%;display:none;flex-shrink:0;border:2px solid rgba(255,255,255,0.12)">` : ''}
-          <div>
-            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(26px,4vw,44px);color:var(--on-dark);letter-spacing:-1.5px;line-height:1.1;margin-bottom:20px">${name}</div>
-            <div style="display:flex;align-items:baseline;gap:20px;flex-wrap:wrap">
-              <div style="display:flex;align-items:baseline;gap:10px">
-                <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(36px,5vw,52px);color:var(--on-dark);letter-spacing:-2px;line-height:1">${avg}</div>
-                <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);text-transform:uppercase;letter-spacing:1px">avg score</div>
-              </div>
-              <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--on-dark-dim)">#${entityRank} of ${totalEntities} ${pluralType}</div>
-              <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--on-dark-dim)">${films.length} film${films.length!==1?'s':''} rated</div>
+      <!-- Back link -->
+      <div style="margin-bottom:20px">
+        <span onclick="renderAnalysis()" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--blue);cursor:pointer;text-decoration:underline;text-underline-offset:2px">← Back to leaderboards</span>
+      </div>
+
+      <!-- Entity header (light, in-place) -->
+      <div style="margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid var(--rule)">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:14px">${typeLabel}</div>
+        <div style="display:flex;align-items:center;gap:20px">
+          ${(PERSON_TYPES.includes(type) || type === 'company') ? `<img id="explore-person-img" src="" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:50%;display:none;flex-shrink:0;background:var(--rule)">` : ''}
+          <div style="flex:1;min-width:0">
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(24px,4vw,36px);color:var(--ink);letter-spacing:-1px;line-height:1.1;margin-bottom:8px">${name}</div>
+            <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim)">
+              <span><strong style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:24px;color:var(--ink);letter-spacing:-0.5px">${avg}</strong> avg</span>
+              <span>#${entityRank} of ${totalEntities}</span>
+              <span>${films.length} film${films.length!==1?'s':''}</span>
             </div>
           </div>
         </div>
@@ -245,6 +262,12 @@ export function exploreEntity(type, name) {
     </div>
   `;
 
+  // Scroll analysis section into view (in-place, no page-level jump)
+  requestAnimationFrame(() => {
+    const section = document.getElementById('profile-analysis-section');
+    if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
   // Load insight + person image async after render
   loadExploreInsight(type, name, films);
   if (PERSON_TYPES.includes(type)) loadPersonImage(name);
@@ -305,9 +328,9 @@ async function loadExploreInsight(type, name, films) {
     const text = await getEntityInsight(type, name, films);
     if (!document.getElementById('explore-insight')) return; // user navigated away
     el.innerHTML = `
-      <div style="padding:18px 20px;background:var(--surface-dark);border-radius:8px">
-        <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--on-dark-dim);margin-bottom:10px">Your taste in ${name}</div>
-        <div style="font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.7;color:var(--on-dark)">${text}</div>
+      <div style="padding:18px 20px;background:var(--cream);border:1px solid var(--rule);border-radius:4px">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:10px">Your taste in ${name}</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.7;color:var(--ink)">${text}</div>
       </div>`;
   } catch(e) {
     const el2 = document.getElementById('explore-insight');

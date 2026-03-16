@@ -244,7 +244,7 @@ export function initPredict() {
     const needed = 3 - MOVIES.length;
     lockEl.style.cssText = 'padding:80px 24px;text-align:center;max-width:440px;margin:0 auto';
     lockEl.innerHTML = `
-      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">for you</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">discover</div>
       <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;color:var(--ink);letter-spacing:-1px;margin-bottom:12px">This gets personal.</div>
       <div style="font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.7;color:var(--dim);font-weight:300;max-width:400px;margin:0 auto 28px">After a few more ratings, Palate Map starts predicting your scores and recommending films chosen by your taste — not by popularity.</div>
       <div style="display:flex;justify-content:center;gap:6px;margin-bottom:16px">
@@ -456,7 +456,7 @@ function renderForYouHeader(updatedAt) {
   const headline = conf.stageKey === 'dialed_in' || conf.stageKey === 'knows_you_well'
     ? 'What to watch tonight.' : 'Getting to know your taste.';
   el.innerHTML = `
-    <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);margin-bottom:10px">for you · based on ${MOVIES.length} films</div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);margin-bottom:10px">discover · based on ${MOVIES.length} films</div>
     <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(28px,5vw,40px);line-height:1;color:var(--ink);letter-spacing:-1px;margin-bottom:12px">${headline}</div>
     <div style="width:40px;height:3px;background:${paletteColor};margin-bottom:12px"></div>
     <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">${ago}${ago && archetype ? ' · ' : ''}${archetype ? `<span style="color:${paletteColor}">${archetype}</span>` : ''}${archetype ? ' · ' : ''}${conf.label}</div>`;

@@ -37,12 +37,10 @@ export function renderWatchlist() {
   ].filter(Boolean).join(' · ');
 
   content.innerHTML = `
-    <div style="padding:28px 0 48px">
-      <!-- Editorial header -->
-      <div style="margin-bottom:28px">
-        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);margin-bottom:10px">watch list · ${list.length} film${list.length !== 1 ? 's' : ''}${headerStats ? ' · ' + headerStats : ''}</div>
-        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(28px,4vw,40px);line-height:1;color:var(--ink);letter-spacing:-1px;margin-bottom:12px">${seenCount > 0 && watchCount === 0 ? 'Ready to rate.' : 'Up next.'}</div>
-        <div style="width:40px;height:3px;background:var(--blue);margin-bottom:16px"></div>
+    <div style="padding:8px 0 48px">
+      <!-- Compact tab-level header -->
+      <div style="margin-bottom:24px">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim)">${list.length} film${list.length !== 1 ? 's' : ''}${headerStats ? ' · ' + headerStats : ''}</div>
       </div>
       ${list.length === 0 ? emptyState() : listHTML(list)}
       <!-- Search below content -->
@@ -59,7 +57,7 @@ export function renderWatchlist() {
       setTimeout(async () => {
         const { runAutoPredict } = await import('./predict.js');
         await runAutoPredict(item);
-        const screen = document.getElementById('watchlist');
+        const screen = document.getElementById('myfilms-watchlist');
         if (screen?.classList.contains('active')) {
           renderWatchlist();
         }
@@ -76,7 +74,7 @@ function emptyState() {
         <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:20px">— nothing queued —</div>
         <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;color:var(--on-dark);letter-spacing:-0.5px;margin-bottom:10px">What's next?</div>
         <div style="font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.7;color:rgba(244,239,230,0.7);margin-bottom:24px">Add films from anywhere in the app, or search below.</div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim)">Or check <span style="color:var(--blue);cursor:pointer" onclick="showScreen('predict')">For You</span> for recommendations →</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim)">Or check <span style="color:var(--blue);cursor:pointer" onclick="showScreen('predict')">Discover</span> for recommendations →</div>
       </div>
     </div>`;
 }
@@ -147,7 +145,7 @@ function listHTML(list) {
 
   html += `
     <div style="text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid var(--rule)">
-      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">Looking for something new? Check </span><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);cursor:pointer" onclick="showScreen('predict')">For You</span><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)"> for recommendations →</span>
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">Looking for something new? Check </span><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);cursor:pointer" onclick="showScreen('predict')">Discover</span><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)"> for recommendations →</span>
     </div>`;
   return html;
 }
@@ -215,6 +213,7 @@ export function addToWatchlist(item) {
   syncToSupabase();
   const toastMsg = status === 'seen' ? `${item.title} marked as seen.` : `${item.title} added to watch list.`;
   import('../ui-callbacks.js').then(({ showToast }) => showToast(toastMsg));
+  window.__ledger?.updateMyFilmsTabCounts?.();
 
   // Auto-predict after 30s if still on list (skip for seen items)
   if (status !== 'seen' && item.tmdbId && getPredictionTier().canPredict) {
@@ -224,7 +223,7 @@ export function addToWatchlist(item) {
       if (!stillOn) return;
       const { runAutoPredict } = await import('./predict.js');
       await runAutoPredict(item);
-      const screen = document.getElementById('watchlist');
+      const screen = document.getElementById('myfilms-watchlist');
       if (screen?.classList.contains('active')) renderWatchlist();
     }, 30000);
   }
@@ -263,6 +262,7 @@ export function markAsSeen(tmdbId, filmData = null) {
   saveUserLocally();
   syncToSupabase();
   import('../ui-callbacks.js').then(({ showToast }) => showToast('Marked as seen.'));
+  window.__ledger?.updateMyFilmsTabCounts?.();
 
   const item = (currentUser.watchlist || []).find(w => String(w.tmdbId) === String(tmdbId));
   if (item) {
@@ -270,7 +270,7 @@ export function markAsSeen(tmdbId, filmData = null) {
     track('watchlist_mark_seen', { tmdb_id: tmdbId, title: item.title, days_on_list: daysOnList });
   }
 
-  const screen = document.getElementById('watchlist');
+  const screen = document.getElementById('myfilms-watchlist');
   if (screen?.classList.contains('active')) renderWatchlist();
 }
 window.markAsSeen = markAsSeen;
@@ -286,6 +286,7 @@ export function unmarkSeen(tmdbId) {
   saveUserLocally();
   syncToSupabase();
   import('../ui-callbacks.js').then(({ showToast }) => showToast('Moved back to watch list.'));
+  window.__ledger?.updateMyFilmsTabCounts?.();
 
   // Trigger auto-predict now that it's back in watch state
   if (list[idx].tmdbId && getPredictionTier().canPredict) {
@@ -295,12 +296,12 @@ export function unmarkSeen(tmdbId) {
       if (!stillOn) return;
       const { runAutoPredict } = await import('./predict.js');
       await runAutoPredict(list[idx]);
-      const screen = document.getElementById('watchlist');
+      const screen = document.getElementById('myfilms-watchlist');
       if (screen?.classList.contains('active')) renderWatchlist();
     }, 5000);
   }
 
-  const screen = document.getElementById('watchlist');
+  const screen = document.getElementById('myfilms-watchlist');
   if (screen?.classList.contains('active')) renderWatchlist();
 }
 window.unmarkSeen = unmarkSeen;
@@ -318,6 +319,7 @@ export function removeFromWatchlist(tmdbId) {
   saveUserLocally();
   syncToSupabase();
   import('../ui-callbacks.js').then(({ showToast }) => showToast('Removed from watch list.'));
+  window.__ledger?.updateMyFilmsTabCounts?.();
 }
 window.removeFromWatchlist = removeFromWatchlist;
 
