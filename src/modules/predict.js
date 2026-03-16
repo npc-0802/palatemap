@@ -161,7 +161,6 @@ let predictDebounceTimer = null;
 let predictSelectedFilm = null;
 let lastPrediction = null;
 let recommendPage = 1;
-let dismissedTmdbIds = new Set(); // tracks films dismissed this session
 let previousRecommendationIds = new Set(); // tracks previous cycle's recommendation tmdbIds
 let _manualRefresh = false; // set by findMeAFilmRefresh, consumed by findMeAFilm
 let constrainedDebounceTimer = null;
@@ -541,7 +540,6 @@ function renderHeroCard(result) {
         : `<span style="color:var(--on-dark-dim);opacity:0.5">rate or add a film to refresh</span>`}`;
 
   heroEl.innerHTML = `
-    <button class="foryou-hero-dismiss" onclick="event.stopPropagation();forYouDismissHero()" title="Next pick">✕</button>
     <div class="foryou-hero-inner" onclick="openRecommendedDetail(${safeTmdbId})">
       ${posterHtml}
       <div class="foryou-hero-body">
@@ -612,7 +610,6 @@ function renderSecondaryCards(results) {
 
     return `
       <div class="foryou-sec-card" onclick="openRecommendedDetail(${safeTmdbId})" style="opacity:0;animation:heroReveal 0.3s ease ${i * 80}ms both">
-        <button class="foryou-sec-dismiss" onclick="event.stopPropagation();forYouDismissSecondary(${i})" title="Dismiss">✕</button>
         <div class="foryou-sec-poster-wrap">
           ${posterImg}
           ${scoreBadge}
@@ -1248,8 +1245,8 @@ async function buildCandidatePool() {
   const watchlistIds = new Set((currentUser?.watchlist || []).map(w => String(w.tmdbId)));
   const watchlistTitlesNorm = new Set((currentUser?.watchlist || []).map(w => normTitle(w.title)));
 
-  // Exclude rated, watchlisted, and dismissed films from all streams
-  const seen = new Set([...ratedIds, ...watchlistIds, ...dismissedTmdbIds]);
+  // Exclude rated and watchlisted films from all streams
+  const seen = new Set([...ratedIds, ...watchlistIds]);
   const isKnown = (id, title) =>
     seen.has(String(id)) ||
     ratedTitlesNorm.has(normTitle(title)) ||
@@ -2120,7 +2117,6 @@ async function findMeAFilm() {
 
     // ── Phase 2: Pre-score all candidates locally (JS only, no Claude) ───────
     const scored = rawCandidates
-      .filter(c => !dismissedTmdbIds.has(String(c.tmdbId)))
       .map(c => ({ ...c, compatScore: scoreCandidate(c) }))
       .sort((a, b) => b.compatScore - a.compatScore);
 
@@ -2311,7 +2307,7 @@ async function buildDiscoveryPool() {
   const ratedTitlesNorm = new Set(MOVIES.map(m => normTitle(m.title)));
   const watchlistIds = new Set((currentUser?.watchlist || []).map(w => String(w.tmdbId)));
   const watchlistTitlesNorm = new Set((currentUser?.watchlist || []).map(w => normTitle(w.title)));
-  const seen = new Set([...ratedIds, ...watchlistIds, ...dismissedTmdbIds]);
+  const seen = new Set([...ratedIds, ...watchlistIds]);
   const isKnown = (id, title) =>
     seen.has(String(id)) || ratedTitlesNorm.has(normTitle(title)) || watchlistTitlesNorm.has(normTitle(title));
 
@@ -3092,57 +3088,13 @@ window.findMeAFilmRefresh = function() {
   loadForYouRecommendations();
 };
 
-window.findMeAFilmDismiss = function(tmdbId) {
-  dismissedTmdbIds.add(String(tmdbId));
-  loadForYouRecommendations();
-};
-
-window.forYouDismissHero = function() {
-  const cached = currentUser?.cachedRecommendations;
-  if (!cached?.length) return;
-  dismissedTmdbIds.add(String(cached[0].tmdbId));
-  cached.shift();
-  setCurrentUser({ ...currentUser, cachedRecommendations: cached });
-  saveUserLocally();
-  if (cached.length) {
-    renderHeroCard(cached[0]);
-    renderSecondaryCards(cached.slice(1, 5));
-  } else {
-    loadForYouRecommendations();
-  }
-};
-
-window.forYouDismissSecondary = function(index) {
-  const cached = currentUser?.cachedRecommendations;
-  if (!cached || index + 1 >= cached.length) return;
-  const actualIndex = index + 1; // +1 because hero is cached[0]
-  dismissedTmdbIds.add(String(cached[actualIndex].tmdbId));
-  cached.splice(actualIndex, 1);
-  setCurrentUser({ ...currentUser, cachedRecommendations: cached });
-  saveUserLocally();
-  renderSecondaryCards(cached.slice(1, 5));
-  // If fewer than 6 items remain in cache, trigger background refresh
-  if (cached.length < 6) {
-    loadForYouRecommendations();
-  }
-};
-
 window.forYouSeenIt = function(index, title, tmdbId) {
-  // Pull film data from cache before splicing
+  // Pull film data from cache for watchlist entry
   const cached = currentUser?.cachedRecommendations;
   let filmData = null;
   if (cached && index + 1 < cached.length) {
-    const actualIndex = index + 1;
-    const rec = cached[actualIndex];
+    const rec = cached[index + 1];
     filmData = { tmdbId: rec.tmdbId, title: rec.title, year: rec.year, poster: rec.poster, overview: rec.overview || '', director: rec.director || '' };
-    dismissedTmdbIds.add(String(rec.tmdbId));
-    cached.splice(actualIndex, 1);
-    setCurrentUser({ ...currentUser, cachedRecommendations: cached });
-    saveUserLocally();
-    renderSecondaryCards(cached.slice(1, 5));
-    if (cached.length < 6) {
-      loadForYouRecommendations();
-    }
   }
   // Mark as seen on watchlist (adds if not already there)
   import('./watchlist.js').then(({ markAsSeen }) => {

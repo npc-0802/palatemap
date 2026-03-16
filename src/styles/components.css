@@ -1940,27 +1940,6 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); 
   gap: 10px;
   margin-top: 20px;
 }
-.foryou-hero-dismiss {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: none;
-  border: 1px solid rgba(255,255,255,0.15);
-  color: var(--on-dark-dim);
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.15s;
-  border-radius: 2px;
-}
-.foryou-hero-dismiss:hover {
-  border-color: rgba(255,255,255,0.4);
-  color: var(--on-dark);
-}
 .foryou-hero-footer {
   font-family: 'DM Mono', monospace;
   font-size: 9px;
@@ -2093,26 +2072,6 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); 
   font-size: 9px;
   color: var(--dim);
 }
-.foryou-sec-dismiss {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  background: rgba(0,0,0,0.5);
-  border: none;
-  color: white;
-  cursor: pointer;
-  font-size: 11px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.15s;
-  z-index: 1;
-}
-.foryou-sec-card:hover .foryou-sec-dismiss { opacity: 1; }
 .foryou-sec-seen-btn {
   background: none;
   border: 1px solid rgba(255,255,255,0.15);
