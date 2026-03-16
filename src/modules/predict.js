@@ -1251,8 +1251,11 @@ async function buildCandidatePool() {
     });
   });
   const tier = getPredictionTier();
+  // Relax entity thresholds for users with few films — onboarding graduates
+  // typically have ~10 diverse films with little entity overlap
+  const entityMinCount = MOVIES.length < 15 ? 1 : 2;
   const topDirectors = Object.entries(directorMap)
-    .filter(([, v]) => v.count >= (tier.tier === 'early' ? 1 : 2))
+    .filter(([, v]) => v.count >= entityMinCount)
     .map(([name, v]) => ({ name, avg: v.total / v.count }))
     .sort((a, b) => b.avg - a.avg)
     .slice(0, 3);
@@ -1305,7 +1308,7 @@ async function buildCandidatePool() {
       });
     });
     const topActors = Object.entries(actorMap)
-      .filter(([, v]) => v.count >= 2)
+      .filter(([, v]) => v.count >= entityMinCount)
       .map(([name, v]) => ({ name, avg: v.total / v.count }))
       .sort((a, b) => b.avg - a.avg)
       .slice(0, 3);
@@ -1360,7 +1363,7 @@ async function buildCandidatePool() {
       });
     });
     const topCompanies = Object.entries(companyMap)
-      .filter(([, v]) => v.count >= 2)
+      .filter(([, v]) => v.count >= entityMinCount)
       .map(([name, v]) => ({ name, avg: v.total / v.count }))
       .sort((a, b) => b.avg - a.avg)
       .slice(0, 2);
@@ -1403,6 +1406,20 @@ async function buildCandidatePool() {
   }
 
   // ── Stream D: TMDB discover (genre + era weighted) ──────────────────────────
+  // Backfill genres for rated films that don't have them (e.g. onboarding films)
+  const needGenres = MOVIES.filter(m => !m.genres && m.tmdbId);
+  if (needGenres.length > 0) {
+    await Promise.allSettled(needGenres.slice(0, 10).map(async (m) => {
+      try {
+        const res = await fetch(`${TMDB}/movie/${m.tmdbId}?api_key=${TMDB_KEY}`);
+        const data = await res.json();
+        if (data.genres?.length) {
+          m.genres = data.genres.map(g => g.name).join(', ');
+        }
+      } catch { /* non-critical */ }
+    }));
+  }
+
   const genreScores = {};
   const genreCounts = {};
   MOVIES.forEach(m => {
@@ -1419,7 +1436,7 @@ async function buildCandidatePool() {
     'Thriller': 53, 'War': 10752, 'Western': 37
   };
   const topGenres = Object.entries(genreScores)
-    .filter(([g]) => genreCounts[g] >= 2 && GENRE_ID_MAP[g])
+    .filter(([g]) => genreCounts[g] >= entityMinCount && GENRE_ID_MAP[g])
     .map(([g, total]) => ({ name: g, id: GENRE_ID_MAP[g], avg: total / genreCounts[g] }))
     .sort((a, b) => b.avg - a.avg)
     .slice(0, 2);
@@ -1435,30 +1452,41 @@ async function buildCandidatePool() {
   });
   let topDecade = null, topDecadeAvg = 0;
   Object.keys(decadeScores).forEach(d => {
-    if (decadeCounts[d] >= 2) {
+    if (decadeCounts[d] >= entityMinCount) {
       const avg = decadeScores[d] / decadeCounts[d];
       if (avg > topDecadeAvg) { topDecadeAvg = avg; topDecade = parseInt(d); }
     }
   });
 
-  const discoverCalls = topGenres.map(async (genre) => {
-    const params = new URLSearchParams({
-      api_key: TMDB_KEY,
-      with_genres: genre.id,
-      sort_by: 'vote_average.desc',
-      'vote_count.gte': 200,
-      page: Math.ceil(recommendPage / 2)
-    });
-    if (topDecade) {
-      params.set('primary_release_date.gte', `${topDecade}-01-01`);
-      params.set('primary_release_date.lte', `${topDecade + 9}-12-31`);
-    }
-    try {
-      const res = await fetch(`${TMDB}/discover/movie?${params}`);
-      const data = await res.json();
-      return data.results || [];
-    } catch { return []; }
-  });
+  const discoverCalls = topGenres.length > 0
+    ? topGenres.map(async (genre) => {
+        const params = new URLSearchParams({
+          api_key: TMDB_KEY,
+          with_genres: genre.id,
+          sort_by: 'vote_average.desc',
+          'vote_count.gte': 200,
+          page: Math.ceil(recommendPage / 2)
+        });
+        if (topDecade) {
+          params.set('primary_release_date.gte', `${topDecade}-01-01`);
+          params.set('primary_release_date.lte', `${topDecade + 9}-12-31`);
+        }
+        try {
+          const res = await fetch(`${TMDB}/discover/movie?${params}`);
+          const data = await res.json();
+          return data.results || [];
+        } catch { return []; }
+      })
+    : [
+        // Fallback: broad popular films when no genre data available
+        (async () => {
+          try {
+            const res = await fetch(`${TMDB}/discover/movie?api_key=${TMDB_KEY}&sort_by=vote_average.desc&vote_count.gte=500&page=${Math.ceil(recommendPage / 2)}`);
+            const data = await res.json();
+            return data.results || [];
+          } catch { return []; }
+        })()
+      ];
 
   const discoverResults = (await Promise.all(discoverCalls)).flat();
   discoverResults.forEach(film => {
