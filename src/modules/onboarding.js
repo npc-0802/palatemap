@@ -2328,7 +2328,7 @@ function renderTasteReveal() {
     <div class="ob-taste-reveal">
       <div class="ob-taste-label" style="opacity:0;animation:fadeIn 0.4s ease 0.2s both">Your palate is ready.</div>
       <div class="ob-taste-radar-wrap" style="opacity:0;animation:fadeIn 0.3s ease 0.4s both">
-        <svg viewBox="-10 -10 260 260" width="220" height="220">
+        <svg viewBox="-60 -20 300 280" style="overflow:visible;width:100%;max-width:320px;height:auto">
           ${radarRings}${radarAxes}${radarLabels}
           <polygon points="${radarPts}" fill="rgba(61,90,128,0.2)" stroke="var(--blue)" stroke-width="1.5"/>
         </svg>
