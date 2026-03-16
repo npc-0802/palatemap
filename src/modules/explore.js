@@ -334,6 +334,15 @@ async function loadExploreInsight(type, name, films) {
       </div>`;
   } catch(e) {
     const el2 = document.getElementById('explore-insight');
-    if (el2) el2.style.display = 'none';
+    if (!el2) return;
+    // Quota exhausted — graceful fallback (entity page still shows all data)
+    if (e?.name === 'InsightQuotaExhausted') {
+      el2.innerHTML = `
+        <div style="padding:14px 18px;border:1px dashed var(--rule);border-radius:4px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.3px">Written insight unavailable right now — the numbers tell the story.</div>
+        </div>`;
+    } else {
+      el2.style.display = 'none';
+    }
   }
 }

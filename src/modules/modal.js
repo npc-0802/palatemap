@@ -355,7 +355,14 @@ async function loadModalInsight(film) {
       </div>`;
   } catch(e) {
     const el2 = document.getElementById('modal-insight');
-    if (el2) el2.style.display = 'none';
+    if (!el2) return;
+    if (e?.name === 'InsightQuotaExhausted') {
+      // Quota exhausted — hide silently (film modal still has scores, reasoning, etc.)
+      el2.style.display = 'none';
+    } else {
+      // Real error (proxy failure, malformed response, etc.) — show subtle indicator
+      el2.innerHTML = `<div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);padding:8px 0">Insight couldn't load right now.</div>`;
+    }
   }
 }
 

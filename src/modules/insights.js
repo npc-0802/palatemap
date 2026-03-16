@@ -1,8 +1,69 @@
 import { MOVIES, CATEGORIES, currentUser } from '../state.js';
 import { getFilmObservationWeight } from './weight-blend.js';
+import { track } from '../analytics.js';
 
 const PROXY_URL = 'https://palate-map-proxy.noahparikhcott.workers.dev';
 const CACHE_KEY = 'palate_insights_v1';
+
+// ── Insight quota (separate from prediction quota) ────────────────────────
+// Controls fresh Claude calls for entity/film insight generation.
+// Cached insights are always free — quota only applies to fresh generation.
+
+const INSIGHT_QUOTA_KEY = 'palatemap_insight_quota';
+
+const INSIGHT_LIMITS = {
+  free:    { daily: 10,  monthly: 30  },
+  paid:    { daily: 50,  monthly: 200 },
+  founder: { daily: 200, monthly: 1000 },
+};
+
+const FOUNDER_EMAILS = ['noahparikhcott@gmail.com'];
+
+function getInsightTier() {
+  const explicit = currentUser?.subscription_tier;
+  if (explicit && INSIGHT_LIMITS[explicit]) return explicit;
+  const email = (currentUser?.email || '').toLowerCase().trim();
+  if (email && FOUNDER_EMAILS.includes(email)) return 'founder';
+  return 'free';
+}
+
+function loadInsightQuota() {
+  try { return JSON.parse(localStorage.getItem(INSIGHT_QUOTA_KEY) || '{}'); } catch { return {}; }
+}
+
+function saveInsightQuota(q) {
+  localStorage.setItem(INSIGHT_QUOTA_KEY, JSON.stringify(q));
+}
+
+function canGenerateFreshInsight() {
+  const tier = getInsightTier();
+  const limits = INSIGHT_LIMITS[tier];
+  const q = loadInsightQuota();
+  const today = new Date().toISOString().slice(0, 10);
+  const month = new Date().toISOString().slice(0, 7);
+  const daily = q.date === today ? (q.daily || 0) : 0;
+  const monthly = q.month === month ? (q.monthly || 0) : 0;
+  if (daily >= limits.daily) return { allowed: false, reason: 'daily' };
+  if (monthly >= limits.monthly) return { allowed: false, reason: 'monthly' };
+  return { allowed: true, reason: null };
+}
+
+function recordInsightUsage(insightType, entityKey) {
+  const q = loadInsightQuota();
+  const today = new Date().toISOString().slice(0, 10);
+  const month = new Date().toISOString().slice(0, 7);
+  if (q.date !== today) { q.date = today; q.daily = 0; }
+  if (q.month !== month) { q.month = month; q.monthly = 0; }
+  q.daily = (q.daily || 0) + 1;
+  q.monthly = (q.monthly || 0) + 1;
+  saveInsightQuota(q);
+  track('insight_generated', { type: insightType, key: entityKey, daily_used: q.daily, monthly_used: q.monthly, tier: getInsightTier() });
+}
+
+// Sentinel thrown when quota is exhausted (not a real error)
+export class InsightQuotaExhausted extends Error {
+  constructor() { super('insight_quota_exhausted'); this.name = 'InsightQuotaExhausted'; }
+}
 
 function loadCache() {
   try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch { return {}; }
@@ -61,7 +122,18 @@ export async function getEntityInsight(type, name, films) {
   const filmCount = films.length;
   const avg = Math.round(films.reduce((s, f) => s + (f.total || 0), 0) / filmCount);
 
-  if (!isEntityStale(cache[key], filmCount, avg)) return cache[key].text;
+  // Cached insight — always free
+  if (!isEntityStale(cache[key], filmCount, avg)) {
+    track('insight_cache_hit', { type: 'entity', key, tier: getInsightTier() });
+    return cache[key].text;
+  }
+
+  // Fresh generation — check quota
+  const quotaCheck = canGenerateFreshInsight();
+  if (!quotaCheck.allowed) {
+    track('insight_quota_blocked', { type: 'entity', key, reason: quotaCheck.reason, tier: getInsightTier() });
+    throw new InsightQuotaExhausted();
+  }
 
   const overall = buildOverallStats();
   const statStr = CATEGORIES.map(c => `${c.label} ${overall[c.key] ?? '—'}`).join(', ');
@@ -91,6 +163,7 @@ Write 2–3 sentences in second person about what this user's scoring patterns r
   const text = await callClaude(system, userPrompt);
   cache[key] = { text, filmCount, avg, ts: Date.now() };
   saveCache(cache);
+  recordInsightUsage('entity', key);
   return text;
 }
 
@@ -98,9 +171,20 @@ Write 2–3 sentences in second person about what this user's scoring patterns r
 
 export async function getFilmInsight(film) {
   const cache = loadCache();
-  const key = `film::${film.title}`;
+  const key = film.tmdbId ? `film::tmdb:${film.tmdbId}` : `film::${film.title}::${film.year || ''}`;
 
-  if (!isFilmStale(cache[key], film.total)) return cache[key].text;
+  // Cached insight — always free
+  if (!isFilmStale(cache[key], film.total)) {
+    track('insight_cache_hit', { type: 'film', key, tier: getInsightTier() });
+    return cache[key].text;
+  }
+
+  // Fresh generation — check quota
+  const quotaCheck = canGenerateFreshInsight();
+  if (!quotaCheck.allowed) {
+    track('insight_quota_blocked', { type: 'film', key, reason: quotaCheck.reason, tier: getInsightTier() });
+    throw new InsightQuotaExhausted();
+  }
 
   const overall = buildOverallStats();
   const sorted = [...MOVIES].sort((a, b) => b.total - a.total);
@@ -131,6 +215,7 @@ Write 2–3 sentences in second person about what this scoring pattern reveals a
   const text = await callClaude(system, userPrompt);
   cache[key] = { text, filmCount: 1, total: film.total, ts: Date.now() };
   saveCache(cache);
+  recordInsightUsage('film', key);
   return text;
 }
 
@@ -142,8 +227,10 @@ export function invalidateInsight(type, name) {
   saveCache(cache);
 }
 
-export function invalidateFilmInsight(title) {
+export function invalidateFilmInsight(title, tmdbId) {
   const cache = loadCache();
+  // Remove both key formats for backward compat
+  if (tmdbId) delete cache[`film::tmdb:${tmdbId}`];
   delete cache[`film::${title}`];
   saveCache(cache);
 }
