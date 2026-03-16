@@ -1649,11 +1649,25 @@ async function callClaudeForPrediction(film, entityConstraint = null, source = '
     })
   });
 
-  const data = await res.json();
+  let data;
+  const rawText = await res.text();
+  try {
+    data = JSON.parse(rawText);
+  } catch {
+    console.error('[predict] Proxy returned non-JSON:', rawText.slice(0, 500));
+    throw new Error(`Prediction proxy returned invalid response (HTTP ${res.status}). Check that the proxy is running.`);
+  }
 
   // Handle server-side quota/policy/auth blocks
   if (data.error === 'quota_exceeded' || data.error === 'plan_restricted' || data.error === 'auth_required' || data.error === 'quota_service_error') {
     throw new Error(data.message || 'Prediction blocked by server policy.');
+  }
+
+  // Handle Anthropic API-level errors (overloaded, invalid key, etc.)
+  if (data.type === 'error' || data.error) {
+    const msg = data.error?.message || data.error || 'Unknown API error';
+    console.error('[predict] Anthropic API error:', msg);
+    throw new Error(`Prediction API error: ${msg}`);
   }
 
   // Thread usage data from proxy response (Phase 2 telemetry)
@@ -1668,9 +1682,53 @@ async function callClaudeForPrediction(film, entityConstraint = null, source = '
     });
   }
 
-  const text = data.content?.[0]?.text || '';
+  // Check for empty or truncated responses
+  if (!data.content?.length) {
+    console.error('[predict] Empty content in API response:', JSON.stringify(data).slice(0, 500));
+    throw new Error('Prediction API returned an empty response. Please try again.');
+  }
+  if (data.stop_reason === 'max_tokens') {
+    console.warn('[predict] Response truncated by max_tokens limit');
+  }
+
+  const text = data.content[0].text || '';
   const clean = text.replace(/```json|```/g, '').trim();
-  const prediction = JSON.parse(clean);
+
+  // Claude sometimes returns prose wrapping JSON — try to extract the JSON object
+  let prediction;
+  try {
+    prediction = JSON.parse(clean);
+  } catch (parseErr) {
+    // Attempt to find a JSON object embedded in prose text
+    const jsonMatch = clean.match(/\{[\s\S]*"predicted_scores"[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        prediction = JSON.parse(jsonMatch[0]);
+        // Track fallback recovery — frequency signals prompt contract health
+        console.warn('[predict] Recovered JSON from prose-wrapped response');
+        track('prediction_parse_fallback', {
+          tmdb_id: film.tmdbId,
+          prose_prefix: clean.slice(0, 80),
+          response_length: clean.length,
+          stop_reason: data.stop_reason || null,
+          model: data.model || null,
+        });
+      } catch {
+        // Fall through to error below
+      }
+    }
+    if (!prediction) {
+      const preview = clean.slice(0, 200);
+      console.error('[predict] Non-JSON response from API:', clean);
+      track('prediction_parse_error', {
+        tmdb_id: film.tmdbId,
+        response_preview: preview,
+        response_length: clean.length,
+        stop_reason: data.stop_reason || null,
+      });
+      throw new Error(`Prediction response was not valid JSON. The model returned: "${preview}${clean.length > 200 ? '…' : ''}"`);
+    }
+  }
 
   // Validate prediction has real scores — reject degenerate API responses
   const scores = prediction.predicted_scores;
@@ -1822,7 +1880,7 @@ async function runPrediction(film, source = 'manual_predict') {
     // Distinguish quota/policy errors from API errors
     const isQuotaError = e.message?.includes('predictions') || e.message?.includes('plan');
     document.getElementById('predict-result').innerHTML = `
-      <div class="tmdb-error">${isQuotaError ? e.message : `Prediction failed: ${e.message}. Check that the proxy is running and your API key is valid.`}</div>`;
+      <div class="tmdb-error">${isQuotaError ? e.message : `Prediction failed: ${e.message}`}</div>`;
   }
 }
 

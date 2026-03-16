@@ -1,6 +1,6 @@
 import { MOVIES, setMovies, setCurrentUser, currentUser, applyUserWeights, recalcAllTotals, CATEGORIES, calcTotal } from '../state.js';
 import { ARCHETYPES } from '../data/archetypes.js';
-import { classifyArchetype, getArchetypeDescription, ARCHETYPE_DESCRIPTIONS } from './quiz-engine.js';
+import { classifyArchetype, getArchetypeDescription, ARCHETYPE_DESCRIPTIONS, computeTasteEdges, formatTasteEdges } from './quiz-engine.js';
 import { saveToStorage } from './storage.js';
 import { renderRankings } from './rankings.js';
 import { sb, syncToSupabase, saveUserLocally, signInWithGoogle, sendMagicLink } from './supabase.js';
@@ -2280,6 +2280,10 @@ function renderTasteReveal() {
   const archDesc = getArchetypeDescription(classification.archetypeKey, classification.adjective, classification.confidence)
     || 'Your taste has a clear shape. Every film you add sharpens the picture.';
 
+  // Taste edges — strong categories not captured by the archetype label
+  const tasteEdges = computeTasteEdges(weights, classification.archetypeKey);
+  const tasteEdgesText = formatTasteEdges(tasteEdges, classification.archetypeKey);
+
   // Radar chart SVG
   const cx = 120, cy = 120, maxR = 90;
   const radarAxes = catKeys.map((c, i) => {
@@ -2323,6 +2327,7 @@ function renderTasteReveal() {
       <div class="ob-taste-archetype" style="opacity:0;animation:fadeIn 0.4s ease 0.8s both">${fullName || archetype}</div>
       <div class="ob-taste-descriptors" style="opacity:0;animation:fadeIn 0.3s ease 1s both">${topCats.join(' · ')}</div>
       <div class="ob-taste-desc" style="opacity:0;animation:fadeIn 0.4s ease 1.2s both">${archDesc}</div>
+      ${tasteEdgesText ? `<div class="ob-taste-desc" style="opacity:0;animation:fadeIn 0.3s ease 1.3s both;font-style:italic;color:rgba(244,239,230,0.6);font-size:13px">${tasteEdgesText}</div>` : ''}
       <div class="ob-taste-stats" style="opacity:0;animation:fadeIn 0.4s ease 1.4s both">
         <div class="ob-taste-stat">
           <div class="ob-taste-stat-label">Your strongest category</div>

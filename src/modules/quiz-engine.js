@@ -353,3 +353,101 @@ export const ADJECTIVE_DESCRIPTIONS = {
   Instinctive: 'Your taste leans visceral.',
   Devoted: 'Your taste is integrated.',
 };
+
+// ── Taste edges: surface strong categories not captured by archetype ──
+// The 8→5 archetype compression means some categories (ending, hold, world, craft)
+// can be a user's strongest visible weight but invisible in their archetype copy.
+// This function identifies those "hidden edges" so the UI can acknowledge them.
+
+const CATS_ALL = ['story','craft','performance','world','experience','hold','ending','singularity'];
+
+// Which categories are "owned" by each archetype dimension?
+const DIM_CATEGORIES = {
+  narrative:    ['story', 'ending'],
+  craft:        ['craft', 'world'],
+  human:        ['performance'],
+  experiential: ['experience', 'hold'],
+  singular:     ['singularity'],
+  balanced:     [], // Holist owns nothing specifically
+};
+
+const CAT_LABELS_FULL = {
+  story: 'Story', craft: 'Craft', performance: 'Performance', world: 'World',
+  experience: 'Experience', hold: 'Hold', ending: 'Ending', singularity: 'Singularity',
+};
+
+// How each category is described as an edge — lowercase, natural-language fragments
+const EDGE_PHRASES = {
+  story: 'narrative structure',
+  craft: 'filmmaking craft',
+  performance: 'performances',
+  world: 'world-building',
+  experience: 'the experience of watching',
+  hold: 'how films stay with you',
+  ending: 'endings',
+  singularity: 'originality',
+};
+
+/**
+ * Compute "taste edges" — strong categories that the archetype label doesn't capture.
+ * Returns an array of { cat, weight, label, phrase } for categories that are:
+ *   1. Above the user's mean weight by a meaningful margin
+ *   2. NOT part of the assigned archetype's dimension
+ * Returns at most 2 edges, sorted by distinctiveness.
+ */
+export function computeTasteEdges(weights, archetypeKey) {
+  if (!weights) return [];
+  const vals = CATS_ALL.map(c => weights[c] ?? NEUTRAL);
+  const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+  const std = Math.sqrt(vals.reduce((a, v) => a + (v - mean) ** 2, 0) / vals.length);
+  if (std < 0.15) return []; // Very flat profile — no meaningful edges
+
+  // Categories owned by the assigned archetype
+  const owned = new Set(DIM_CATEGORIES[archetypeKey] || []);
+
+  // Find categories that are distinctively high AND not owned by the archetype
+  const edges = CATS_ALL
+    .map(c => ({
+      cat: c,
+      weight: weights[c] ?? NEUTRAL,
+      deviation: ((weights[c] ?? NEUTRAL) - mean) / (std || 1),
+      label: CAT_LABELS_FULL[c],
+      phrase: EDGE_PHRASES[c],
+    }))
+    .filter(e => !owned.has(e.cat) && e.deviation >= 0.7)  // At least 0.7 std above mean AND not already represented
+    .sort((a, b) => b.deviation - a.deviation)
+    .slice(0, 2);
+
+  return edges;
+}
+
+/**
+ * Format taste edges into a display sentence for the profile.
+ * Returns empty string if no edges.
+ * Tone: interpretive, concise, not a data readout.
+ */
+export function formatTasteEdges(edges, archetypeKey) {
+  if (!edges.length) return '';
+
+  // Build the edge noun phrase
+  const edgeText = edges.length === 1
+    ? edges[0].phrase
+    : `${edges[0].phrase} and ${edges[1].phrase}`;
+
+  // The "beyond [archetype focus]" framing — what the archetype already covers
+  const archFocus = {
+    narrative: 'story',
+    craft: 'craft and world',
+    human: 'performance',
+    experiential: 'experience',
+    singular: 'singularity',
+  };
+
+  // For non-Holist: "Beyond [archetype focus], [edges] also matter more to you than most."
+  // For Holist: "What sharpens this profile: [edges] carry unusual weight."
+  if (archetypeKey === 'balanced') {
+    return `What sharpens this profile: ${edgeText} carry unusual weight.`;
+  }
+
+  return `Beyond that, ${edgeText} also matter more to you than most.`;
+}
