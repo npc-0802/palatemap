@@ -70,7 +70,7 @@ export function updateTasteBanner() {
       </div>`;
   } else if (tier.tier === 'full') {
     const threshold = Math.floor(n / 10) * 10;
-    const lastThreshold = parseInt(localStorage.getItem('palatemap_calibrate_last_threshold') || '0');
+    const lastThreshold = parseInt(localStorage.getItem('palatemap_calibrate_last_threshold') || '10');
     if (threshold > lastThreshold) {
       banner.innerHTML = `
         <div style="background:#FDF1EC;border-bottom:1px solid rgba(232,98,58,0.25);border-left:3px solid var(--action);padding:10px 56px;display:flex;align-items:center;gap:12px">
