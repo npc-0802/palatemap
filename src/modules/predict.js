@@ -459,9 +459,9 @@ function renderProgressNudge() {
 
 function timeAgo(date) {
   const diff = Math.floor((Date.now() - date.getTime()) / 86400000);
-  if (diff === 0) return 'Updated today';
-  if (diff === 1) return 'Updated yesterday';
-  return `Updated ${diff} days ago`;
+  if (diff === 0) return 'today';
+  if (diff === 1) return 'yesterday';
+  return `${diff} days ago`;
 }
 
 function renderForYouHeader(updatedAt) {
