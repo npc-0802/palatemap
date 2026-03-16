@@ -2202,6 +2202,11 @@ function finishCalibration() {
 
 // ── TASTE REVEAL ──
 function renderTasteReveal() {
+  // Ensure dark background regardless of entry path
+  const overlay = document.getElementById('onboarding-overlay');
+  if (overlay && !overlay.classList.contains('starters-mode')) {
+    overlay.classList.add('starters-mode');
+  }
   const card = document.getElementById('ob-card-content');
   updateProgress(100);
   const catKeys = CATEGORIES.map(c => c.key);
