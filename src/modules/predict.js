@@ -163,6 +163,7 @@ let lastPrediction = null;
 let recommendPage = 1;
 let previousRecommendationIds = new Set(); // tracks previous cycle's recommendation tmdbIds
 let _manualRefresh = false; // set by findMeAFilmRefresh, consumed by findMeAFilm
+let _heuristicOnly = false; // set by findMeAFilmRefresh — skip Claude calls on heuristic refresh
 let constrainedDebounceTimer = null;
 
 // ── PROGRESSIVE UNLOCK TIERS ────────────────────────────────────────────────
@@ -346,11 +347,13 @@ export function initPredict() {
     }
   }
 
-  // Reset manual predict section
+  // Reset manual predict section + clear stale prediction results
   const searchEl = document.getElementById('predict-search');
   if (searchEl) searchEl.value = '';
   const searchResults = document.getElementById('predict-search-results');
   if (searchResults) searchResults.innerHTML = '';
+  const predictResult = document.getElementById('predict-result');
+  if (predictResult) predictResult.innerHTML = '';
   predictSelectedFilm = null;
 
   // Compute dynamic entity weights
@@ -2297,13 +2300,16 @@ async function findMeAFilm() {
     // Determine prediction source and whether we can run predictions
     const isOnboardingSeed = isOnboardingSeedEligible();
     const isManualRefresh = _manualRefresh;
+    const isHeuristicOnly = _heuristicOnly;
     _manualRefresh = false; // consume the flag
+    _heuristicOnly = false;
 
     const predSource = isOnboardingSeed ? 'onboarding_seed'
       : isManualRefresh ? 'manual_refresh'
       : 'foryou_auto';
 
-    const canPredictForYou = fmTier.canPredict && canRunFreshPrediction(predSource).allowed;
+    // Heuristic-only refresh (from "Matched to Your Palate" Refresh button) skips Claude calls entirely
+    const canPredictForYou = !isHeuristicOnly && fmTier.canPredict && canRunFreshPrediction(predSource).allowed;
 
     // At Tier 1, skip Claude calls entirely — heuristic-only recommendations
     if (canPredictForYou) {
@@ -3349,6 +3355,7 @@ window.recDetailToggleWl = async function(tmdbId) {
 
 window.findMeAFilmRefresh = function() {
   _manualRefresh = true;
+  _heuristicOnly = true; // heuristic section refresh — no Claude calls, no quota spend
   loadForYouRecommendations();
 };
 
