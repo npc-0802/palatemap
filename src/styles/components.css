@@ -3250,7 +3250,7 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); 
   font-size: 10px;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--dim);
+  color: var(--on-dark-dim);
   margin-bottom: 24px;
 }
 .ob-taste-radar-wrap {
@@ -3271,14 +3271,14 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); 
   font-style: italic;
   font-weight: 900;
   font-size: clamp(32px, 5vw, 44px);
-  color: var(--ink);
+  color: var(--on-dark);
   margin-bottom: 8px;
   letter-spacing: -1px;
 }
 .ob-taste-descriptors {
   font-family: 'DM Mono', monospace;
   font-size: 11px;
-  color: var(--dim);
+  color: var(--on-dark-dim);
   letter-spacing: 0.5px;
   margin-bottom: 24px;
 }
@@ -3286,13 +3286,13 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); 
   font-family: 'DM Sans', sans-serif;
   font-size: 15px;
   line-height: 1.6;
-  color: var(--dim);
+  color: var(--on-dark-dim);
   font-style: italic;
   max-width: 440px;
   margin: 0 auto 28px;
 }
 .ob-taste-stats {
-  border-top: 0.5px solid var(--rule);
+  border-top: 0.5px solid rgba(244, 239, 230, 0.08);
   padding-top: 24px;
   margin-bottom: 28px;
 }
@@ -3304,25 +3304,25 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--blue-dark); 
   font-size: 9px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--dim);
+  color: var(--on-dark-dim);
   margin-bottom: 4px;
 }
 .ob-taste-stat-value {
   font-family: 'Playfair Display', serif;
   font-style: italic;
   font-size: 18px;
-  color: var(--ink);
+  color: var(--on-dark);
 }
 .ob-taste-stat-sub {
   font-family: 'DM Sans', sans-serif;
   font-size: 13px;
-  color: var(--dim);
+  color: var(--on-dark-dim);
   margin-top: 2px;
 }
 .ob-taste-footer {
   font-family: 'DM Sans', sans-serif;
   font-size: 13px;
-  color: var(--dim);
+  color: var(--on-dark-dim);
   margin-bottom: 28px;
 }
 .ob-taste-cta {
