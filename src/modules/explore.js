@@ -118,13 +118,13 @@ export function exploreEntity(type, name) {
   fmEl.classList.remove('open');
 
   // Ensure we're on the profile screen (entity detail lives inside profile)
+  // Must use showScreen to trigger renderProfile() which creates #profile-analysis-content
   const profileEl = document.getElementById('profile');
   if (!profileEl?.classList.contains('active')) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    profileEl.classList.add('active');
-    document.querySelectorAll('.nav-btn, .nav-mobile-btn').forEach(b => {
-      b.classList.toggle('active', b.getAttribute('onclick')?.includes("'profile'"));
-    });
+    window.showScreen('profile');
+  } else if (!document.getElementById('profile-analysis-content')) {
+    // Profile is active but analysis section wasn't rendered (edge case)
+    window.renderProfile?.();
   }
 
   const pluralType = type === 'director' ? 'directors' : type === 'writer' ? 'writers' : type === 'actor' ? 'actors' : type === 'year' ? 'years' : 'companies';
