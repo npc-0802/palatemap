@@ -2295,7 +2295,7 @@ function renderTasteReveal() {
     const angle = (Math.PI * 2 * i / catKeys.length) - Math.PI / 2;
     const ex = cx + maxR * Math.cos(angle);
     const ey = cy + maxR * Math.sin(angle);
-    return `<line x1="${cx}" y1="${cy}" x2="${ex}" y2="${ey}" stroke="rgba(244,239,230,0.08)" stroke-width="0.5"/>`;
+    return `<line x1="${cx}" y1="${cy}" x2="${ex}" y2="${ey}" stroke="rgba(244,239,230,0.18)" stroke-width="0.5"/>`;
   }).join('');
   const radarLabels = catKeys.map((c, i) => {
     const angle = (Math.PI * 2 * i / catKeys.length) - Math.PI / 2;
@@ -2303,7 +2303,7 @@ function renderTasteReveal() {
     const ly = cy + (maxR + 18) * Math.sin(angle);
     const anchor = lx < cx - 5 ? 'end' : lx > cx + 5 ? 'start' : 'middle';
     const label = (CAT_LABELS[c] || c).replace('The ', '');
-    return `<text x="${lx}" y="${ly}" text-anchor="${anchor}" dominant-baseline="central" font-family="'DM Mono',monospace" font-size="8" fill="rgba(244,239,230,0.4)">${label}</text>`;
+    return `<text x="${lx}" y="${ly}" text-anchor="${anchor}" dominant-baseline="central" font-family="'DM Mono',monospace" font-size="8" fill="rgba(244,239,230,0.55)">${label}</text>`;
   }).join('');
   const radarPts = catKeys.map((c, i) => {
     const angle = (Math.PI * 2 * i / catKeys.length) - Math.PI / 2;
@@ -2316,7 +2316,7 @@ function renderTasteReveal() {
       const angle = (Math.PI * 2 * i / catKeys.length) - Math.PI / 2;
       return `${cx + maxR * level * Math.cos(angle)},${cy + maxR * level * Math.sin(angle)}`;
     }).join(' ');
-    return `<polygon points="${pts}" fill="none" stroke="rgba(244,239,230,0.06)" stroke-width="0.5"/>`;
+    return `<polygon points="${pts}" fill="none" stroke="rgba(244,239,230,0.14)" stroke-width="0.5"/>`;
   }).join('');
 
   card.innerHTML = `
