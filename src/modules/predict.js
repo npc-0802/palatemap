@@ -310,9 +310,9 @@ export function initPredict() {
         : '';
       // Two-layer overlay: wash dims content underneath, card sits on top at full opacity
       overlay.innerHTML = isPaidLock
-        ? `<div style="position:absolute;inset:0;background:rgba(244,239,230,0.75);z-index:1"></div>
+        ? `<div style="position:absolute;inset:0;background:rgba(244,239,230,0.92);z-index:1"></div>
            <div style="position:relative;z-index:2;background:rgba(232,98,58,0.08);border:1.5px solid rgba(232,98,58,0.25);padding:14px 24px;text-align:center"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--action);font-weight:500">Palate Map Pro</div><div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--dim);margin-top:4px">Coming soon</div></div>`
-        : `<div style="position:absolute;inset:0;background:rgba(244,239,230,0.75);z-index:1"></div>
+        : `<div style="position:absolute;inset:0;background:rgba(244,239,230,0.92);z-index:1"></div>
            <div style="position:relative;z-index:2;background:var(--paper);border:1px solid var(--rule);padding:12px 20px;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.5px;text-align:center">${lockMsg}</div>`;
       overlay.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2';
       constrainedSection.appendChild(overlay);
@@ -339,9 +339,9 @@ export function initPredict() {
         ? `Rate ${10 - MOVIES.length} more film${10 - MOVIES.length !== 1 ? 's' : ''} to unlock`
         : '';
       dOverlay.innerHTML = isPaidLockD
-        ? `<div style="position:absolute;inset:0;background:rgba(244,239,230,0.75);z-index:1"></div>
+        ? `<div style="position:absolute;inset:0;background:rgba(244,239,230,0.92);z-index:1"></div>
            <div style="position:relative;z-index:2;background:rgba(232,98,58,0.08);border:1.5px solid rgba(232,98,58,0.25);padding:14px 24px;text-align:center"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--action);font-weight:500">Palate Map Pro</div><div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--dim);margin-top:4px">Coming soon</div></div>`
-        : `<div style="position:absolute;inset:0;background:rgba(244,239,230,0.75);z-index:1"></div>
+        : `<div style="position:absolute;inset:0;background:rgba(244,239,230,0.92);z-index:1"></div>
            <div style="position:relative;z-index:2;background:var(--paper);border:1px solid var(--rule);padding:12px 20px;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.5px;text-align:center">${lockMsg}</div>`;
       dOverlay.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2';
       discoverySection.appendChild(dOverlay);
