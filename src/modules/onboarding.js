@@ -2211,29 +2211,15 @@ function renderTasteReveal() {
   updateProgress(100);
   const catKeys = CATEGORIES.map(c => c.key);
 
-  // Compute confidence-weighted averages across all rated films.
-  // Anchor films (slider-scored) get full weight (1.0).
-  // Calibrated films are weighted by their mean per-category alpha,
-  // so low-confidence inferred scores don't dominate the reveal.
-  const avgScores = {};
-  catKeys.forEach(c => {
-    let weightedSum = 0;
-    let totalWeight = 0;
-    for (const m of MOVIES) {
-      const filmWeight = m.calibration_confidence
-        ? (m.calibration_confidence[c] ?? 0) || 0.15  // UI floor for reveal only — do NOT copy this weighting to other systems
-        : 1.0;  // anchor / slider-scored (full confidence)
-      weightedSum += (m.scores?.[c] || 50) * filmWeight;
-      totalWeight += filmWeight;
-    }
-    avgScores[c] = totalWeight > 0 ? weightedSum / totalWeight : 50;
-  });
+  // Use the same weight computation as obFinish so the radar matches
+  // the profile the user will see after entering the app.
+  const avgScores = computeWeightedCategoryAverages(MOVIES) || {};
   const maxAvg = Math.max(...Object.values(avgScores));
   const minAvg = Math.min(...Object.values(avgScores));
   const range = maxAvg - minAvg || 1;
   const weights = {};
   catKeys.forEach(c => {
-    weights[c] = 1 + ((avgScores[c] - minAvg) / range) * 4;
+    weights[c] = 1 + (((avgScores[c] ?? 50) - minAvg) / range) * 4;
   });
 
   const classification = classifyArchetype(weights);
@@ -2310,9 +2296,10 @@ function renderTasteReveal() {
     const label = (CAT_LABELS[c] || c).replace('The ', '');
     return `<text x="${lx}" y="${ly}" text-anchor="${anchor}" dominant-baseline="central" font-family="'DM Mono',monospace" font-size="8" fill="rgba(244,239,230,0.55)">${label}</text>`;
   }).join('');
+  const maxW = Math.max(...catKeys.map(k => weights[k] || 1));
   const radarPts = catKeys.map((c, i) => {
     const angle = (Math.PI * 2 * i / catKeys.length) - Math.PI / 2;
-    const val = (weights[c] - 1) / 4; // normalize 1-5 to 0-1
+    const val = (weights[c] || 1) / maxW;
     const r = maxR * Math.max(0.1, val);
     return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`;
   }).join(' ');
