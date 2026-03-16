@@ -593,14 +593,14 @@ export function showResumePrompt(savedState) {
 
   card.innerHTML = `
     <div style="max-width:420px;margin:0 auto;padding:80px 24px 40px;text-align:center">
-      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;color:var(--on-dark);margin-bottom:12px;opacity:0;animation:fadeIn 0.4s ease 0.2s both">Welcome back.</div>
-      <div style="font-family:'DM Sans',sans-serif;font-size:15px;color:var(--on-dark-dim);line-height:1.6;margin-bottom:8px;opacity:0;animation:fadeIn 0.4s ease 0.4s both">
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;color:var(--ink);margin-bottom:12px;opacity:0;animation:fadeIn 0.4s ease 0.2s both">Welcome back.</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:15px;color:var(--dim);line-height:1.6;margin-bottom:8px;opacity:0;animation:fadeIn 0.4s ease 0.4s both">
         You have an onboarding session in progress — ${summary}.
       </div>
-      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);margin-bottom:36px;opacity:0;animation:fadeIn 0.3s ease 0.5s both">${pct}% complete</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-bottom:36px;opacity:0;animation:fadeIn 0.3s ease 0.5s both">${pct}% complete</div>
       <div style="display:flex;flex-direction:column;gap:12px;max-width:300px;margin:0 auto;opacity:0;animation:fadeIn 0.4s ease 0.6s both">
         <button class="ob-btn" data-testid="resume-continue" style="background:var(--action)" onclick="obResumeSession()">Continue where I left off</button>
-        <span data-testid="resume-start-over" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="obStartOver()">Start over</span>
+        <span data-testid="resume-start-over" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="obStartOver()">Start over</span>
       </div>
     </div>
   `;
@@ -2286,7 +2286,7 @@ function renderTasteReveal() {
   const splitInterp = splitInterps[splitKey] || splitInterps[splitKeyRev] || `${strongestLabel} leads, ${weakestLabel} takes the back seat.`;
 
   // Archetype description
-  const archData = ARCHETYPES.find(a => a.key === classification.archetypeKey || a.name === archetype);
+  const archData = ARCHETYPES[classification.archetypeKey] || ARCHETYPES[archetype] || Object.values(ARCHETYPES).find(a => a.name === archetype);
   const archDesc = archData?.description || 'Your taste has a clear shape. Every film you add sharpens the picture.';
 
   // Radar chart SVG
