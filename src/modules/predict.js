@@ -36,7 +36,7 @@ import { loadTagVectors, getTagVector, tagVectorsLoaded, getAdmissibleTags, find
 import { computeCategoryFingerprints, categorySimilarity, overallSimilarity, getTopCategoryTags, tagSimilarity, getCoverageCount } from './tag-profile.js';
 import { fitUserResidual, predictWithResidual, checkPooledBaselineGate, checkResidualGate } from './residual-model.js';
 import { evaluatePredictions } from './eval-framework.js';
-import { canRunFreshPrediction, recordPredictionUsage, isCachedPrediction, isCacheValid, getRemainingPredictionQuota } from './prediction-policy.js';
+import { canRunFreshPrediction, recordPredictionUsage, isCachedPrediction, isCacheValid, getRemainingPredictionQuota, getPredictionPolicy } from './prediction-policy.js';
 
 const TMDB_KEY = 'f5a446a5f70a9f6a16a8ddd052c121f2';
 const TMDB = 'https://api.themoviedb.org/3';
@@ -201,7 +201,7 @@ function showTenFilmMilestone() {
     <div class="dark-grid" style="background:var(--surface-dark-3);padding:48px 40px;text-align:center;max-width:420px">
       <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:20px">milestone</div>
       <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:28px;color:var(--on-dark);letter-spacing:-1px;margin-bottom:12px">Your taste is mapped.</div>
-      <div style="font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.7;color:rgba(244,239,230,0.7);margin-bottom:28px">Predictions are now at full precision.<br>Discovery mode is unlocked.</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.7;color:rgba(244,239,230,0.7);margin-bottom:28px">Predictions are now at full precision.${getPredictionPolicy().allow_discovery_auto ? '<br>Discovery mode is unlocked.' : ''}</div>
       <button onclick="document.getElementById('milestone-interstitial')?.remove()" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:14px 32px;cursor:pointer">Show me what's next →</button>
     </div>`;
   document.body.appendChild(overlay);
@@ -294,7 +294,10 @@ export function initPredict() {
     if (overlay) overlay.remove();
   }
 
-  if (!tier.canConstrain && constrainedSection) {
+  // Constrained: locked by tier (< 5 films) OR policy (free tier blocks constrained_search)
+  const constrainedPolicy = getPredictionPolicy().allow_constrained;
+  const constrainedLocked = !tier.canConstrain || !constrainedPolicy;
+  if (constrainedLocked && constrainedSection) {
     constrainedSection.style.position = 'relative';
     constrainedSection.style.opacity = '0.4';
     constrainedSection.style.pointerEvents = 'none';
@@ -303,7 +306,10 @@ export function initPredict() {
       overlay = document.createElement('div');
       overlay.className = 'foryou-lock-overlay';
       overlay.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2';
-      overlay.innerHTML = `<div style="pointer-events:auto;background:var(--paper);border:1px solid var(--rule);padding:12px 20px;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.5px;text-align:center">Rate ${5 - MOVIES.length} more film${5 - MOVIES.length !== 1 ? 's' : ''} to unlock</div>`;
+      const lockMsg = !tier.canConstrain
+        ? `Rate ${5 - MOVIES.length} more film${5 - MOVIES.length !== 1 ? 's' : ''} to unlock`
+        : 'Available on paid plans';
+      overlay.innerHTML = `<div style="pointer-events:auto;background:var(--paper);border:1px solid var(--rule);padding:12px 20px;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.5px;text-align:center">${lockMsg}</div>`;
       constrainedSection.appendChild(overlay);
     }
   } else if (constrainedSection) {
@@ -313,9 +319,11 @@ export function initPredict() {
     if (overlay) overlay.remove();
   }
 
-  // Discovery section: disable if locked
+  // Discovery section: locked by tier (< 10 films) OR policy (free tier blocks discovery_auto)
   const discoverySection = document.getElementById('foryou-discovery-section');
-  if (!tier.canDiscover && discoverySection) {
+  const discoveryPolicy = getPredictionPolicy().allow_discovery_auto;
+  const discoveryLocked = !tier.canDiscover || !discoveryPolicy;
+  if (discoveryLocked && discoverySection) {
     discoverySection.style.position = 'relative';
     discoverySection.style.opacity = '0.4';
     discoverySection.style.pointerEvents = 'none';
@@ -324,8 +332,10 @@ export function initPredict() {
       dOverlay = document.createElement('div');
       dOverlay.className = 'foryou-lock-overlay';
       dOverlay.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2';
-      const needed = 10 - MOVIES.length;
-      dOverlay.innerHTML = `<div style="pointer-events:auto;background:var(--paper);border:1px solid var(--rule);padding:12px 20px;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.5px;text-align:center">Rate ${needed} more film${needed !== 1 ? 's' : ''} to unlock</div>`;
+      const lockMsg = !tier.canDiscover
+        ? `Rate ${10 - MOVIES.length} more film${10 - MOVIES.length !== 1 ? 's' : ''} to unlock`
+        : 'Available on paid plans';
+      dOverlay.innerHTML = `<div style="pointer-events:auto;background:var(--paper);border:1px solid var(--rule);padding:12px 20px;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.5px;text-align:center">${lockMsg}</div>`;
       discoverySection.appendChild(dOverlay);
     }
   } else if (discoverySection) {
@@ -2102,26 +2112,21 @@ async function findMeAFilm() {
       wlIdsCheck.has(String(c.tmdbId)) ||
       wlTitlesCheck.has(normTitle(c.title));
 
-    let results;
-    if (fmTier.canPredict) {
-      results = top5
-        .filter(c => !alreadyKnown(c))
-        .filter(c => !previousRecommendationIds.has(String(c.tmdbId)))
-        .map(c => {
-          const cached = currentUser?.predictions?.[String(c.tmdbId)];
-          if (!cached?.prediction) return null;
+    // Collect results — prefer Claude predictions when available, fall back to compatScore.
+    // Free tier users won't have foryou_auto predictions; they still get recommendations
+    // ranked by local compatibility scoring (entity overlap, genre, era, tag similarity).
+    let results = top5
+      .filter(c => !alreadyKnown(c))
+      .filter(c => !previousRecommendationIds.has(String(c.tmdbId)))
+      .map(c => {
+        const cached = currentUser?.predictions?.[String(c.tmdbId)];
+        if (cached?.prediction) {
           return { ...c, prediction: cached.prediction, predTotal: calcPredictedTotal(cached.prediction) };
-        })
-        .filter(Boolean)
-        .sort((a, b) => b.predTotal - a.predTotal);
-    } else {
-      // Tier 1: no Claude predictions — use compatScore as predTotal
-      results = top5
-        .filter(c => !alreadyKnown(c))
-        .filter(c => !previousRecommendationIds.has(String(c.tmdbId)))
-        .map(c => ({ ...c, predTotal: c.compatScore, prediction: null }))
-        .sort((a, b) => b.predTotal - a.predTotal);
-    }
+        }
+        // No prediction available — use local compatScore as fallback
+        return { ...c, predTotal: c.compatScore, prediction: null };
+      })
+      .sort((a, b) => b.predTotal - a.predTotal);
 
     // Actor cap: max 1 film per lead actor (first credited cast member)
     const actorSeen = new Set();
@@ -2160,8 +2165,8 @@ async function findMeAFilm() {
     renderSecondaryCards(finalResults.slice(1, 5));
     updateRefreshButtonState();
 
-    // Load discovery as part of the same refresh cycle
-    if (getPredictionTier().canDiscover) {
+    // Load discovery as part of the same refresh cycle (requires both tier AND policy)
+    if (getPredictionTier().canDiscover && getPredictionPolicy().allow_discovery_auto) {
       loadDiscoveryRecommendations();
     }
 
@@ -2369,14 +2374,15 @@ async function loadDiscoveryRecommendations() {
       } catch { /* skip */ }
     }));
 
-    // Collect results
+    // Collect results — prefer predictions, fall back to compatScore
     const results = top4
       .map(c => {
         const cached = currentUser?.predictions?.[String(c.tmdbId)];
-        if (!cached?.prediction) return null;
-        return { ...c, prediction: cached.prediction, predTotal: calcPredictedTotal(cached.prediction) };
+        if (cached?.prediction) {
+          return { ...c, prediction: cached.prediction, predTotal: calcPredictedTotal(cached.prediction) };
+        }
+        return { ...c, predTotal: c.compatScore, prediction: null };
       })
-      .filter(Boolean)
       .sort((a, b) => b.predTotal - a.predTotal)
       .slice(0, 3);
 
@@ -2720,14 +2726,15 @@ async function constrainedSelectEntity(type, tmdbId, name) {
       } catch { /* prediction failure */ }
     }));
 
-    // Step 5: Collect and render top 3
+    // Step 5: Collect and render top 3 — prefer predictions, fall back to compatScore
     const results = top5
       .map(c => {
         const cached = currentUser?.predictions?.[String(c.tmdbId)];
-        if (!cached?.prediction) return null;
-        return { ...c, prediction: cached.prediction, predTotal: calcPredictedTotal(cached.prediction) };
+        if (cached?.prediction) {
+          return { ...c, prediction: cached.prediction, predTotal: calcPredictedTotal(cached.prediction) };
+        }
+        return { ...c, predTotal: c.compatScore, prediction: null };
       })
-      .filter(Boolean)
       .sort((a, b) => b.predTotal - a.predTotal)
       .slice(0, 3);
 
@@ -2737,7 +2744,7 @@ async function constrainedSelectEntity(type, tmdbId, name) {
           <span class="constrained-results-title">Films from ${name}</span>
           <button class="constrained-clear-btn" onclick="constrainedClear()">× Clear</button>
         </div>
-        <div style="padding:24px;text-align:center;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim)">Couldn't generate predictions. <a style="color:var(--blue);cursor:pointer" onclick="constrainedSelectEntity('${type}',${tmdbId},'${name.replace(/'/g,"\\'")}')">Try again</a></div>`;
+        <div style="padding:24px;text-align:center;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim)">No unrated films found. <a style="color:var(--blue);cursor:pointer" onclick="constrainedSelectEntity('${type}',${tmdbId},'${name.replace(/'/g,"\\'")}')">Try again</a></div>`;
       return;
     }
 
