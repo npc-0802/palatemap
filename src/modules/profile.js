@@ -8,7 +8,7 @@ import { shouldShowHint, renderHint } from './hints.js';
 import { on } from '../events.js';
 import { loadTagVectors, getTagVector, tagVectorsLoaded, getAdmissibleTags } from './tag-genome.js';
 import { computeCategoryFingerprints, getTopCategoryTags, getCoverageCount } from './tag-profile.js';
-import { getFilmObservationWeight } from './weight-blend.js';
+import { getFilmObservationWeight, getPalateConfidenceSummary } from './weight-blend.js';
 import { evaluatePredictions } from './eval-framework.js';
 
 let profileImportedMovies = null;
@@ -329,6 +329,29 @@ function radarLegend() {
   return '<div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-family:\'DM Mono\',monospace;font-size:9px;color:var(--dim)"><span style="display:flex;align-items:center;gap:5px"><svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke="var(--blue)" stroke-width="1.5"/></svg>your weights</span></div>';
 }
 
+function renderPalateConfidence() {
+  const conf = getPalateConfidenceSummary(currentUser, MOVIES);
+  // Four segments, fill up to the current stage
+  const stageKeys = ['getting_to_know', 'taking_shape', 'knows_you_well', 'dialed_in'];
+  const activeIdx = stageKeys.indexOf(conf.stageKey);
+  const segments = stageKeys.map((_, i) => {
+    if (i < activeIdx) return 'var(--blue)';
+    if (i === activeIdx) return 'var(--blue)';
+    return 'var(--rule)';
+  });
+  return `
+    <div style="margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--rule)">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:14px">Palate Confidence</div>
+      <div style="display:flex;gap:4px;margin-bottom:12px;height:6px">
+        ${segments.map(c => `<div style="flex:1;background:${c};border-radius:3px"></div>`).join('')}
+      </div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:4px">${conf.label}</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);line-height:1.5;margin-bottom:2px">${conf.description}</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--blue);line-height:1.5">${conf.nextAction}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-top:8px">${conf.highTrustFilms} films rated · based on deliberate ratings</div>
+    </div>`;
+}
+
 function renderTasteTexture() {
   if (!tagVectorsLoaded()) return '';
   const coverage = getCoverageCount(MOVIES, (id) => getTagVector(id));
@@ -509,6 +532,9 @@ export function renderProfile() {
           </div>
         </div>
       </div>
+
+      <!-- PALATE CONFIDENCE -->
+      ${renderPalateConfidence()}
 
       <!-- AVG SCORES + STATS -->
       <div style="margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--rule)">

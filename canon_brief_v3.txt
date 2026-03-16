@@ -1,5 +1,5 @@
 Palate Map
-Product Brief · Living Document · v3.30
+Product Brief · Living Document · v3.31
 Last updated: March 2026
 Confidential — do not distribute
 
@@ -612,6 +612,15 @@ Phase 3 — Growth Features [IN PROGRESS]
   - Dashed archetype prototype radar removed from profile — old prototypes had 0.25 min/max ratio vs user median of 0.47, creating misleading comparison. Radar now shows user weights only.
   - Profile radar legend updated (no more "dashed is a typical [archetype]" framing).
   - All rendering surfaces updated: taste reveal, profile, deferred archetype reveal, share cards.
+• 3.31 Taste Edges + Prediction Resilience ✓ — surface hidden category strengths and harden prediction parsing:
+  - Diagnosis: the 8→5 archetype compression makes some categories "invisible." Categories blended at 0.4–0.5 coefficient (craft 57%, ending 48%, world 46%, hold 32% invisible rates) vs categories with 1.0 coefficient (performance, singularity ~0%). This is NOT just an ending problem.
+  - Design constraint: the archetype is a summary layer, not the full taste explanation. Users see all 8 weights on their radar but the archetype only speaks to the compressed 5 dimensions.
+  - Taste edges system: `computeTasteEdges(weights, archetypeKey)` finds categories ≥0.7 std above user's mean that aren't owned by the archetype's dimension. At most 2 edges, omitted for flat profiles (std < 0.15).
+  - `formatTasteEdges()` renders interpretive copy: "Beyond that, endings and originality also matter more to you than most." For Holists: "What sharpens this profile: [edges] carry unusual weight."
+  - Surfaced on: profile page, onboarding taste reveal, deferred archetype reveal (weight-blend.js).
+  - Pre-beta decision: archetype taxonomy unchanged. Taste edges bridge the gap between archetype label and full 8-category profile. Post-beta question preserved: what role should archetypes play in an 8-category system?
+  - Prediction parsing hardened: `res.text()` + controlled `JSON.parse` replaces blind `res.json()`. Embedded JSON extraction recovers prose-wrapped model responses. Anthropic API errors, empty responses, and max_tokens truncation detected explicitly.
+  - Parse failure analytics: `prediction_parse_fallback` (recovered) and `prediction_parse_error` (total failure) events for monitoring prompt contract health.
 
 Phase 4 — Platform
 • 4.1 Universal entity search — global search surfacing any director/actor/writer/company (entity-level, not film-level — film search is covered by 3.8 Global Search). Entity page shows: TMDB data, user's own rankings (if any), community avg score (requires 4.2). Requires schema change: separate palatemap_ratings table (see below).

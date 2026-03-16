@@ -3,7 +3,7 @@ import { syncToSupabase, saveUserLocally, logPrediction, sb } from './supabase.j
 import { ARCHETYPES } from '../data/archetypes.js';
 import { classifyArchetype } from './quiz-engine.js';
 import { track, pushAnalyticsEvent } from '../analytics.js';
-import { getFilmObservationWeight } from './weight-blend.js';
+import { getFilmObservationWeight, getPalateConfidenceSummary } from './weight-blend.js';
 import { smartSearch, formatDirector } from './smart-search.js';
 
 function renderWelcomeBanner() {
@@ -442,12 +442,14 @@ function renderForYouHeader(updatedAt) {
   const archetype = currentUser?.full_archetype_name || currentUser?.archetype || '';
   const paletteColor = getArchetypeColor() || 'var(--blue)';
   const ago = updatedAt ? `Updated ${timeAgo(new Date(updatedAt))}` : '';
-  const headline = MOVIES.length < 50 ? 'Getting to know your taste.' : 'What to watch tonight.';
+  const conf = getPalateConfidenceSummary(currentUser, MOVIES);
+  const headline = conf.stageKey === 'dialed_in' || conf.stageKey === 'knows_you_well'
+    ? 'What to watch tonight.' : 'Getting to know your taste.';
   el.innerHTML = `
     <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);margin-bottom:10px">for you · based on ${MOVIES.length} films</div>
     <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(28px,5vw,40px);line-height:1;color:var(--ink);letter-spacing:-1px;margin-bottom:12px">${headline}</div>
     <div style="width:40px;height:3px;background:${paletteColor};margin-bottom:12px"></div>
-    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">${ago}${ago && archetype ? ' · ' : ''}${archetype ? `<span style="color:${paletteColor}">${archetype}</span> ●` : ''}</div>`;
+    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">${ago}${ago && archetype ? ' · ' : ''}${archetype ? `<span style="color:${paletteColor}">${archetype}</span>` : ''}${archetype ? ' · ' : ''}${conf.label}</div>`;
 }
 
 // Legacy alias

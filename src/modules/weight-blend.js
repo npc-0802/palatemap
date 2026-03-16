@@ -482,6 +482,88 @@ export function isInferredOnboardingFilm(film) {
   return film?.rating_source === 'onboarding_pairwise';
 }
 
+// ── Palate Confidence ──
+// Why qualitative stages instead of numeric accuracy:
+// We cannot claim "X% accurate" — that implies ground truth we don't have.
+// What we CAN say honestly is how developed the taste model is, based on
+// observation quality. The goal is trust + engagement + honest expectation-setting.
+//
+// Primary signal: high-trust films (manual_rating, guided_slider, legacy).
+// These are deliberate 8-slider ratings where every category reflects intent.
+// Pairwise-inferred films are useful bootstrap data but not high-trust observations.
+
+const CONFIDENCE_STAGES = [
+  {
+    key: 'getting_to_know',
+    label: 'Getting to know you',
+    description: 'We have a first read on your taste.',
+    nextAction: 'Rate a few more films to sharpen it.',
+    threshold: 0,
+  },
+  {
+    key: 'taking_shape',
+    label: 'Taking shape',
+    description: 'Your palate map is starting to come into focus.',
+    nextAction: 'A few more ratings will make predictions more personal.',
+    threshold: 11,
+  },
+  {
+    key: 'knows_you_well',
+    label: 'Knows you well',
+    description: 'We know your taste well enough to make strong calls.',
+    nextAction: 'Add more films to sharpen the edges.',
+    threshold: 21,
+  },
+  {
+    key: 'dialed_in',
+    label: 'Dialed in',
+    description: 'Your palate map is mature and highly personal.',
+    nextAction: 'More ratings still help, but recommendations should already feel strong.',
+    threshold: 36,
+  },
+];
+
+/**
+ * Compute palate confidence summary — how developed the user's taste model is.
+ * Based primarily on high-trust film count (manual + guided slider ratings).
+ * Small modifiers for onboarding completeness.
+ *
+ * @param {object} user - currentUser object
+ * @param {Array} movies - MOVIES array
+ * @returns {{ stageKey, label, description, nextAction, highTrustFilms, progress }}
+ */
+export function getPalateConfidenceSummary(user = currentUser, movies = MOVIES) {
+  // Count high-trust observations (everything except pairwise-inferred)
+  const highTrust = (movies || []).filter(m => m.rating_source !== 'onboarding_pairwise');
+  const htCount = highTrust.length;
+
+  // Small bonus for completed onboarding calibration (adds ~2 equivalent films of signal)
+  const hasCalibration = !!(user?.onboarding_profile_confidence);
+  const effectiveCount = htCount + (hasCalibration ? 2 : 0);
+
+  // Find the highest stage whose threshold we meet
+  let stage = CONFIDENCE_STAGES[0];
+  for (const s of CONFIDENCE_STAGES) {
+    if (effectiveCount >= s.threshold) stage = s;
+  }
+
+  // Progress within current stage toward next (for UI bar)
+  const stageIdx = CONFIDENCE_STAGES.indexOf(stage);
+  const nextStage = CONFIDENCE_STAGES[stageIdx + 1];
+  const progress = nextStage
+    ? Math.min(1, (effectiveCount - stage.threshold) / (nextStage.threshold - stage.threshold))
+    : 1; // Final stage = full
+
+  return {
+    stageKey: stage.key,
+    label: stage.label,
+    description: stage.description,
+    nextAction: stage.nextAction,
+    highTrustFilms: htCount,
+    progress,
+  };
+}
+
 /**
  * Compute confidence-weighted category averages across all MOVIES.
  * Uses getFilmObservationWeight() so pairwise-inferred films are discounted.
