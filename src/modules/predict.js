@@ -573,7 +573,7 @@ function updateRefreshButtonState() {
   if (quotaEl && tier.canPredict) {
     const text = quota.monthly_remaining <= 10
       ? `${quota.monthly_remaining} predictions left this month`
-      : `${quota.daily_remaining} of ${quota.daily_limit} left today`;
+      : `${quota.daily_remaining} of ${quota.daily_limit} predictions left today`;
     quotaEl.textContent = text;
     quotaEl.style.display = '';
   } else if (quotaEl) {
