@@ -1,6 +1,6 @@
 import { MOVIES, setMovies, setCurrentUser, currentUser, applyUserWeights, recalcAllTotals, CATEGORIES, calcTotal } from '../state.js';
 import { ARCHETYPES } from '../data/archetypes.js';
-import { classifyArchetype } from './quiz-engine.js';
+import { classifyArchetype, getArchetypeDescription, ARCHETYPE_DESCRIPTIONS } from './quiz-engine.js';
 import { saveToStorage } from './storage.js';
 import { renderRankings } from './rankings.js';
 import { sb, syncToSupabase, saveUserLocally, signInWithGoogle, sendMagicLink } from './supabase.js';
@@ -2276,9 +2276,9 @@ function renderTasteReveal() {
   const splitKeyRev = `${weakest}-${strongest}`;
   const splitInterp = splitInterps[splitKey] || splitInterps[splitKeyRev] || `${strongestLabel} leads, ${weakestLabel} takes the back seat.`;
 
-  // Archetype description
-  const archData = ARCHETYPES[classification.archetypeKey] || ARCHETYPES[archetype] || Object.values(ARCHETYPES).find(a => a.name === archetype);
-  const archDesc = archData?.description || 'Your taste has a clear shape. Every film you add sharpens the picture.';
+  // Archetype description (combined archetype + adjective copy)
+  const archDesc = getArchetypeDescription(classification.archetypeKey, classification.adjective, classification.confidence)
+    || 'Your taste has a clear shape. Every film you add sharpens the picture.';
 
   // Radar chart SVG
   const cx = 120, cy = 120, maxR = 90;

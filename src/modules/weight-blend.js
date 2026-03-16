@@ -410,13 +410,13 @@ function showArchetypeChangePopup(from, to, fullName) {
 
 // ── Deferred archetype reveal (new onboarding, shown at 8+ films) ──
 
-import { ARCHETYPE_DESCRIPTIONS, ADJECTIVE_DESCRIPTIONS } from './quiz-engine.js';
+import { ARCHETYPE_DESCRIPTIONS, getArchetypeDescription } from './quiz-engine.js';
 
 function showArchetypeReveal(classification) {
   const archDesc = ARCHETYPE_DESCRIPTIONS[classification.archetypeKey] || ARCHETYPE_DESCRIPTIONS.balanced;
   const palColor = classification.color || '#3d5a80';
   const displayName = classification.fullName || classification.archetype;
-  const adjectiveDesc = classification.adjective ? (ADJECTIVE_DESCRIPTIONS[classification.adjective] || '') : '';
+  const combinedDesc = getArchetypeDescription(classification.archetypeKey, classification.adjective, classification.confidence);
 
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(12,11,9,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn 0.3s ease';
@@ -426,12 +426,8 @@ function showArchetypeReveal(classification) {
       <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--on-dark-dim);margin-bottom:10px;opacity:0;animation:fadeIn 0.3s ease 0.6s both">you are —</div>
       <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(28px,6vw,42px);line-height:1.05;letter-spacing:-1px;color:${palColor};margin-bottom:8px;opacity:0;animation:fadeIn 0.4s ease 0.8s both">${displayName}</div>
       <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim);letter-spacing:1px;margin-bottom:20px;opacity:0;animation:fadeIn 0.3s ease 1s both">${archDesc.tagline || ''}</div>
-      <div style="font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.75;color:var(--on-dark);margin-bottom:12px;opacity:0.85;text-align:left;opacity:0;animation:fadeIn 0.3s ease 1.2s both">${archDesc.description || ''}</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.75;color:var(--on-dark);margin-bottom:12px;opacity:0.85;text-align:left;opacity:0;animation:fadeIn 0.3s ease 1.2s both">${combinedDesc}</div>
       ${archDesc.quote ? `<div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--on-dark-dim);letter-spacing:0.5px;font-style:italic;margin-bottom:16px;opacity:0;animation:fadeIn 0.3s ease 1.4s both">${archDesc.quote}</div>` : ''}
-      ${adjectiveDesc ? `
-      <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(244,239,230,0.1);text-align:left;opacity:0;animation:fadeIn 0.3s ease 1.5s both">
-        <div style="font-family:'DM Sans',sans-serif;font-size:12.5px;line-height:1.65;color:var(--on-dark-dim)">${adjectiveDesc}</div>
-      </div>` : ''}
       <div style="margin-top:24px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--on-dark-dim);line-height:1.6;opacity:0;animation:fadeIn 0.3s ease 1.6s both">Based on your first ${MOVIES.length} films. This will evolve as you rate more.</div>
       <button style="margin-top:20px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;background:transparent;color:var(--on-dark);border:1.5px solid var(--on-dark);padding:12px 28px;cursor:pointer;opacity:0;animation:fadeIn 0.3s ease 1.8s both" onclick="this.closest('div[style*=fixed]').remove()">Got it</button>
     </div>

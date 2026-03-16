@@ -171,13 +171,28 @@ export function classifyArchetype(weights, priorArchetypeKey = null) {
   else if (expSide > craftSide + 1.5) adjective = 'Instinctive';
   else adjective = 'Devoted';
 
+  const topMargin = topVal - secondVal;
+
   // Helper to build result object
   const makeResult = (key) => {
+    // For the assigned key, compute its actual dimension value and margin over runner-up
+    const assignedDimVal = key === 'balanced' ? topVal : (dims[key] ?? topVal);
+    const otherMax = Math.max(...Object.entries(dims).filter(([k]) => k !== key).map(([,v]) => v));
+    const margin = assignedDimVal - otherMax;
+
+    // confidence: 'strong' (clear leader), 'moderate' (leads but narrowly), 'leaning' (barely ahead / hysteresis-held)
+    let confidence;
+    if (key === 'balanced') confidence = topMargin < 0.15 ? 'strong' : 'moderate';
+    else if (margin >= 0.7) confidence = 'strong';
+    else if (margin >= 0.3) confidence = 'moderate';
+    else confidence = 'leaning';
+
     if (key === 'balanced') {
       return {
         archetype: 'Holist', archetypeKey: 'balanced', adjective,
         fullName: `${adjective} Holist`, color: '#7A7A6D',
-        dimensions: dims, secondary: entries[1][0]
+        dimensions: dims, secondary: entries[1][0],
+        margin: topMargin, confidence,
       };
     }
     const meta = ARCHETYPE_META[key];
@@ -185,7 +200,8 @@ export function classifyArchetype(weights, priorArchetypeKey = null) {
       archetype: meta.name, archetypeKey: key, adjective,
       fullName: `${adjective} ${meta.name}`, color: meta.color,
       dimensions: dims,
-      secondary: entries.filter(e => e[0] !== key)[0]?.[0] || entries[1][0]
+      secondary: entries.filter(e => e[0] !== key)[0]?.[0] || entries[1][0],
+      margin, confidence,
     };
   };
 
@@ -214,51 +230,126 @@ export function classifyArchetype(weights, priorArchetypeKey = null) {
   return makeResult(topKey);
 }
 
-// ── Archetype descriptions (draft copy — to be refined) ──
+// ── Archetype descriptions ──
+// Each archetype has per-adjective combined descriptions.
+// getArchetypeDescription(key, adjective) returns the right copy.
 
 export const ARCHETYPE_DESCRIPTIONS = {
   narrative: {
     name: 'Narrativist',
     tagline: 'You follow the thread.',
-    description: 'Story is your compass. You track where a film goes, how it gets there, and whether it earns its ending. A great premise hooks you; a great resolution seals it. You can forgive rough edges if the narrative pulls you forward — and you can\'t forgive polish if the story goes nowhere.',
     quote: '"Tell me something I haven\'t heard before — and finish what you started."',
+    studied: 'You watch the architecture. Setup, escalation, payoff — you\'re tracking the machinery of a story even while you\'re inside it. A film that fumbles its third act loses you no matter how well-shot it is, and a tight narrative with a perfect ending can carry you past weak production value. You\'re the person who knows a twist is coming and judges whether it was earned.',
+    instinctive: 'You follow the thread without thinking about it. When a story works, you\'re locked in — when it doesn\'t, you check out, and you rarely need to explain why. You don\'t diagram plot structure, but you have an immediate, reliable sense for when a narrative has momentum and when it\'s faking it. Your gut reads story the way some people read faces.',
+    devoted: 'Stories stay with you. You rewatch films to live inside the narrative again, you argue about endings with people who didn\'t care as much, and a great story becomes part of how you see things. Film for you is fundamentally a storytelling medium — everything else is in service of that. The films you love most are the ones you can\'t stop retelling.',
   },
   craft: {
     name: 'Formalist',
     tagline: 'You see how it\'s built.',
-    description: 'You watch films the way an architect walks through buildings. The cut, the frame, the sound design, the world they constructed — you notice when someone knows what they\'re doing behind the camera, and it matters to you more than most people realize. A well-made film earns your respect even when the story doesn\'t land.',
     quote: '"Show me something I can\'t unsee."',
+    studied: 'You notice the choices. A cut that lingers one beat too long, a lens that flattens when it should have depth, a sound mix that buries what it should expose — these aren\'t background details for you, they\'re the film. You evaluate craft with precision and vocabulary, and you have little patience for films that coast on story while ignoring how they\'re made. You probably have opinions about aspect ratios.',
+    instinctive: 'You respond to craft before you can name it. A well-made film feels different in your body — the rhythm is confident, the control is evident, the whole thing moves with intention. You can\'t always explain what the director did, but you know when someone behind the camera is operating at a level. The worst thing a film can be, for you, is competent but generic.',
+    devoted: 'You follow filmmakers, not franchises. A new film from a director you admire is an event. You\'ve watched careers evolve, noticed when a visual style matured or when an editor changed, and you care about the conversation between a filmmaker\'s body of work. For you, a great film is evidence of a singular creative intelligence. You\'re building a relationship with the people who make the things you watch.',
   },
   human: {
     name: 'Humanist',
     tagline: 'You watch for the people.',
-    description: 'Characters are your entry point. A film lives or dies on whether the people in it feel real — whether someone on screen makes you lean forward, hold your breath, or think about them for days after. You\'ll sit through anything if someone in it moves you.',
     quote: '"I don\'t remember the plot. I remember her face in that scene."',
+    studied: 'You can tell when an actor is working and when they\'re living in a role. Technical skill impresses you, but emotional truth is what you\'re really scoring. You notice the gap between a performance that\'s praised and one that\'s actually felt, and your scores reflect that distinction. A film with hollow characters is a film with nothing at its center, no matter what else it gets right.',
+    instinctive: 'A single face can carry a whole film for you. You don\'t evaluate performances analytically — you either believe someone on screen or you don\'t, and that judgment is instant and usually final. When a character lands, you\'re all the way in. When they don\'t, nothing else can compensate. You\'ve loved deeply imperfect films because one person in them felt completely real.',
+    devoted: 'You form relationships with characters that outlast the credits. You remember names, revisit scenes, and carry fictional people in your head long after the plot fades. The films that matter most to you are the ones where someone on screen made you feel understood — or made you understand someone else. For you, film is an empathy technology, and performances are the signal.',
   },
   experiential: {
     name: 'Sensualist',
     tagline: 'You\'re here for what it feels like.',
-    description: 'The experience of watching is the point. Not whether a film is "good" by some external measure — whether it was good to sit through. Did it hold you? Would you go back? Does it still have a grip on you? You trust your own response more than anyone else\'s analysis.',
     quote: '"I don\'t need it to be important. I need it to be mine."',
+    studied: 'You evaluate atmosphere with intention. Production design, color palette, sound mix, the weight of a room — you notice when a film\'s world is constructed with care and when it\'s an afterthought. A beautiful film with nothing behind the beauty bores you, but a film that builds a world you can feel thinking earns your highest scores. You know the difference between a mood and a world.',
+    instinctive: 'You watch films to be somewhere else. When a world pulls you in, you stop evaluating and start inhabiting — the analysis comes later, if it comes at all. You respond to texture, temperature, and atmosphere on a level that\'s closer to physical than intellectual. The films you love most aren\'t the ones you think about — they\'re the ones you can still feel.',
+    devoted: 'You return to films for the feeling of being inside them. Your rewatches aren\'t about catching details — they\'re about re-entering a place. You have comfort films that are more about atmosphere than plot, and you\'re not embarrassed by that. For you, a great film is a world you can visit whenever you need to, and the best ones feel like they were built specifically for you to live in.',
   },
   singular: {
     name: 'Archivist',
     tagline: 'You want the thing that\'s never been done.',
-    description: 'Originality is the axis you rotate around. You\'d rather watch something flawed and genuinely new than something polished and familiar. You\'re drawn to films that couldn\'t have been made by anyone else, at any other time. The one-of-ones.',
     quote: '"If I\'ve seen it before, why would I watch it again?"',
+    studied: 'You evaluate films for permanence. Not whether you enjoyed the first watch, but whether the film earned a place — in your collection, in your thinking, in the conversation about what film can do. You care about endings because they determine whether a film resolves into something durable or dissolves into something forgettable. Your rankings are curated, not accumulated.',
+    instinctive: 'You know on the walk home whether a film is going to stay. That sense of lasting impact is immediate for you — you don\'t need a second viewing or a week of reflection. Some films attach and some don\'t, and your gut makes that call fast and rarely reverses it. Your collection isn\'t built through deliberation. It\'s built through recognition.',
+    devoted: 'Your film library is personal infrastructure. Rewatches are rituals, not background noise. Every film in your collection is there for a reason, and you could tell someone why if they asked. You care about endings because a film that doesn\'t land its conclusion can\'t earn a permanent place. Few films clear your bar, but the ones that do become part of how you organize the world.',
   },
   balanced: {
     name: 'Holist',
     tagline: 'The film is one thing.',
-    description: 'You experience film as a whole. Story, craft, performance, world, feeling, memory, ending, originality — you don\'t rank them because for you they\'re inseparable. A great film gets everything right at once. A flawed film has a crack that runs through the entire thing. Your scores tend to cluster because when something works for you, it works on every level.',
     quote: '"I don\'t break a film into parts. I just know if it worked."',
+    studied: 'You evaluate the whole object, and you\'re aware of all its parts. A film can\'t win you with one brilliant element if the rest is mediocre — you see the seams, the imbalances, the places where ambition outran execution. That makes you hard to impress, but it also means the films you rate highest are the ones that genuinely work on every level. Your palate is the most structurally demanding one in the system.',
+    instinctive: 'A film either works or it doesn\'t, and you know fast. You\'re not tracking individual dimensions — you\'re reading the whole thing as a single signal. When every element is in sync, you feel it immediately. When something is off, you feel that too, even if you can\'t point to the specific failure. Your taste is less a set of preferences and more a tuning fork for coherence.',
+    devoted: 'When a film clears your bar, you\'re all the way in. That bar is high because you need everything to work — story, craft, performance, world, the way it ends, the way it stays with you. Most films fall short somewhere. The ones that don\'t become sacred. You have fewer favorites than most people, but you\'d defend every single one of them without hesitation.',
   },
 };
 
-// ── Adjective descriptions ──
+// ── Softer "leaning" descriptions for low-margin assignments ──
+// Used when the dimension lead is < 0.3 (user is close to Holist territory
+// but retained via hysteresis or marginal lead). These acknowledge the tendency
+// without overclaiming identity.
 
+const LEANING_DESCRIPTIONS = {
+  narrative: {
+    studied: 'Your palate tilts toward story — you track narrative structure more closely than most, even if other dimensions run nearly as strong. A fumbled third act bothers you more than it probably should, and a tight ending can redeem a lot. But you\'re not a pure story-first viewer; you bring a broader lens than that.',
+    instinctive: 'Story tends to be your entry point, even if you don\'t always realize it. When a narrative has momentum, you\'re locked in; when it stalls, you check out — and you rarely stop to analyze why. You\'re not someone who diagrams plot structure, but you notice when a story earns its ending and when it fakes it. Other dimensions compete, but story is often the tiebreaker.',
+    devoted: 'You lean toward story more than most, though your palate is broader than any single label. A great narrative stays with you — you argue about endings, you retell plots — but you also respond to craft, performance, and experience in ways that keep your profile from narrowing to one axis.',
+  },
+  craft: {
+    studied: 'You notice filmmaking choices more than most — the cuts, the framing, the sound design. That attentiveness gives your palate a formalist lean, even though other dimensions are nearly as prominent. You evaluate craft with intention, but you don\'t dismiss a film just because the direction is straightforward.',
+    instinctive: 'Well-made films feel different to you — something in the rhythm, the confidence of the cuts, the sense that someone knew exactly what they were doing. Your palate leans toward craft, though it\'s not your only axis. You can\'t always name what the director did, but you know when the filmmaking itself is operating at a level. That sense competes with story and experience for your attention.',
+    devoted: 'You care about how films are made — probably more than you think. You follow filmmakers and notice stylistic evolution, even though your palate is broad enough that craft alone doesn\'t carry a film for you. It\'s a strong thread in your taste, not the whole fabric.',
+  },
+  human: {
+    studied: 'Performance registers with you more than most — you notice the gap between a praised performance and one that\'s actually felt. Your palate has a humanist lean, though other dimensions are nearly as strong. A film with hollow characters loses something for you, even when everything else works.',
+    instinctive: 'You respond to people on screen before anything else clicks into place. That gives your palate a humanist lean, even though your other dimensions are close behind. When a character lands, you\'re all the way in — but you also care about story, craft, and experience in ways that keep you from being a pure performance voter.',
+    devoted: 'Characters stay with you. Your palate has a humanist tilt — performances are often what you remember longest — though your taste is broader than that single axis. You form attachments to people on screen, but you also notice craft, story, and atmosphere in ways that keep your profile balanced.',
+  },
+  experiential: {
+    studied: 'You evaluate the experience of watching with more intention than most — atmosphere, pacing, how a film\'s world is constructed. Your palate has a sensualist lean, though other dimensions are nearly as prominent. A beautiful film with nothing behind it bores you, but you notice the feeling before you notice the plot.',
+    instinctive: 'The feeling of watching matters to you — maybe more than you\'d admit. Your palate leans sensualist, though it\'s not a dominant axis. You respond to texture and atmosphere on a gut level, and the films you love most aren\'t always the ones you\'d call "best." Other dimensions compete, but experience often tips the scale.',
+    devoted: 'You return to films for the feeling of being inside them — the rewatch is about re-entering a place, not catching details. Your palate is broader than pure experience, but atmosphere and mood are strong threads in your taste. The films you recommend to people tend to be the ones that left a feeling, not the ones you\'d call technically best.',
+  },
+  singular: {
+    studied: 'You evaluate films partly for permanence — whether they earn a lasting place, not just a good first impression. Your palate has an archivist lean, though other dimensions are nearly as strong. You care about endings and originality more than most, but you\'re not dismissive of films that work within familiar forms.',
+    instinctive: 'You have a sense for whether a film is going to stay with you — and that sense is fast and usually right. Your palate leans archivist, though it\'s not your only axis. Some films attach and some don\'t, and you trust that gut call even when you can\'t fully explain it.',
+    devoted: 'Your palate has an archivist quality — you build a collection with intention, and you care about whether films earn a permanent place. Rewatches are rituals, not filler. But your taste is broad enough that originality alone doesn\'t carry a film for you. It\'s a strong lean, not a single thesis.',
+  },
+};
+
+/**
+ * Get the combined archetype + adjective description.
+ * When confidence is 'leaning', returns softer copy that acknowledges the tendency
+ * without overclaiming. Falls back to 'studied' if adjective missing.
+ */
+export function getArchetypeDescription(archetypeKey, adjective, confidence) {
+  if (archetypeKey === 'balanced') {
+    const archetype = ARCHETYPE_DESCRIPTIONS.balanced;
+    if (!archetype) return '';
+    const adj = adjective?.toLowerCase();
+    return (adj && archetype[adj]) || archetype.studied || '';
+  }
+
+  // For leaning confidence, use softer copy
+  if (confidence === 'leaning' && LEANING_DESCRIPTIONS[archetypeKey]) {
+    const leaning = LEANING_DESCRIPTIONS[archetypeKey];
+    const adj = adjective?.toLowerCase();
+    if (adj && leaning[adj]) return leaning[adj];
+    if (leaning.studied) return leaning.studied;
+  }
+
+  const archetype = ARCHETYPE_DESCRIPTIONS[archetypeKey];
+  if (!archetype) return '';
+  const adj = adjective?.toLowerCase();
+  if (adj && archetype[adj]) return archetype[adj];
+  if (archetype.studied) return archetype.studied;
+  return '';
+}
+
+// ── Adjective descriptions (kept for backward compat, no longer primary) ──
 export const ADJECTIVE_DESCRIPTIONS = {
-  Studied: 'Your taste leans analytical. You respond to how films are constructed — the decisions behind the camera, the architecture of the story, the precision of craft.',
-  Instinctive: 'Your taste leans visceral. You respond to how films make you feel — the experience of watching, the hold afterward, the gut-level response that precedes analysis.',
-  Devoted: 'Your taste is integrated. Craft and feeling carry equal weight — you want films that are well-made AND deeply felt. Neither alone is enough.',
+  Studied: 'Your taste leans analytical.',
+  Instinctive: 'Your taste leans visceral.',
+  Devoted: 'Your taste is integrated.',
 };

@@ -1,6 +1,6 @@
 import { MOVIES, currentUser, setMovies, recalcAllTotals } from '../state.js';
 import { ARCHETYPES } from '../data/archetypes.js';
-import { ARCHETYPE_DESCRIPTIONS, ADJECTIVE_DESCRIPTIONS, classifyArchetype } from './quiz-engine.js';
+import { ARCHETYPE_DESCRIPTIONS, ADJECTIVE_DESCRIPTIONS, classifyArchetype, getArchetypeDescription } from './quiz-engine.js';
 import { saveToStorage } from './storage.js';
 import { syncToSupabase } from './supabase.js';
 import { updateDisplayName, updateUsername, exportFullData, exportFilmsCSV } from './account.js';
@@ -29,7 +29,6 @@ function getArchetypeInfo(user) {
   if (user.archetype_key || user.full_archetype_name) {
     const key = user.archetype_key || 'balanced';
     const desc = ARCHETYPE_DESCRIPTIONS[key] || ARCHETYPE_DESCRIPTIONS.balanced || {};
-    const adj = user.adjective ? (ADJECTIVE_DESCRIPTIONS[user.adjective] || '') : '';
     // Recompute from current weights for live updates (with hysteresis from stored key)
     const priorKey = user.archetype_key || null;
     const live = user.weights ? classifyArchetype(user.weights, priorKey) : null;
@@ -37,17 +36,20 @@ function getArchetypeInfo(user) {
     const fullName = live?.fullName || user.full_archetype_name || archName;
     const color = live?.color || '#3d5a80';
     const liveKey = live?.archetypeKey || key;
+    const liveAdj = live?.adjective || user.adjective;
+    const liveConf = live?.confidence || 'moderate';
     const liveDesc = ARCHETYPE_DESCRIPTIONS[liveKey] || desc;
     return {
       name: archName,
       fullName,
       color,
-      description: liveDesc.description || '',
+      description: getArchetypeDescription(liveKey, liveAdj, liveConf) || liveDesc.studied || '',
       quote: liveDesc.quote || '',
       tagline: liveDesc.tagline || '',
-      adjective: live?.adjective || user.adjective,
-      adjectiveDesc: adj,
+      adjective: liveAdj,
+      adjectiveDesc: '',
       key: liveKey,
+      confidence: liveConf,
     };
   }
   // Fallback to old ARCHETYPES
@@ -317,11 +319,11 @@ window.profileConfirmImport = async function() {
   window.showScreen?.('rankings');
 };
 
-function radarLegend(archetype) {
-  if (shouldShowHint('profile_radar', () => true) && archetype) {
-    return renderHint('profile_radar', 'Solid line is your weighting. Dashed is a typical <strong>' + archetype + '</strong>. Where they diverge is what makes your palate unique. <span style="color:var(--blue);cursor:pointer;text-decoration:underline" onclick="openArchetypeModal()">Adjust your weights →</span>');
+function radarLegend() {
+  if (shouldShowHint('profile_radar', () => true)) {
+    return renderHint('profile_radar', 'This radar shows how you weight each category. The shape is your taste fingerprint — it evolves as you rate more films. <span style="color:var(--blue);cursor:pointer;text-decoration:underline" onclick="openArchetypeModal()">Adjust your weights →</span>');
   }
-  return '<div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-family:\'DM Mono\',monospace;font-size:9px;color:var(--dim)"><span style="display:flex;align-items:center;gap:5px"><svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke="var(--blue)" stroke-width="1.5"/></svg>yours</span><span style="display:flex;align-items:center;gap:5px"><svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke="var(--dim)" stroke-width="1" stroke-dasharray="3,2"/></svg>archetype</span></div>';
+  return '<div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-family:\'DM Mono\',monospace;font-size:9px;color:var(--dim)"><span style="display:flex;align-items:center;gap:5px"><svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke="var(--blue)" stroke-width="1.5"/></svg>your weights</span></div>';
 }
 
 function renderTasteTexture() {
@@ -448,8 +450,8 @@ export function renderProfile() {
 
   const archInfo = getArchetypeInfo(user);
   const weights = user.weights || {};
-  const oldArch = ARCHETYPES[user.archetype] || {};
-  const archWeights = oldArch.weights || null;
+  // No dashed prototype radar — the old prototypes are 2x spikier than real users
+  // and create a misleading comparison. The radar shows only the user's actual shape.
   const movies = MOVIES;
 
   const catAvgs = CATS.map(c => {
@@ -489,8 +491,8 @@ export function renderProfile() {
         <!-- Right: Fingerprint -->
         <div style="flex:0 0 280px">
           <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">Taste Fingerprint</div>
-          ${radarChart(weights, archWeights)}
-          ${radarLegend(archInfo.fullName)}
+          ${radarChart(weights, null)}
+          ${radarLegend()}
           <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--rule)">
             <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:12px">Category Weights</div>
             ${CATS.map(c => {
