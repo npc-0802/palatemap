@@ -221,8 +221,6 @@ export function initPredict() {
   const secondarySection = document.getElementById('foryou-secondary-section');
   const manualSection = document.getElementById('foryou-manual');
   const constrainedSection = document.getElementById('foryou-constrained');
-  const picksRow = document.getElementById('foryou-picks-row');
-  const orDivider = document.querySelector('.foryou-vs-divider');
 
   // ── Tier 0: Locked — warm invitation ──────────────────────────────────────
   if (!tier.canRecommend) {
@@ -230,8 +228,6 @@ export function initPredict() {
     if (secondarySection) secondarySection.style.display = 'none';
     if (manualSection) manualSection.style.display = 'none';
     if (constrainedSection) constrainedSection.style.display = 'none';
-    if (picksRow) picksRow.style.display = 'none';
-    if (orDivider) orDivider.style.display = 'none';
 
     let lockEl = document.getElementById('predict-lock-state');
     if (!lockEl) {
@@ -261,68 +257,55 @@ export function initPredict() {
     showTenFilmMilestone();
   }
 
-  // ── Remove lock state, show sections per tier ─────────────────────────────
+  // ── Remove lock state, show sections ──────────────────────────────────────
   const lockEl = document.getElementById('predict-lock-state');
   if (lockEl) lockEl.remove();
   if (heroSection) heroSection.style.display = '';
   if (secondarySection) secondarySection.style.display = '';
-  if (picksRow) picksRow.style.display = '';
 
-  // Show all sections but disable locked ones with unlock message
-  if (manualSection) manualSection.style.display = '';
-  if (constrainedSection) constrainedSection.style.display = '';
-  if (orDivider) orDivider.style.display = '';
-
-  // Disable locked sections with overlay
-  if (!tier.canPredict && manualSection) {
-    manualSection.style.position = 'relative';
-    manualSection.style.opacity = '0.4';
-    manualSection.style.pointerEvents = 'none';
-    let overlay = manualSection.querySelector('.foryou-lock-overlay');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.className = 'foryou-lock-overlay';
-      overlay.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2';
-      overlay.innerHTML = `<div style="pointer-events:auto;background:var(--paper);border:1px solid var(--rule);padding:12px 20px;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.5px;text-align:center">Rate ${5 - MOVIES.length} more film${5 - MOVIES.length !== 1 ? 's' : ''} to unlock</div>`;
-      manualSection.appendChild(overlay);
+  // Manual predict section — always available when tier can predict
+  if (manualSection) {
+    if (!tier.canPredict) {
+      manualSection.style.position = 'relative';
+      manualSection.style.opacity = '0.4';
+      manualSection.style.pointerEvents = 'none';
+      let overlay = manualSection.querySelector('.foryou-lock-overlay');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'foryou-lock-overlay';
+        overlay.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2';
+        overlay.innerHTML = `<div style="pointer-events:auto;background:var(--paper);border:1px solid var(--rule);padding:12px 20px;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.5px;text-align:center">Rate ${5 - MOVIES.length} more film${5 - MOVIES.length !== 1 ? 's' : ''} to unlock predictions</div>`;
+        manualSection.appendChild(overlay);
+      }
+    } else {
+      manualSection.style.opacity = '';
+      manualSection.style.pointerEvents = '';
+      manualSection.style.display = '';
+      const overlay = manualSection.querySelector('.foryou-lock-overlay');
+      if (overlay) overlay.remove();
     }
-  } else if (manualSection) {
-    manualSection.style.opacity = '';
-    manualSection.style.pointerEvents = '';
-    const overlay = manualSection.querySelector('.foryou-lock-overlay');
-    if (overlay) overlay.remove();
+    // Quota display in the predict section
+    const quotaEl = document.getElementById('foryou-manual-quota');
+    if (quotaEl && tier.canPredict) {
+      const quota = getRemainingPredictionQuota();
+      quotaEl.textContent = quota.monthly_remaining <= 10
+        ? `${quota.monthly_remaining} predictions left this month`
+        : `${quota.daily_remaining} of ${quota.daily_limit} predictions left today`;
+      quotaEl.style.display = '';
+    } else if (quotaEl) {
+      quotaEl.style.display = 'none';
+    }
   }
 
-  // Constrained: locked by tier (< 5 films) OR policy (free tier blocks constrained_search)
-  const constrainedPolicy = getPredictionPolicy().allow_constrained;
-  const constrainedLocked = !tier.canConstrain || !constrainedPolicy;
-  if (constrainedLocked && constrainedSection) {
-    constrainedSection.style.position = 'relative';
-    constrainedSection.style.pointerEvents = 'none';
-    let overlay = constrainedSection.querySelector('.foryou-lock-overlay');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.className = 'foryou-lock-overlay';
-      const isPaidLock = tier.canConstrain && !constrainedPolicy;
-      const lockMsg = !tier.canConstrain
-        ? `Rate ${5 - MOVIES.length} more film${5 - MOVIES.length !== 1 ? 's' : ''} to unlock`
-        : '';
-      // Two-layer overlay: wash dims content underneath, card sits on top at full opacity
-      overlay.innerHTML = isPaidLock
-        ? `<div style="position:absolute;inset:0;background:rgba(244,239,230,0.92);z-index:1"></div>
-           <div style="position:relative;z-index:2;background:rgba(232,98,58,0.08);border:1.5px solid rgba(232,98,58,0.25);padding:14px 24px;text-align:center"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--action);font-weight:500">Palate Map Pro</div><div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--dim);margin-top:4px">Coming soon</div></div>`
-        : `<div style="position:absolute;inset:0;background:rgba(244,239,230,0.92);z-index:1"></div>
-           <div style="position:relative;z-index:2;background:var(--paper);border:1px solid var(--rule);padding:12px 20px;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.5px;text-align:center">${lockMsg}</div>`;
-      overlay.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2';
-      constrainedSection.appendChild(overlay);
-    }
-  } else if (constrainedSection) {
+  // Browse by Who Made It — always available in beta (heuristic/local only, no Claude cost)
+  if (constrainedSection) {
+    constrainedSection.style.display = '';
     constrainedSection.style.pointerEvents = '';
     const overlay = constrainedSection.querySelector('.foryou-lock-overlay');
     if (overlay) overlay.remove();
   }
 
-  // Discovery section: locked by tier (< 10 films) OR policy (free tier blocks discovery_auto)
+  // Discovery section — beta-safe teaser for future Pro feature
   const discoverySection = document.getElementById('foryou-discovery-section');
   const discoveryPolicy = getPredictionPolicy().allow_discovery_auto;
   const discoveryLocked = !tier.canDiscover || !discoveryPolicy;
@@ -333,15 +316,15 @@ export function initPredict() {
     if (!dOverlay) {
       dOverlay = document.createElement('div');
       dOverlay.className = 'foryou-lock-overlay';
-      const isPaidLockD = tier.canDiscover && !discoveryPolicy;
-      const lockMsg = !tier.canDiscover
-        ? `Rate ${10 - MOVIES.length} more film${10 - MOVIES.length !== 1 ? 's' : ''} to unlock`
-        : '';
-      dOverlay.innerHTML = isPaidLockD
-        ? `<div style="position:absolute;inset:0;background:rgba(244,239,230,0.92);z-index:1"></div>
-           <div style="position:relative;z-index:2;background:rgba(232,98,58,0.08);border:1.5px solid rgba(232,98,58,0.25);padding:14px 24px;text-align:center"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--action);font-weight:500">Palate Map Pro</div><div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--dim);margin-top:4px">Coming soon</div></div>`
-        : `<div style="position:absolute;inset:0;background:rgba(244,239,230,0.92);z-index:1"></div>
-           <div style="position:relative;z-index:2;background:var(--paper);border:1px solid var(--rule);padding:12px 20px;font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.5px;text-align:center">${lockMsg}</div>`;
+      // Beta-safe teaser — no pricing, no checkout, just interest capture
+      dOverlay.innerHTML = `
+        <div style="position:absolute;inset:0;background:rgba(244,239,230,0.92);z-index:1;backdrop-filter:blur(3px)"></div>
+        <div style="position:relative;z-index:2;text-align:center;max-width:320px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--action);font-weight:500;margin-bottom:8px">Palate Map Pro</div>
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:18px;color:var(--ink);margin-bottom:8px">Films you'd never find on your own.</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);line-height:1.5;margin-bottom:16px">Automatic prediction-backed discovery across genres you haven't explored yet.</div>
+          <button onclick="event.stopPropagation();window._notifyProInterest&&window._notifyProInterest('discovery')" style="pointer-events:auto;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;background:none;border:1.5px solid rgba(232,98,58,0.4);color:var(--action);padding:8px 20px;cursor:pointer;transition:all 0.15s" onmouseover="this.style.background='rgba(232,98,58,0.08)'" onmouseout="this.style.background='none'">Notify me</button>
+        </div>`;
       dOverlay.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2';
       discoverySection.appendChild(dOverlay);
     }
@@ -508,6 +491,49 @@ function getSourceExplanation(r) {
   if (r.source === 'discover' || r.source === 'discovery')
     return `This matches broader patterns in your taste profile — new territory worth testing.`;
   return `This matched patterns across your rated films.`;
+}
+
+// Elevate manual predict to hero position when no prediction-backed hero exists
+function _elevateManualPredict() {
+  const manualEl = document.getElementById('foryou-manual');
+  const heroEl = document.getElementById('foryou-hero');
+  if (heroEl) heroEl.style.display = 'none';
+  if (!manualEl) return;
+  const eyebrow = document.getElementById('foryou-manual-eyebrow-text');
+  const headline = document.getElementById('foryou-manual-headline');
+  if (eyebrow) eyebrow.textContent = 'Discover';
+  if (headline) headline.textContent = 'Start discovering';
+  manualEl.classList.add('foryou-manual-hero');
+}
+
+// Reset manual predict section from hero elevation
+function _resetManualPredict() {
+  const manualEl = document.getElementById('foryou-manual');
+  if (!manualEl) return;
+  const eyebrow = document.getElementById('foryou-manual-eyebrow-text');
+  const headline = document.getElementById('foryou-manual-headline');
+  if (eyebrow) eyebrow.textContent = 'Predict a specific film';
+  if (headline) headline.textContent = 'What would you score it?';
+  manualEl.classList.remove('foryou-manual-hero');
+}
+
+// Data-driven match reason based on user's weighted categories and film source
+function getMatchReason(result) {
+  const w = currentUser?.weights;
+  if (!w) return getSourceLabel(result);
+  // Get top 2 categories by user weight
+  const cats = CATEGORIES.map(c => ({ key: c.key, label: c.label, weight: w[c.key] || 0 }))
+    .sort((a, b) => b.weight - a.weight);
+  const top2 = cats.slice(0, 2).map(c => c.label);
+  // Source-specific prefix
+  if (result.source === 'director') {
+    const dir = (result.director || '').split(',')[0].trim();
+    return dir ? `${dir} · ${top2[0]} + ${top2[1]} match` : `${top2[0]} + ${top2[1]} match`;
+  }
+  if (result.source === 'actor') {
+    return result.sourceName ? `${result.sourceName} · ${top2[0]} match` : `${top2[0]} + ${top2[1]} match`;
+  }
+  return `${top2[0]} + ${top2[1]} match`;
 }
 
 // Build compact entity chips for the hero card
@@ -699,13 +725,21 @@ function renderSecondaryCards(results) {
     const hasRealPred = (r.predictionBacked ?? !!r.prediction) && r.predTotal != null;
     let scoreBadge;
     if (!tier.showScores || !hasRealPred) {
-      // No scores at this tier, or heuristic-only — show source label instead of fake number
-      scoreBadge = `<div class="foryou-sec-score-badge" style="font-size:8px;letter-spacing:0.5px">${hasRealPred ? getSourceLabel(r) : 'Match'}</div>`;
+      scoreBadge = '';
     } else if (tier.rangeWidth > 0) {
       scoreBadge = `<div class="foryou-sec-score-badge">${formatPredictedScore(r.predTotal, MOVIES.length)}</div>`;
     } else {
       scoreBadge = `<div class="foryou-sec-score-badge">~${Math.round(r.predTotal)}</div>`;
     }
+
+    // Data-driven match reason replaces generic "Match" badge
+    const matchReason = !hasRealPred ? `<div class="foryou-sec-match-reason">${getMatchReason(r)}</div>` : '';
+
+    // Card-level predict CTA for heuristic cards (with quota disclosure)
+    const canPred = tier.canPredict && canRunFreshPrediction('manual_predict').allowed;
+    const predictCta = (!hasRealPred && canPred)
+      ? `<button class="foryou-sec-predict-btn" onclick="event.stopPropagation();openRecommendedDetail(${safeTmdbId})">Get prediction <span style="font-size:8px;opacity:0.7">(uses 1)</span></button>`
+      : '';
 
     return `
       <div class="foryou-sec-card" onclick="openRecommendedDetail(${safeTmdbId})" style="opacity:0;animation:heroReveal 0.3s ease ${i * 80}ms both">
@@ -716,7 +750,11 @@ function renderSecondaryCards(results) {
         <div class="foryou-sec-body">
           <div class="foryou-sec-title">${r.title}</div>
           <div class="foryou-sec-meta">${r.year || ''}</div>
-          <button class="foryou-sec-seen-btn" onclick="event.stopPropagation();forYouSeenIt(${i}, '${r.title.replace(/'/g, "\\'")}', ${safeTmdbId})">Seen it →</button>
+          ${matchReason}
+          <div class="foryou-sec-actions">
+            <button class="foryou-sec-seen-btn" onclick="event.stopPropagation();forYouSeenIt(${i}, '${r.title.replace(/'/g, "\\'")}', ${safeTmdbId})">Seen it →</button>
+            ${predictCta}
+          </div>
         </div>
       </div>`;
   }).join('');
@@ -724,10 +762,22 @@ function renderSecondaryCards(results) {
 
 function renderForYouFromCache() {
   const cached = currentUser?.cachedRecommendations;
-  if (!cached?.length) return;
+  if (!cached?.length) {
+    _elevateManualPredict();
+    return;
+  }
+  const hasPredBacked = cached.some(r => (r.predictionBacked ?? !!r.prediction) && r.predTotal != null);
+  // If hero is prediction-backed, show it; otherwise elevate manual predict
+  if (hasPredBacked) {
+    renderHeroCard(cached[0]);
+    _resetManualPredict();
+  } else {
+    const heroEl = document.getElementById('foryou-hero');
+    if (heroEl) heroEl.style.display = 'none';
+    _elevateManualPredict();
+  }
   renderForYouEyebrow(currentUser.lastRecommendationAt);
-  renderHeroCard(cached[0]);
-  renderSecondaryCards(cached.slice(1, 5));
+  renderSecondaryCards(cached.slice(hasPredBacked ? 1 : 0, hasPredBacked ? 5 : 4));
   updateRefreshButtonState();
   // Discovery shares the same cache lifecycle
   const cachedDiscovery = currentUser?.cachedDiscovery;
@@ -2339,8 +2389,17 @@ async function findMeAFilm() {
     syncToSupabase();
 
     renderForYouEyebrow(now);
-    renderHeroCard(finalResults[0]);
-    renderSecondaryCards(finalResults.slice(1, 5));
+    const heroIsPredBacked = finalResults[0] && (finalResults[0].predictionBacked ?? !!finalResults[0].prediction) && finalResults[0].predTotal != null;
+    if (heroIsPredBacked) {
+      renderHeroCard(finalResults[0]);
+      _resetManualPredict();
+      renderSecondaryCards(finalResults.slice(1, 5));
+    } else {
+      const heroEl = document.getElementById('foryou-hero');
+      if (heroEl) heroEl.style.display = 'none';
+      _elevateManualPredict();
+      renderSecondaryCards(finalResults.slice(0, 4));
+    }
     updateRefreshButtonState();
 
     // Diagnostics: track prediction coverage in recommendations
@@ -2604,16 +2663,17 @@ function renderDiscoveryCards(results) {
       : `<div class="discovery-card-poster-none"></div>`;
     const safeTmdbId = parseInt(r.tmdbId);
     const onWl = (currentUser?.watchlist || []).some(w => String(w.tmdbId) === String(r.tmdbId));
-    const scoreDisplay = (r.predictionBacked ?? !!r.prediction) && r.predTotal != null
-      ? formatPredictedScore(r.predTotal, MOVIES.length)
-      : 'Match';
+    const hasRealPred = (r.predictionBacked ?? !!r.prediction) && r.predTotal != null;
+    const scoreDisplay = hasRealPred
+      ? `<div class="discovery-card-score">${formatPredictedScore(r.predTotal, MOVIES.length)}</div>`
+      : `<div class="discovery-card-match-reason">${getMatchReason(r)}</div>`;
     return `<div class="discovery-card" onclick="openRecommendedDetail(${safeTmdbId})">
       ${poster}
       <div class="discovery-card-body">
         <div class="discovery-card-source">${DISCOVERY_ICON_SVG} New territory</div>
         <div class="discovery-card-title">${r.title}</div>
         <div class="discovery-card-meta">${r.year || ''}${r.director ? ' · ' + r.director.split(',')[0] : ''}</div>
-        <div class="discovery-card-score">${scoreDisplay}</div>
+        ${scoreDisplay}
       </div>
       <div class="discovery-card-actions" onclick="event.stopPropagation()">
         <button class="discovery-wl-btn${onWl ? ' on-list' : ''}" onclick="toggleRecommendWatchlist('${r.tmdbId}');this.classList.toggle('on-list');this.textContent=this.classList.contains('on-list')?'✓ List':'+ List'">${onWl ? '✓ List' : '+ List'}</button>
@@ -2980,7 +3040,7 @@ function renderConstrainedResults(name, type, _tmdbId, results) {
     const onWl = (currentUser?.watchlist || []).some(w => String(w.tmdbId) === String(r.tmdbId));
     const csScoreDisplay = (r.predictionBacked ?? !!r.prediction) && r.predTotal != null
       ? formatPredictedScore(r.predTotal, MOVIES.length)
-      : 'Match';
+      : getMatchReason(r);
     return `<div class="constrained-card" onclick="openRecommendedDetail(${safeTmdbId})">
       ${poster}
       <div class="constrained-card-body">
@@ -3311,6 +3371,18 @@ window.forYouSeenIt = function(index, title, tmdbId) {
   import('./watchlist.js').then(({ markAsSeen }) => {
     markAsSeen(tmdbId, filmData);
   });
+};
+
+// Beta-safe interest capture for Pro features
+window._notifyProInterest = function(feature) {
+  track('pro_interest_captured', { feature, email: currentUser?.email || null });
+  const btn = event?.target;
+  if (btn) {
+    btn.textContent = 'We\'ll let you know';
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+    btn.disabled = true;
+  }
 };
 
 window.loadFullRecommendation = function(tmdbId, title, year) {

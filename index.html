@@ -415,35 +415,55 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- Inline hint slot -->
   <div id="foryou-hint-slot"></div>
 
-  <!-- Section A: Hero recommendation -->
+  <!-- Section 1: Hero recommendation -->
   <div id="foryou-hero-section">
     <div id="foryou-hero" class="foryou-hero" style="display:none"></div>
   </div>
 
-  <!-- Section B: Picks row (secondary + discovery side by side) -->
-  <div id="foryou-picks-row" class="foryou-picks-row">
-    <!-- Left: More picks -->
-    <div id="foryou-secondary-section" class="foryou-picks-left">
-      <div class="foryou-section-header">
-        <span class="foryou-section-label">More picks for you</span>
+  <!-- Section 2: Predict a Film CTA -->
+  <div id="foryou-manual" class="foryou-manual">
+    <div class="predict-eyebrow">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1L8.5 5.5L13 7L8.5 8.5L7 13L5.5 8.5L1 7L5.5 5.5Z" fill="currentColor" opacity="0.6"/></svg>
+      <span id="foryou-manual-eyebrow-text">Predict a specific film</span>
+    </div>
+    <div class="foryou-manual-headline" id="foryou-manual-headline">What would you score it?</div>
+    <div class="foryou-manual-sub">Search any film you haven't rated. We'll predict all 8 of your category scores — with reasoning based on your taste.</div>
+    <div id="foryou-manual-quota" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-bottom:12px"></div>
+    <div style="max-width:480px;margin:0 auto;text-align:left">
+      <input class="foryou-manual-input" id="predict-search" type="text" placeholder="Search for a film…" oninput="predictSearchDebounce()">
+      <div id="predict-search-results" style="margin-bottom:12px;margin-top:12px"></div>
+    </div>
+    <div id="predict-recent-hint"></div>
+  </div>
+  <div id="predict-result" style="margin-top:24px"></div>
+
+  <!-- Section 3: Matched to Your Palate (heuristic recommendations) -->
+  <div id="foryou-secondary-section" class="foryou-picks-left">
+    <div class="foryou-section-header">
+      <div>
+        <span class="foryou-section-label">Matched to Your Palate</span>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-top:3px;letter-spacing:0.3px">Based on your taste profile · not individually predicted</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
         <button class="foryou-refresh-btn" id="foryou-refresh-btn" onclick="findMeAFilmRefresh()">Refresh →</button>
-        <span id="foryou-quota-indicator" style="display:none;font-size:11px;color:var(--text-muted,#999);margin-left:8px;white-space:nowrap"></span>
+        <span id="foryou-quota-indicator" style="display:none;font-size:11px;color:var(--text-muted,#999);white-space:nowrap"></span>
       </div>
-      <div id="foryou-secondary-grid" class="foryou-secondary-grid"></div>
     </div>
-    <!-- Right: Discovery -->
-    <div id="foryou-discovery-section" class="foryou-picks-right foryou-discovery-section-wrap">
-      <div class="foryou-discovery-header">
-        <div class="foryou-discovery-header-left">
-          <span class="foryou-discovery-label">palate map · discovery</span>
-          <span class="foryou-discovery-headline">New territory.</span>
-        </div>
-      </div>
-      <div id="foryou-discovery-grid" class="foryou-discovery-grid"></div>
-    </div>
+    <div id="foryou-secondary-grid" class="foryou-secondary-grid"></div>
   </div>
 
-  <!-- Section C: Entity-constrained ("I'm in the mood for…") -->
+  <!-- Section 4: New Territory Teaser -->
+  <div id="foryou-discovery-section" class="foryou-discovery-section-wrap">
+    <div class="foryou-discovery-header">
+      <div class="foryou-discovery-header-left">
+        <span class="foryou-discovery-label">palate map · discovery</span>
+        <span class="foryou-discovery-headline">New territory.</span>
+      </div>
+    </div>
+    <div id="foryou-discovery-grid" class="foryou-discovery-grid"></div>
+  </div>
+
+  <!-- Section 5: Browse by Who Made It -->
   <div id="foryou-constrained" class="foryou-constrained">
     <div class="mood-section-label">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><circle cx="7" cy="7" r="1.5" fill="currentColor"/></svg>
@@ -458,25 +478,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
     <div id="constrained-results" style="display:none"></div>
   </div>
-
-  <!-- Divider -->
-  <div class="foryou-vs-divider"><span class="foryou-vs-label">or</span></div>
-
-  <!-- Section D: Manual predict -->
-  <div id="foryou-manual" class="foryou-manual">
-    <div class="predict-eyebrow">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1L8.5 5.5L13 7L8.5 8.5L7 13L5.5 8.5L1 7L5.5 5.5Z" fill="currentColor" opacity="0.6"/></svg>
-      Predict a specific film
-    </div>
-    <div class="foryou-manual-headline">What would you score it?</div>
-    <div class="foryou-manual-sub">Search any film you haven't rated. We'll predict all 8 of your category scores — with reasoning based on your taste.</div>
-    <div style="max-width:480px;margin:0 auto;text-align:left">
-      <input class="foryou-manual-input" id="predict-search" type="text" placeholder="Search for a film…" oninput="predictSearchDebounce()">
-      <div id="predict-search-results" style="margin-bottom:12px;margin-top:12px"></div>
-    </div>
-    <div id="predict-recent-hint"></div>
-  </div>
-  <div id="predict-result" style="margin-top:24px"></div>
 </div>
 
 <!-- ══════════════ CALIBRATION ══════════════ -->
