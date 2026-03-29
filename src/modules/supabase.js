@@ -78,8 +78,17 @@ async function _applyUserData(data) {
   const { setCloudStatus, updateMastheadProfile, updateStorageStatus } = await import('../ui-callbacks.js');
   const { renderRankings } = await import('./rankings.js');
 
-  // Preserve locally cached recommendation data across Supabase reloads
-  const prev = currentUser || {};
+  // Preserve locally cached data across Supabase reloads.
+  // currentUser may be null if loadUserLocally() hasn't run yet (auth flow),
+  // so also check localStorage directly for critical fields like
+  // onboarding_profile_weights that may not be in Supabase yet.
+  let prev = currentUser || {};
+  if (!prev.onboarding_profile_weights) {
+    try {
+      const local = JSON.parse(localStorage.getItem('palatemap_user'));
+      if (local?.onboarding_profile_weights) prev = { ...prev, onboarding_profile_weights: local.onboarding_profile_weights };
+    } catch(_) {}
+  }
   setCurrentUser({
     id: data.id, username: data.username, display_name: data.display_name,
     archetype: data.archetype, archetype_secondary: data.archetype_secondary,
@@ -92,6 +101,7 @@ async function _applyUserData(data) {
     adjective: data.adjective || prev.adjective || null,
     full_archetype_name: data.full_archetype_name || prev.full_archetype_name || null,
     rating_weights: data.rating_weights || prev.rating_weights || null,
+    onboarding_profile_weights: data.onboarding_profile_weights || prev.onboarding_profile_weights || null,
     films_rated: data.films_rated ?? prev.films_rated ?? 0,
     weight_history: data.weight_history || prev.weight_history || [],
     watchlist: (data.watchlist || []).map(w => ({ ...w, status: w.status || 'watch', seenAt: w.seenAt || null })),
@@ -164,6 +174,7 @@ export async function syncToSupabase() {
     ...(user.full_archetype_name ? { full_archetype_name: user.full_archetype_name } : {}),
     ...(user.rating_weights ? { rating_weights: user.rating_weights } : {}),
     ...(user.films_rated != null ? { films_rated: user.films_rated } : {}),
+    ...(user.onboarding_profile_weights ? { onboarding_profile_weights: user.onboarding_profile_weights } : {}),
     ...(user.weight_history?.length ? { weight_history: user.weight_history } : {}),
     ...(user.watchlist !== undefined ? { watchlist: user.watchlist } : {}),
     ...(user.predictions !== undefined ? { predictions: (() => {

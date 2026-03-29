@@ -321,6 +321,28 @@ export function updateEffectiveWeights() {
     // Any high-trust source that isn't part of the onboarding flow counts:
     // manual_rating, legacy films (no rating_source), future sources.
     decayFilmCount = MOVIES.filter(m => !ONBOARDING_SOURCES.has(m.rating_source)).length;
+
+    // Guard: if the user has zero post-onboarding films, the taste reveal
+    // result is authoritative. Don't recompute — just ensure the stored
+    // weights and archetype match exactly what the reveal showed.
+    if (decayFilmCount === 0) {
+      const classification = classifyArchetype(obProfileWeights, currentUser.archetype_key || null);
+      setCurrentUser({
+        ...currentUser,
+        weights: { ...obProfileWeights },
+        rating_weights: computeRatingWeights(),
+        films_rated: filmsRated,
+        archetype: classification.archetype,
+        archetype_secondary: classification.secondary || '',
+        archetype_key: classification.archetypeKey,
+        adjective: classification.adjective,
+        full_archetype_name: classification.fullName,
+      });
+      recalcAllTotals();
+      recordWeightSnapshot('rating');
+      saveUserLocally();
+      return;
+    }
   } else {
     prior = quizWeights;
     decayFilmCount = filmsRated;
