@@ -1,5 +1,5 @@
 Palate Map
-Product Brief · Living Document · v3.31
+Product Brief · Living Document · v3.32
 Last updated: March 2026
 Confidential — do not distribute
 
@@ -62,7 +62,7 @@ Design Principles
 • Rankings nav icon is a medal (ribbon + circle), not a hamburger. Analysis uses bar chart. Icons are distinct across all 5 tabs.
 
 03  Current Architecture
-Status: Phase 1 complete, Phase 2 complete, Phase 3.1–3.8 complete, 3.11 complete, 3.13 complete, 3.15–3.30 complete. Vite multi-file vanilla JS.
+Status: Phase 1 complete, Phase 2 complete, Phase 3.1–3.8 complete, 3.11 complete, 3.13 complete, 3.15–3.32 complete. Vite multi-file vanilla JS.
 
 File Structure
 palatemap/
@@ -91,8 +91,9 @@ palatemap/
       friends.js       friends list, friend profile, invite modal, overlap + taste + predict views
       watchlist.js     watch list screen — add, remove, rank from queue
       hints.js         dismissable educational hints system (shouldShowHint, renderHint)
-      supabase.js      all cloud sync + auth + friends DB logic
+      supabase.js      all cloud sync + auth + friends DB + generated artifacts
       storage.js       localStorage helpers
+      credit-policy.js unified credit pool — source gating, tier detection, server sync
       upgrade.js       upgrade nudge toast, upgrade modal, checkout flow
     styles/
       main.css         layout, nav, masthead, dark surface variables
@@ -447,7 +448,16 @@ Phase 3 — Growth Features [IN PROGRESS]
   Rank it → prefills Add Film category sliders from cached or auto-predicted scores (not just fresh prediction-screen results). ✓
   Rating and saving a watchlisted film automatically removes it from the watch list. ✓
 
-• 3.5 Overlap Predict ✓ — search bar on friend Overlap tab; combined Claude prediction using both taste profiles; reasoning distinguishes each user by name with film-specific anchors; shared watchlist surfaces films both users have saved.
+• 3.5 Overlap Predict ✓ — search bar on friend Overlap tab. Handles all four seen/unseen permutations:
+  - seen/seen: free comparison — no Claude, no credit. Shows actual scores, verdict, category breakdown.
+  - seen/unseen / unseen/seen: 1 credit — predicts unseen side, pairs with actual score. Actual scores always outrank predictions.
+  - unseen/unseen: 1 credit — predicts both sides.
+  Shared-watch verdict model: 7 labeled verdicts (strong_overlap, good_for_both, solid_pick, one_sided, split_watch, could_go_either_way, not_the_move) displayed verdict-first above scores.
+  Search results show seen-state labels ("both seen — free", "you've seen this", etc.).
+  Metered through server-authoritative Worker credit path (prediction_source: 'overlap_predict'). Auth header attached. Server _credits piggyback syncs local cache.
+  Durable persistence: results saved as generated_artifacts (content_type: 'overlap_prediction') with awaited server upsert after credit spend. localStorage as same-device performance layer.
+  State-aware artifact reuse: cached artifacts only reused when myIsActual/friendIsActual match current live state. New actual ratings hard-invalidate stale predictions. Compatible cache hits refresh actual-side scores from live data.
+  Friend colors: ensureDistinctFromBlue() guarantees friend radar/score color has RGB distance >80 from user's #3D5A80.
 
 • 3.6 Prediction engine polish — prediction caching ✓; Re-predict ✓; prediction history browser ✓ (browses past predictions sorted by date, click to reload cached result; rows show score + tier label + horizontal hover padding matching watchlist style); confidence calibration [not started]. Predicted-vs-actual reconciliation surfaced in both Add Film Step 4 confirmation card and saved film modal ✓ (accuracy labels: "Nailed it" ≤3, "Close" ≤8, "Off the mark" >8).
 
@@ -621,6 +631,17 @@ Phase 3 — Growth Features [IN PROGRESS]
   - Pre-beta decision: archetype taxonomy unchanged. Taste edges bridge the gap between archetype label and full 8-category profile. Post-beta question preserved: what role should archetypes play in an 8-category system?
   - Prediction parsing hardened: `res.text()` + controlled `JSON.parse` replaces blind `res.json()`. Embedded JSON extraction recovers prose-wrapped model responses. Anthropic API errors, empty responses, and max_tokens truncation detected explicitly.
   - Parse failure analytics: `prediction_parse_fallback` (recovered) and `prediction_parse_error` (total failure) events for monitoring prompt contract health.
+
+• 3.32 Unified Credit System ✓ — server-authoritative metering for all Claude API usage:
+  - Architecture: Cloudflare Worker proxy (worker/index.js) enforces credit limits. Three-phase atomic flow: reserve_credit → call Anthropic → finalize_credit or release_credit. Pending reservations count toward cap (no concurrent overspend).
+  - Client module: credit-policy.js. canUseSource() for source-level entitlement (hard gate). getCreditHint() for soft UI hints. syncCreditsFromResponse() updates local cache from server _credits piggyback. hydrateCreditsFromServer() for login/session restore.
+  - Tier ladder: free (25/mo), pro (150/mo), premium (500/mo). Founder emails → premium. Legacy 'paid' → pro.
+  - Source gating: per-tier allowlists (SOURCE_GATES) on both Worker and client. manual_predict, repredict, manual_refresh, overlap_predict always allowed. watchlist_auto, foryou_auto, discovery_auto, constrained_search gated to pro+.
+  - Company-funded sources (onboarding_seed): bypass credit checks, never decrement user budget, tracked separately for cost attribution.
+  - Metering detection: Worker reads body.prediction_source (→ prediction metering) or body.credit_source (→ insight metering). Neither → non-metered passthrough.
+  - Explicit-spend contract: all auto-spend paths removed (watchlist auto-predict, constrained search batch-predict). Users only spend credits through intentional actions.
+  - Server-side persistence: metered results stored as generated_artifacts (Supabase table, unique on user_id + content_type + object_id). Predictions, insights, and overlap results all persist durably after credit spend.
+  - Generated artifacts API: saveGeneratedArtifact(), loadGeneratedArtifact(), loadGeneratedArtifacts() in supabase.js. Server read path checked before fresh generation to avoid re-spending.
 
 Phase 4 — Platform
 • 4.1 Universal entity search — global search surfacing any director/actor/writer/company (entity-level, not film-level — film search is covered by 3.8 Global Search). Entity page shows: TMDB data, user's own rankings (if any), community avg score (requires 4.2). Requires schema change: separate palatemap_ratings table (see below).
@@ -806,4 +827,4 @@ This migration should be planned alongside Phase 4.2 (community ratings) as they
 
 Engineering rule: until the palatemap_predictions table exists, every prediction call must store the full predicted_scores, archetype_at_time, and weights_at_time on the prediction entry in currentUser.predictions. This ensures the data needed for future cross-user learning is captured now and will be migratable when the schema is ready. Do not store only the predicted total — always store the full score breakdown.
 
-Palate Map · private product brief · v3.30 · do not distribute
+Palate Map · private product brief · v3.32 · do not distribute
