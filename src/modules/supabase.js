@@ -243,15 +243,20 @@ export async function loadFriendFull(friendId) {
     const { data } = await sb.from('palatemap_users')
       .select('id, display_name, username, archetype, archetype_secondary, weights, movies')
       .eq('id', friendId).single();
-    if (data) {
-      // Fetch watchlist separately so a missing column doesn't break the whole profile load
-      try {
-        const wlRes = await sb.from('palatemap_users').select('watchlist').eq('id', friendId).single();
-        data.watchlist = wlRes.data?.watchlist || [];
-      } catch(_) { data.watchlist = []; }
-    }
     return data || null;
   } catch(e) { return null; }
+}
+
+/**
+ * Lazy-load a friend's watchlist. Called only when the Watchlist tab is opened.
+ */
+export async function loadFriendWatchlist(friendId) {
+  try {
+    const { data } = await sb.from('palatemap_users')
+      .select('watchlist')
+      .eq('id', friendId).single();
+    return data?.watchlist || [];
+  } catch(_) { return []; }
 }
 
 export async function acceptFriendInvite(token) {
@@ -515,4 +520,93 @@ export async function loadGeneratedArtifacts(contentType) {
     console.warn('generated_artifacts load-all failed:', e);
     return [];
   }
+}
+
+// ── Shared Watchlist ──────────────────────────────────────────────────────
+// Pair-specific "Watch Together" list. Canonical pair: lower UUID = user_a_id.
+
+function canonicalPair(idA, idB) {
+  return idA < idB ? { user_a_id: idA, user_b_id: idB } : { user_a_id: idB, user_b_id: idA };
+}
+
+export async function loadSharedWatchlist(friendId) {
+  if (!currentUser?.id) return [];
+  const pair = canonicalPair(currentUser.id, friendId);
+  try {
+    const { data } = await sb.from('shared_watchlist')
+      .select('*')
+      .eq('user_a_id', pair.user_a_id)
+      .eq('user_b_id', pair.user_b_id)
+      .order('created_at', { ascending: false });
+    return data || [];
+  } catch(e) {
+    console.warn('shared_watchlist load failed:', e);
+    return [];
+  }
+}
+
+export async function addToSharedWatchlist(friendId, item) {
+  if (!currentUser?.id) return false;
+  const pair = canonicalPair(currentUser.id, friendId);
+  try {
+    const { error } = await sb.from('shared_watchlist')
+      .upsert({
+        ...pair,
+        tmdb_id: item.tmdbId,
+        title: item.title || null,
+        year: item.year ? parseInt(item.year, 10) : null,
+        poster: item.poster || null,
+        director: item.director || null,
+        added_by_user_id: currentUser.id,
+      }, { onConflict: 'user_a_id,user_b_id,tmdb_id' });
+    if (error) { console.warn('shared_watchlist add error:', error); return false; }
+    return true;
+  } catch(e) {
+    console.warn('shared_watchlist add failed:', e);
+    return false;
+  }
+}
+
+export async function removeFromSharedWatchlist(friendId, tmdbId) {
+  if (!currentUser?.id) return false;
+  const pair = canonicalPair(currentUser.id, friendId);
+  try {
+    const { error } = await sb.from('shared_watchlist')
+      .delete()
+      .eq('user_a_id', pair.user_a_id)
+      .eq('user_b_id', pair.user_b_id)
+      .eq('tmdb_id', tmdbId);
+    if (error) { console.warn('shared_watchlist remove error:', error); return false; }
+    return true;
+  } catch(e) {
+    console.warn('shared_watchlist remove failed:', e);
+    return false;
+  }
+}
+
+/**
+ * Load latest shared_watchlist created_at timestamps for multiple friends.
+ * Used by the notification dot system. Returns Map<friendId, latestCreatedAt>.
+ */
+export async function loadSharedWatchlistTimestamps(friendIds) {
+  if (!currentUser?.id || !friendIds?.length) return new Map();
+  const results = new Map();
+  try {
+    // Query all shared_watchlist rows involving this user
+    const { data } = await sb.from('shared_watchlist')
+      .select('user_a_id, user_b_id, created_at')
+      .or(`user_a_id.eq.${currentUser.id},user_b_id.eq.${currentUser.id}`)
+      .order('created_at', { ascending: false });
+    if (!data) return results;
+    const friendSet = new Set(friendIds);
+    for (const row of data) {
+      const friendId = row.user_a_id === currentUser.id ? row.user_b_id : row.user_a_id;
+      if (friendSet.has(friendId) && !results.has(friendId)) {
+        results.set(friendId, row.created_at);
+      }
+    }
+  } catch(e) {
+    console.warn('shared_watchlist timestamps failed:', e);
+  }
+  return results;
 }

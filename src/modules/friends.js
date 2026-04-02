@@ -1,6 +1,6 @@
 import { MOVIES, currentUser, setCurrentUser, mergeSplitNames, getLabel } from '../state.js';
 import { ARCHETYPES } from '../data/archetypes.js';
-import { sb, loadFriends, loadFriendFull, acceptFriendInvite, confirmFriendInvite, unfriendUser, searchUsers, sendFriendRequest, loadPendingIncoming, loadPendingOutgoing, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, getUserEmail, loadAllFriendsFilmData, saveGeneratedArtifact, loadGeneratedArtifact } from './supabase.js';
+import { sb, loadFriends, loadFriendFull, loadFriendWatchlist, acceptFriendInvite, confirmFriendInvite, unfriendUser, searchUsers, sendFriendRequest, loadPendingIncoming, loadPendingOutgoing, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, getUserEmail, loadAllFriendsFilmData, saveGeneratedArtifact, loadGeneratedArtifact, loadSharedWatchlist, addToSharedWatchlist, removeFromSharedWatchlist, loadSharedWatchlistTimestamps } from './supabase.js';
 import { shouldShowHint, renderHint } from './hints.js';
 import { smartSearch, formatDirector } from './smart-search.js';
 import { track } from '../analytics.js';
@@ -21,6 +21,27 @@ let friendColorCache = null;
 let friendEntityMapsCache = {};
 let currentFriendCache = null;
 let overlapPredictDebounceTimer = null;
+let sharedWatchlistCache = null; // loaded lazily on Watchlist tab open
+
+async function populateSharedWlDots(friendIds) {
+  try {
+    const timestamps = await loadSharedWatchlistTimestamps(friendIds);
+    for (const [friendId, latestCreated] of timestamps) {
+      const seenKey = `palatemap_shared_wl_seen_${friendId}`;
+      const lastSeen = localStorage.getItem(seenKey);
+      if (!lastSeen || new Date(latestCreated) > new Date(lastSeen)) {
+        const slot = document.querySelector(`.shared-wl-dot-slot[data-friend-id="${friendId}"]`);
+        if (slot && !slot.querySelector('.shared-wl-dot')) {
+          const dot = document.createElement('span');
+          dot.className = 'shared-wl-dot';
+          dot.setAttribute('data-friend', friendId);
+          dot.style.cssText = 'width:7px;height:7px;border-radius:50%;background:#E8623A;flex-shrink:0';
+          slot.appendChild(dot);
+        }
+      }
+    }
+  } catch(_) {}
+}
 
 export async function refreshFriendsDataCache(friendIds) {
   const data = await loadAllFriendsFilmData(friendIds);
@@ -74,6 +95,8 @@ export function renderFriends() {
     if (area) area.outerHTML = friendListHTML(friends, incoming, outgoing);
     // Background: cache all friends' film data for modal context
     if (friends.length) refreshFriendsDataCache(friends.map(f => f.id));
+    // Background: check for new shared watchlist items (notification dots)
+    if (friends.length) populateSharedWlDots(friends.map(f => f.id));
   }).catch(() => {
     const area = document.getElementById('friends-list-area');
     if (area) area.textContent = 'Could not load friends.';
@@ -568,6 +591,20 @@ window.overlapWatchlist = function() {
   import('./watchlist.js').then(({ addToWatchlist }) => addToWatchlist(item));
 };
 
+window.overlapSaveToShared = async function() {
+  const item = window._overlapPredictFilm;
+  const friend = currentFriendCache;
+  if (!item || !friend) return;
+  const ok = await addToSharedWatchlist(friend.id, item);
+  if (ok) {
+    track('shared_watchlist_item_added', { tmdb_id: item.tmdbId, friend_id: friend.id, source: 'overlap_predict' });
+    import('../ui-callbacks.js').then(({ showToast }) => showToast(`${item.title} added to watch together.`));
+    sharedWatchlistCache = null; // invalidate so next tab open reloads
+  } else {
+    import('../ui-callbacks.js').then(({ showToast }) => showToast('Could not add to watch together.'));
+  }
+};
+
 window.toggleFriendEntity = function(entityId) {
   const films = document.getElementById(`${entityId}-films`);
   const arrow = document.getElementById(`${entityId}-arrow`);
@@ -720,12 +757,13 @@ function friendListHTML(friends, incoming = [], outgoing = []) {
     </div>` :
     friends.map(f => {
       const color = ARCHETYPES[f.archetype]?.palette || '#3D5A80';
-      return `<div onclick="openFriendProfile('${f.id}')" style="display:flex;align-items:center;gap:16px;padding:16px 0;border-bottom:1px solid var(--rule);cursor:pointer;transition:background 0.12s;margin:0 -8px;padding-left:8px;padding-right:8px" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+      return `<div onclick="openFriendProfile('${f.id}')" style="display:flex;align-items:center;gap:16px;padding:16px 0;border-bottom:1px solid var(--rule);cursor:pointer;transition:background 0.12s;margin:0 -8px;padding-left:8px;padding-right:8px;position:relative" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
         <div style="width:10px;height:10px;border-radius:2px;background:${color};flex-shrink:0"></div>
         <div style="flex:1">
           <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:17px;color:var(--ink)">${f.display_name}</div>
           <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px">${f.archetype}${f.archetype_secondary ? ' · ' + f.archetype_secondary : ''}</div>
         </div>
+        <span class="shared-wl-dot-slot" data-friend-id="${f.id}"></span>
         <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">Open →</div>
       </div>`;
     }).join('');
@@ -758,33 +796,6 @@ function friendListHTML(friends, incoming = [], outgoing = []) {
 }
 
 // ── FRIEND PROFILE ──
-
-function sharedWatchlistHTML(friend, color) {
-  const myList = currentUser?.watchlist || [];
-  const friendList = friend?.watchlist || [];
-  if (!myList.length || !friendList.length) return '';
-  const friendTmdbIds = new Set(friendList.map(w => String(w.tmdbId)));
-  const shared = myList.filter(w => friendTmdbIds.has(String(w.tmdbId)));
-  if (!shared.length) return '';
-  return `
-    <div style="padding-bottom:28px;margin-bottom:28px;border-bottom:1px solid var(--rule)">
-      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Both want to watch</div>
-      <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--dim);margin-bottom:14px">Films on both your watch lists — worth making a plan.</div>
-      ${shared.map(item => {
-        const poster = item.poster
-          ? `<img src="https://image.tmdb.org/t/p/w92${item.poster}" style="width:32px;height:48px;object-fit:cover;flex-shrink:0">`
-          : `<div style="width:32px;height:48px;background:var(--rule);flex-shrink:0"></div>`;
-        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--rule)">
-          ${poster}
-          <div style="flex:1;min-width:0">
-            <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.title}</div>
-            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-top:2px">${item.year || ''}${item.director ? ' · '+item.director.split(',')[0] : ''}</div>
-          </div>
-          <div style="font-family:'DM Mono',monospace;font-size:9px;color:${color};letter-spacing:0.5px;flex-shrink:0">Both watching</div>
-        </div>`;
-      }).join('')}
-    </div>`;
-}
 
 // Ensure friend color is always visually distinct from the user's blue (#3D5A80).
 // Measures perceptual distance in RGB space; if too close, picks a warm fallback.
@@ -821,20 +832,13 @@ function renderFriendProfile(el, friend) {
       </div>
 
       <div style="display:flex;gap:0;border-bottom:1px solid var(--rule);margin-bottom:28px">
-        <button onclick="showFriendTab('rankings')" id="tab-rankings" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid var(--ink);padding:10px 20px 10px 0;cursor:pointer;color:var(--ink);margin-bottom:-1px">Rankings (${(friend.movies||[]).length})</button>
+        <button onclick="showFriendTab('overlap')" id="tab-overlap" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid var(--ink);padding:10px 20px 10px 0;cursor:pointer;color:var(--ink);margin-bottom:-1px">Overlap</button>
+        <button onclick="showFriendTab('watchlist')" id="tab-watchlist" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid transparent;padding:10px 20px;cursor:pointer;color:var(--dim);margin-bottom:-1px">Watchlist</button>
+        <button onclick="showFriendTab('rankings')" id="tab-rankings" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid transparent;padding:10px 20px;cursor:pointer;color:var(--dim);margin-bottom:-1px">Rankings (${(friend.movies||[]).length})</button>
         <button onclick="showFriendTab('taste')" id="tab-taste" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid transparent;padding:10px 20px;cursor:pointer;color:var(--dim);margin-bottom:-1px">Taste</button>
-        <button onclick="showFriendTab('overlap')" id="tab-overlap" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid transparent;padding:10px 20px;cursor:pointer;color:var(--dim);margin-bottom:-1px">Overlap</button>
       </div>
 
-      <div id="friend-rankings-panel" style="padding-bottom:48px">
-        ${friendRankingsHTML(friend, color)}
-      </div>
-
-      <div id="friend-taste-panel" style="display:none;padding-bottom:48px">
-        ${friendTasteHTML(friend, color)}
-      </div>
-
-      <div id="friend-overlap-panel" style="display:none">
+      <div id="friend-overlap-panel" style="padding-bottom:48px">
         ${shouldShowHint('overlap_compat', () => true)
           ? renderHint('overlap_compat', '<strong>' + compat.total + '%</strong> — that\'s how similar your taste formulas are. High compatibility means you weight the same categories. It doesn\'t mean you rate the same films the same way.')
           : ''}
@@ -843,7 +847,7 @@ function renderFriendProfile(el, friend) {
           <div style="display:flex;align-items:center;gap:32px;flex-wrap:wrap">
             <div>
               <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:64px;line-height:1;color:${color};letter-spacing:-2px">${compat.total}</div>
-              <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--on-dark-dim)">/100</div>
+              <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--on-dark-dim);margin-top:6px">/100</div>
             </div>
             <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--on-dark-dim);line-height:2">
               <div>Weight alignment &nbsp;<strong style="color:var(--on-dark)">${compat.weightPct}%</strong></div>
@@ -852,8 +856,6 @@ function renderFriendProfile(el, friend) {
             </div>
           </div>
         </div>
-
-        ${sharedWatchlistHTML(friend, color)}
 
         <div style="padding-bottom:28px;margin-bottom:28px;border-bottom:1px solid var(--rule)">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start" class="overlap-fingerprint-row">
@@ -898,15 +900,29 @@ function renderFriendProfile(el, friend) {
         </div>
       </div>
 
+      <div id="friend-watchlist-panel" style="display:none;padding-bottom:48px">
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);padding:32px 0;text-align:center;font-style:italic">Loading watchlists…</div>
+      </div>
+
+      <div id="friend-rankings-panel" style="display:none;padding-bottom:48px">
+        ${friendRankingsHTML(friend, color)}
+      </div>
+
+      <div id="friend-taste-panel" style="display:none;padding-bottom:48px">
+        ${friendTasteHTML(friend, color)}
+      </div>
+
     </div>`;
 
+  sharedWatchlistCache = null; // reset on new friend profile
+  friendWatchlistCache = null;
   loadFriendInsight(friend, compat, color);
   loadForYouTwo(friend, color);
 }
 
 window.showFriendTab = function(tab) {
-  const panels = { overlap: 'friend-overlap-panel', rankings: 'friend-rankings-panel', taste: 'friend-taste-panel' };
-  const tabIds = { overlap: 'tab-overlap', rankings: 'tab-rankings', taste: 'tab-taste' };
+  const panels = { overlap: 'friend-overlap-panel', watchlist: 'friend-watchlist-panel', rankings: 'friend-rankings-panel', taste: 'friend-taste-panel' };
+  const tabIds = { overlap: 'tab-overlap', watchlist: 'tab-watchlist', rankings: 'tab-rankings', taste: 'tab-taste' };
   Object.entries(panels).forEach(([key, id]) => {
     const panel = document.getElementById(id);
     if (panel) panel.style.display = key === tab ? 'block' : 'none';
@@ -915,6 +931,341 @@ window.showFriendTab = function(tab) {
     const btn = document.getElementById(id);
     if (btn) { btn.style.borderBottomColor = key === tab ? 'var(--ink)' : 'transparent'; btn.style.color = key === tab ? 'var(--ink)' : 'var(--dim)'; }
   });
+
+  // Lazy-load watchlist tab content on first open
+  if (tab === 'watchlist' && currentFriendCache) {
+    track('friend_watchlist_tab_opened', { friend_id: currentFriendCache.id });
+    loadWatchlistTab(currentFriendCache);
+  }
+};
+
+// ── WATCHLIST TAB ────────────────────────────────────────────────────────
+
+let friendWatchlistCache = null; // loaded lazily per friend
+
+async function loadWatchlistTab(friend) {
+  const panel = document.getElementById('friend-watchlist-panel');
+  if (!panel) return;
+
+  // Lazy-load friend watchlist + shared watchlist in parallel (only on first open / friend change)
+  const needsFriendWl = !friendWatchlistCache || friendWatchlistCache._friendId !== friend.id;
+  const needsSharedWl = !sharedWatchlistCache || sharedWatchlistCache._friendId !== friend.id;
+
+  if (needsFriendWl || needsSharedWl) {
+    panel.innerHTML = `<div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);padding:32px 0;text-align:center;font-style:italic">Loading watchlists…</div>`;
+    const [friendWlData, sharedWlData] = await Promise.all([
+      needsFriendWl ? loadFriendWatchlist(friend.id) : Promise.resolve(friendWatchlistCache),
+      needsSharedWl ? loadSharedWatchlist(friend.id) : Promise.resolve(sharedWatchlistCache),
+    ]);
+    friendWatchlistCache = friendWlData;
+    friendWatchlistCache._friendId = friend.id;
+    sharedWatchlistCache = sharedWlData;
+    sharedWatchlistCache._friendId = friend.id;
+  }
+
+  // Mark shared watchlist as seen (notification dot)
+  try {
+    localStorage.setItem(`palatemap_shared_wl_seen_${friend.id}`, new Date().toISOString());
+  } catch(_) {}
+  document.querySelector(`.shared-wl-dot[data-friend="${friend.id}"]`)?.remove();
+
+  const color = ensureDistinctFromBlue((ARCHETYPES[friend.archetype] || {}).palette || '#D4665A');
+  const friendName = friend.display_name || 'Friend';
+  const friendWl = friendWatchlistCache || [];
+  const sharedWl = sharedWatchlistCache || [];
+  const sharedTmdbIds = new Set(sharedWl.map(w => String(w.tmdb_id)));
+
+  panel.innerHTML = `
+    ${renderFriendWatchlistSection(friendWl, friend, color, friendName, sharedTmdbIds)}
+    <div style="border-top:1px solid var(--rule);margin:28px 0"></div>
+    ${renderWatchTogetherSection(sharedWl, friend, color, friendName)}
+  `;
+}
+
+function renderFriendWatchlistSection(friendWl, friend, color, friendName, sharedTmdbIds) {
+  if (!friendWl.length) {
+    return `
+      <div style="margin-bottom:28px">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">${friendName}'s watchlist</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);font-style:italic;padding:20px 0">Nothing on their watchlist yet.</div>
+      </div>`;
+  }
+
+  const myRatedIds = new Set(MOVIES.map(m => String(m.tmdbId)));
+  const myWlIds = new Set((currentUser?.watchlist || []).map(w => String(w.tmdbId)));
+
+  const rows = friendWl.map((item, i) => {
+    const tmdbId = String(item.tmdbId);
+    const iRated = myRatedIds.has(tmdbId);
+    const onMyWl = myWlIds.has(tmdbId);
+    const inShared = sharedTmdbIds.has(tmdbId);
+    const myFilm = iRated ? MOVIES.find(m => String(m.tmdbId) === tmdbId) : null;
+
+    const poster = item.poster
+      ? `<img src="https://image.tmdb.org/t/p/w92${item.poster}" style="width:40px;height:60px;object-fit:cover;flex-shrink:0">`
+      : `<div style="width:40px;height:60px;background:var(--rule);flex-shrink:0"></div>`;
+
+    // Status badges
+    let badge = '';
+    if (iRated) badge = `<span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--blue)">Your score: ${Math.round(myFilm.total)}</span>`;
+    else if (onMyWl) badge = `<span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">Also on your watchlist</span>`;
+    if (inShared) badge += `${badge ? ' · ' : ''}<span style="font-family:'DM Mono',monospace;font-size:9px;color:${color}">In watch together</span>`;
+
+    // Actions
+    const actions = [];
+    if (!iRated && !onMyWl) actions.push(`<span onclick="friendWlAddToMyWl(${i})" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--blue);cursor:pointer">＋ Watchlist</span>`);
+    if (!iRated) actions.push(`<span onclick="friendWlRate(${i})" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--action);cursor:pointer">Rate →</span>`);
+    if (!inShared) actions.push(`<span onclick="friendWlAddToShared(${i})" style="font-family:'DM Mono',monospace;font-size:9px;color:${color};cursor:pointer">＋ Watch together</span>`);
+
+    return `<div onclick="openFriendWlItem(${i})" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--rule);cursor:pointer" id="friend-wl-row-${i}">
+      ${poster}
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.title || 'Untitled'}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-top:2px">${item.year || ''}${item.director ? ' · ' + (item.director || '').split(',')[0] : ''}</div>
+        ${badge ? `<div style="margin-top:4px">${badge}</div>` : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0" onclick="event.stopPropagation()">
+        ${actions.join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+    <div style="margin-bottom:28px">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">${friendName}'s watchlist</div>
+      ${rows}
+    </div>`;
+}
+
+function renderWatchTogetherSection(sharedWl, friend, color, friendName) {
+  if (!sharedWl.length) {
+    return `
+      <div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">Watch together</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);font-style:italic;padding:20px 0">Nothing in watch together yet.</div>
+      </div>`;
+  }
+
+  const myRatedIds = new Set(MOVIES.map(m => String(m.tmdbId)));
+  const myWlIds = new Set((currentUser?.watchlist || []).map(w => String(w.tmdbId)));
+
+  const rows = sharedWl.map((item, i) => {
+    const tmdbId = String(item.tmdb_id);
+    const iRated = myRatedIds.has(tmdbId);
+    const onMyWl = myWlIds.has(tmdbId);
+    const myFilm = iRated ? MOVIES.find(m => String(m.tmdbId) === tmdbId) : null;
+    const addedByMe = item.added_by_user_id === currentUser?.id;
+
+    const poster = item.poster
+      ? `<img src="https://image.tmdb.org/t/p/w92${item.poster}" style="width:40px;height:60px;object-fit:cover;flex-shrink:0">`
+      : `<div style="width:40px;height:60px;background:var(--rule);flex-shrink:0"></div>`;
+
+    let badge = '';
+    if (iRated) badge = `<span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--blue)">Your score: ${Math.round(myFilm.total)}</span>`;
+    else if (onMyWl) badge = `<span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">Also on your watchlist</span>`;
+    const addedLabel = addedByMe ? 'Added by you' : `Added by ${friendName}`;
+
+    const actions = [];
+    if (!iRated && !onMyWl) actions.push(`<span onclick="sharedWlAddToMyWl(${i})" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--blue);cursor:pointer">＋ Watchlist</span>`);
+    if (!iRated) actions.push(`<span onclick="sharedWlRate(${i})" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--action);cursor:pointer">Rate →</span>`);
+    actions.push(`<span onclick="sharedWlRemove(${i})" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);cursor:pointer">Remove</span>`);
+
+    return `<div onclick="openSharedWlItem(${i})" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--rule);cursor:pointer" id="shared-wl-row-${i}">
+      ${poster}
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.title || 'Untitled'}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-top:2px">${item.year || ''}${item.director ? ' · ' + (item.director || '').split(',')[0] : ''}</div>
+        ${badge ? `<div style="margin-top:4px">${badge}</div>` : ''}
+        <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--dim);margin-top:3px;opacity:0.7">${addedLabel}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0" onclick="event.stopPropagation()">
+        ${actions.join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+    <div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px">Watch together</div>
+      ${rows}
+    </div>`;
+}
+
+// ── Watchlist tab action handlers ──
+
+window.friendWlAddToMyWl = function(index) {
+  const friend = currentFriendCache;
+  const item = friendWatchlistCache?.[index];
+  if (!item) return;
+  import('./watchlist.js').then(({ addToWatchlist }) => {
+    addToWatchlist({ tmdbId: item.tmdbId, title: item.title, year: item.year, poster: item.poster, director: item.director });
+  });
+  track('friend_watchlist_item_added_to_my_watchlist', { tmdb_id: item.tmdbId, friend_id: friend?.id });
+  setTimeout(() => { if (friend) loadWatchlistTab(friend); }, 300);
+};
+
+window.friendWlRate = function(index) {
+  const item = friendWatchlistCache?.[index];
+  if (!item) return;
+  track('friend_watchlist_item_rated', { tmdb_id: item.tmdbId, friend_id: currentFriendCache?.id });
+  window.showScreen('add');
+  setTimeout(() => {
+    if (item.tmdbId) window.tmdbSelect?.(item.tmdbId, item.title);
+    else { const inp = document.getElementById('f-search'); if (inp) { inp.value = item.title; window.liveSearch?.(item.title); } }
+  }, 100);
+};
+
+window.friendWlAddToShared = async function(index) {
+  const friend = currentFriendCache;
+  const item = friendWatchlistCache?.[index];
+  if (!item || !friend) return;
+  const ok = await addToSharedWatchlist(friend.id, item);
+  if (ok) {
+    track('shared_watchlist_item_added', { tmdb_id: item.tmdbId, friend_id: friend.id, source: 'friend_watchlist' });
+    import('../ui-callbacks.js').then(({ showToast }) => showToast(`${item.title} added to watch together.`));
+    sharedWatchlistCache = null;
+    loadWatchlistTab(friend);
+  }
+};
+
+window.sharedWlAddToMyWl = function(index) {
+  const item = sharedWatchlistCache?.[index];
+  const friend = currentFriendCache;
+  if (!item) return;
+  import('./watchlist.js').then(({ addToWatchlist }) => {
+    addToWatchlist({ tmdbId: item.tmdb_id, title: item.title, year: item.year, poster: item.poster, director: item.director });
+  });
+  track('friend_watchlist_item_added_to_my_watchlist', { tmdb_id: item.tmdb_id, friend_id: friend?.id });
+  setTimeout(() => { if (friend) loadWatchlistTab(friend); }, 300);
+};
+
+window.sharedWlRate = function(index) {
+  const item = sharedWatchlistCache?.[index];
+  if (!item) return;
+  track('shared_watchlist_item_opened', { tmdb_id: item.tmdb_id, friend_id: currentFriendCache?.id });
+  window.showScreen('add');
+  setTimeout(() => {
+    if (item.tmdb_id) window.tmdbSelect?.(item.tmdb_id, item.title);
+    else { const inp = document.getElementById('f-search'); if (inp) { inp.value = item.title; window.liveSearch?.(item.title); } }
+  }, 100);
+};
+
+window.sharedWlRemove = async function(index) {
+  const item = sharedWatchlistCache?.[index];
+  const friend = currentFriendCache;
+  if (!item || !friend) return;
+  const ok = await removeFromSharedWatchlist(friend.id, item.tmdb_id);
+  if (ok) {
+    track('shared_watchlist_item_removed', { tmdb_id: item.tmdb_id, friend_id: friend.id });
+    import('../ui-callbacks.js').then(({ showToast }) => showToast(`${item.title} removed from watch together.`));
+    sharedWatchlistCache = null;
+    loadWatchlistTab(friend);
+  }
+};
+
+// ── Open detail for a watchlist item (friend's or shared) ──
+
+function openWatchlistItemDetail(item, source) {
+  // item shape: { tmdbId|tmdb_id, title, year, poster, director }
+  const tmdbId = String(item.tmdbId || item.tmdb_id || '');
+  const title = item.title || 'Untitled';
+  const year = item.year || '';
+  const poster = item.poster || null;
+  const director = item.director || '';
+  const friend = currentFriendCache;
+  const friendName = friend?.display_name || 'Friend';
+  const color = ensureDistinctFromBlue((ARCHETYPES[friend?.archetype] || {}).palette || '#D4665A');
+
+  // Check user's state
+  const myFilm = MOVIES.find(m => String(m.tmdbId) === tmdbId);
+  const myTotal = myFilm ? (Math.round(myFilm.total * 10) / 10).toFixed(1) : null;
+  const myIdx = myFilm ? MOVIES.indexOf(myFilm) : -1;
+  const onMyWl = (currentUser?.watchlist || []).some(w => String(w.tmdbId) === tmdbId);
+  const sharedTmdbIds = new Set((sharedWatchlistCache || []).map(w => String(w.tmdb_id)));
+  const inShared = sharedTmdbIds.has(tmdbId);
+
+  document.getElementById('friend-wl-detail-modal')?.remove();
+
+  const posterHtml = poster
+    ? `<img src="https://image.tmdb.org/t/p/w342${poster}" style="width:90px;height:135px;object-fit:cover;flex-shrink:0">`
+    : '';
+
+  const sourceLabel = source === 'shared' ? 'Watch together' : `${friendName}'s watchlist`;
+
+  // Action buttons
+  let actionsHtml;
+  if (myFilm) {
+    actionsHtml = `<div style="display:flex;align-items:center;gap:10px;padding:16px 0;border-bottom:1px solid var(--rule)">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--dim)">Your score</div>
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:24px;color:var(--blue);letter-spacing:-0.5px">${myTotal}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim)">/100</div>
+      <div style="flex:1"></div>
+      <button onclick="document.getElementById('friend-wl-detail-modal').remove();openModal(${myIdx})" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;background:none;color:var(--blue);border:1px solid var(--blue);padding:6px 12px;cursor:pointer">Open →</button>
+    </div>`;
+  } else {
+    const wlBtn = onMyWl
+      ? `<span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--green);padding:8px 0">✓ On your watch list</span>`
+      : `<button onclick="document.getElementById('friend-wl-detail-modal').remove();friendWlDetailAddWl('${tmdbId}','${title.replace(/'/g,"\\'")}','${year}','${(poster||'').replace(/'/g,"\\'")}','${director.replace(/'/g,"\\'")}')" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.5px;background:none;color:var(--dim);border:1px solid var(--rule-dark);padding:8px 14px;cursor:pointer;white-space:nowrap">＋ Watchlist</button>`;
+    const sharedBtn = inShared
+      ? `<span style="font-family:'DM Mono',monospace;font-size:9px;color:${color};padding:8px 0">In watch together</span>`
+      : `<button onclick="friendWlDetailAddShared('${tmdbId}','${title.replace(/'/g,"\\'")}','${year}','${(poster||'').replace(/'/g,"\\'")}','${director.replace(/'/g,"\\'")}')" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.5px;background:none;color:${color};border:1px solid ${color};padding:8px 14px;cursor:pointer;white-space:nowrap">＋ Watch together</button>`;
+    actionsHtml = `<div style="display:flex;flex-wrap:wrap;gap:8px;padding:16px 0;border-bottom:1px solid var(--rule)">
+      ${wlBtn}
+      ${sharedBtn}
+      <button onclick="document.getElementById('friend-wl-detail-modal').remove();window.showScreen('add');setTimeout(()=>window.tmdbSelect?.('${tmdbId}','${title.replace(/'/g,"\\'")}'),100)" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;background:var(--action);color:white;border:none;padding:8px 14px;cursor:pointer;white-space:nowrap">Rate now →</button>
+    </div>`;
+  }
+
+  const overlay = document.createElement('div');
+  overlay.id = 'friend-wl-detail-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(12,11,9,0.7);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px';
+  overlay.innerHTML = `
+    <div style="background:var(--paper);max-width:460px;width:100%;border-top:3px solid ${color};max-height:85vh;overflow-y:auto">
+      <div style="background:var(--surface-dark);padding:24px 28px;display:flex;gap:18px;align-items:flex-start;position:relative">
+        <button onclick="document.getElementById('friend-wl-detail-modal').remove()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--on-dark-dim);line-height:1;padding:4px 8px">×</button>
+        ${posterHtml}
+        <div style="flex:1;padding-top:4px;padding-right:28px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--on-dark-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">${sourceLabel}</div>
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-weight:900;font-size:clamp(16px,3vw,22px);line-height:1.2;color:var(--on-dark);margin-bottom:6px">${title}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--on-dark-dim)">${year}${director ? ' · ' + director.split(',')[0] : ''}</div>
+        </div>
+      </div>
+      <div style="padding:0 28px 28px">
+        ${actionsHtml}
+      </div>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+  track('shared_watchlist_item_opened', { tmdb_id: tmdbId, source, friend_id: friend?.id });
+}
+
+window.openFriendWlItem = function(index) {
+  const item = friendWatchlistCache?.[index];
+  if (item) openWatchlistItemDetail(item, 'friend_watchlist');
+};
+
+window.openSharedWlItem = function(index) {
+  const item = sharedWatchlistCache?.[index];
+  if (item) openWatchlistItemDetail(item, 'shared');
+};
+
+// Detail modal action helpers (called from inline onclick with string params)
+window.friendWlDetailAddWl = function(tmdbId, title, year, poster, director) {
+  import('./watchlist.js').then(({ addToWatchlist }) => {
+    addToWatchlist({ tmdbId, title, year, poster, director });
+  });
+};
+
+window.friendWlDetailAddShared = async function(tmdbId, title, year, poster, director) {
+  const friend = currentFriendCache;
+  if (!friend) return;
+  const ok = await addToSharedWatchlist(friend.id, { tmdbId, title, year, poster, director });
+  if (ok) {
+    track('shared_watchlist_item_added', { tmdb_id: tmdbId, friend_id: friend.id, source: 'detail_modal' });
+    import('../ui-callbacks.js').then(({ showToast }) => showToast(`${title} added to watch together.`));
+    sharedWatchlistCache = null;
+  }
+  document.getElementById('friend-wl-detail-modal')?.remove();
 };
 
 window.loadMoreFriendRankings = function(fromIndex) {
@@ -1736,6 +2087,7 @@ function renderOverlapResult(el, result, permutation, myFilm, friendFilm, title,
     </div>
     <div style="display:flex;gap:8px">
       <button onclick="overlapWatchlist()" style="font-family:'DM Mono',monospace;font-size:10px;padding:10px 14px;background:none;border:1px solid var(--rule-dark);color:var(--dim);cursor:pointer;letter-spacing:0.5px">＋ Watchlist</button>
+      <button onclick="overlapSaveToShared()" style="font-family:'DM Mono',monospace;font-size:10px;padding:10px 14px;background:none;border:1px solid var(--rule-dark);color:var(--dim);cursor:pointer;letter-spacing:0.5px">＋ Watch together</button>
       ${_overlapNewSearchBtn()}
     </div>`;
 }
@@ -1770,8 +2122,8 @@ async function loadFriendInsight(friend, compat, color) {
   const prompt = `You are a taste analyst for Palate Map, a film scoring app.
 ${currentUser.display_name} is a ${currentUser.archetype}. Their top films: ${top3User.join(', ')}.
 ${friend.display_name} is a ${friend.archetype}. Their top films: ${top3Friend.join(', ')}.
-Compatibility: ${compat.total}/100. Weight alignment: ${compat.weightPct}%.${coRatedCtx}
-Write exactly 2 sentences addressed to ${currentUser.display_name} (2nd person) about what their taste overlap with ${friend.display_name} reveals. Be specific — reference archetypes or films. No intro, no preamble.`;
+Overall compatibility: ${compat.total}%. Weight alignment: ${compat.weightPct}%.${coRatedCtx}
+Write exactly 2 sentences addressed to ${currentUser.display_name} (2nd person) about what their taste overlap with ${friend.display_name} reveals. Be specific — reference archetypes or films. No intro, no preamble. If you cite a number, use the overall compatibility score (${compat.total}%), not the sub-scores.`;
 
   try {
     const res = await fetch(PROXY_URL, {
@@ -1866,7 +2218,6 @@ async function buildSharedCandidatePool(friend) {
   const ratedTitles = new Set(allMovies.map(m => normTitle(m.title)));
   const wlIds = new Set([
     ...(currentUser?.watchlist || []).map(w => String(w.tmdbId)),
-    ...(friend.watchlist || []).map(w => String(w.tmdbId))
   ]);
   const seen = new Set([...ratedIds, ...wlIds]);
   const isKnown = (id, title) => seen.has(String(id)) || ratedTitles.has(normTitle(title));
